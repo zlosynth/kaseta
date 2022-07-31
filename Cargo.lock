@@ -5,3 +5,12 @@ version = 3
 [[package]]
 name = "dsp"
 version = "0.1.0"
+dependencies = [
+ "libm",
+]
+
+[[package]]
+name = "libm"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "da83a57f3f5ba3680950aa3cbc806fc297bc0b289d42e8942ed528ace71b8145"
