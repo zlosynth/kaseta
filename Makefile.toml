@@ -1,0 +1,23 @@
+[env]
+CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
+
+[tasks.ci]
+dependencies = [
+  "print-env-flow",
+  "check-format",
+  "check-toml",
+  "clippy",
+  "build",
+  "test",
+]
+
+[tasks.check-toml]
+condition = { env_set = ["CARGO_MAKE_FORMAT_TOML_FILES"] }
+install_crate = { crate_name = "taplo-cli", binary = "taplo", test_arg = [
+  "--help",
+] }
+command = "taplo"
+args = ["format", "${CARGO_MAKE_FORMAT_TOML_FILES}", "--check"]
+
+[tasks.clippy]
+env = { CARGO_MAKE_CLIPPY_ARGS = "-- -D warnings" }
