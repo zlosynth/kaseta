@@ -11,5 +11,8 @@ libm = "0.2"
 defmt = { version = "0.3", optional = true }
 sirena = { path = "../../sirena" }
 
+[dev-dependencies]
+approx = "0.4"
+
 [features]
 defmt = ["dep:defmt", "sirena/defmt"]
