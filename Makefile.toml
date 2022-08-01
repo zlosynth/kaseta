@@ -1,15 +1,21 @@
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
+[tasks.dev]
+workspace = false
+dependencies = ["format-toml"]
+run_task = { name = "dev-workspace", fork = true }
+
+[tasks.dev-workspace]
+dependencies = ["format", "clippy", "build", "test"]
+
 [tasks.ci]
-dependencies = [
-  "print-env-flow",
-  "check-format",
-  "check-toml",
-  "clippy",
-  "build",
-  "test",
-]
+workspace = false
+dependencies = ["print-env-flow", "check-toml"]
+run_task = { name = "ci-workspace", fork = true }
+
+[tasks.ci-workspace]
+dependencies = ["check-format", "clippy", "build", "test"]
 
 [tasks.check-toml]
 condition = { env_set = ["CARGO_MAKE_FORMAT_TOML_FILES"] }
