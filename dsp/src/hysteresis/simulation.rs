@@ -11,6 +11,7 @@ use libm::{fabs, sqrt, tanh};
 
 /// Time domain differentiation using the trapezoidal rule.
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Differentiator {
     /// Period between samples
     t: f64,
@@ -58,6 +59,7 @@ fn langevin_deriv(x: f64) -> f64 {
 
 /// Applying hysteresis on input signal.
 #[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Hysteresis {
     /// Drive level
     drive: f32,
