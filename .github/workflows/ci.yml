@@ -19,6 +19,12 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
+    - name: Install up Python 3.x toolchain
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.x'
+    - name: Install Python black
+      run: pip install black
     - name: Install cargo-make
       uses: actions-rs/cargo@v1
       with:

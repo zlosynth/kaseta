@@ -3,7 +3,7 @@ CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 
 [tasks.dev]
 workspace = false
-dependencies = ["format-toml"]
+dependencies = ["format-black", "format-toml"]
 run_task = { name = "dev-workspace", fork = true }
 
 [tasks.dev-workspace]
@@ -11,7 +11,7 @@ dependencies = ["format", "clippy", "build", "test"]
 
 [tasks.ci]
 workspace = false
-dependencies = ["print-env-flow", "check-toml"]
+dependencies = ["print-env-flow", "check-black", "check-toml"]
 run_task = { name = "ci-workspace", fork = true }
 
 [tasks.ci-workspace]
@@ -27,3 +27,11 @@ args = ["format", "${CARGO_MAKE_FORMAT_TOML_FILES}", "--check"]
 
 [tasks.clippy]
 env = { CARGO_MAKE_CLIPPY_ARGS = "-- -D warnings" }
+
+[tasks.format-black]
+condition_script = ["python3 -m black --help >/dev/null"]
+condition = { fail_message = "Python black is not available" }
+script = "python3 -m black hack/"
+
+[tasks.check-black]
+script = "python3 -m black hack/"
