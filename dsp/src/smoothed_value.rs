@@ -1,5 +1,11 @@
+//! Glide between values set by a slower loop.
+//!
+//! This may be useful to smoothen input parameters set through the contorol
+//! loop before passing them to a DSP component.
+
 use sirena::signal::Signal;
 
+/// Smoothen transition between values.
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct SmoothedValue {
