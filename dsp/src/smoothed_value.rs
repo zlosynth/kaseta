@@ -61,6 +61,7 @@ mod tests {
 
     #[test]
     fn given_smooth_value_when_left_intact_it_returns_stable_value() {
+        use sirena::signal::SignalTake;
         let value = SmoothedValue::new(1.0, 64);
         for x in value.take(10) {
             assert_relative_eq!(x, 1.0);
@@ -69,6 +70,7 @@ mod tests {
 
     #[test]
     fn given_smooth_value_when_sets_a_new_value_it_linearly_progresses_to_it_and_remains_stable() {
+        use sirena::signal::SignalTake;
         let mut value = SmoothedValue::new(1.0, 64);
         value.set(0.0);
         for (i, x) in value.by_ref().take(64).enumerate() {

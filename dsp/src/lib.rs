@@ -5,5 +5,6 @@
 extern crate approx;
 
 pub mod hysteresis;
+pub mod oversampling;
 pub mod processor;
 pub mod smoothed_value;

@@ -1,3 +1,5 @@
+//! Apply hysteresis to signal.
+
 use sirena::signal::Signal;
 
 use super::simulation::Hysteresis;

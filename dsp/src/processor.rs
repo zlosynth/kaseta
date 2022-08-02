@@ -1,6 +1,6 @@
 //! Main interface for the DSP loop.
 
-use sirena::signal::{self, Signal};
+use sirena::signal::{self, Signal, SignalClipAmp};
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
