@@ -22,6 +22,13 @@ impl<const N: usize, const M: usize> fmt::Debug for Upsampler<N, M> {
     }
 }
 
+#[cfg(feature = "defmt")]
+impl<const N: usize, const M: usize> defmt::Format for Upsampler<N, M> {
+    fn format(&self, f: defmt::Formatter) {
+        defmt::write!(f, "Upsampler({=usize})", self.factor);
+    }
+}
+
 /// Upsample signal 8x.
 pub type Upsampler8 = Upsampler<{ COEFFICIENTS_8.len() }, { COEFFICIENTS_8.len() / 2 + 1 }>;
 
