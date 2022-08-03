@@ -9,8 +9,6 @@ use crate::smoothed_value::SmoothedValue;
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Processor {
-    _fs: f32,
-
     upsampler: Upsampler8,
     downsampler: Downsampler8,
 
@@ -32,7 +30,6 @@ impl Processor {
         let hysteresis = Hysteresis::new(fs, drive.value(), saturation.value(), width.value());
 
         Self {
-            _fs: fs,
             upsampler,
             downsampler,
             hysteresis,
