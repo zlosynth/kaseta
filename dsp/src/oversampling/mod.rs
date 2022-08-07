@@ -77,7 +77,6 @@ mod tests {
             .try_into()
             .unwrap();
         let processed_buffer: [f32; SAMPLES] = signal
-            .clone()
             .upsample(&mut upsampler)
             .downsample(&mut downsampler)
             .by_ref()

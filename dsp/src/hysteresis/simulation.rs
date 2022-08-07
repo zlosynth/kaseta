@@ -93,6 +93,7 @@ impl Hysteresis {
     /// Mean field parameter.
     const ALPHA: f64 = 1.6e-3;
 
+    #[must_use]
     pub fn new(fs: f32, drive: f32, saturation: f32, width: f32) -> Self {
         let fs = fs as f64;
         let mut hysteresis = Self {
@@ -121,6 +122,7 @@ impl Hysteresis {
         self.a = self.m_s / (0.01 + 6.0 * drive as f64);
     }
 
+    #[must_use]
     pub fn drive(&self) -> f32 {
         self.drive
     }
@@ -131,6 +133,7 @@ impl Hysteresis {
         self.set_drive(self.drive);
     }
 
+    #[must_use]
     pub fn saturation(&self) -> f32 {
         self.saturation
     }
@@ -140,6 +143,7 @@ impl Hysteresis {
         self.c = sqrt(1.0 - width as f64) - 0.01;
     }
 
+    #[must_use]
     pub fn width(&self) -> f32 {
         self.width
     }
@@ -203,6 +207,7 @@ impl Hysteresis {
         m_n1 + (k1 / 6.0) + (k2 / 3.0) + (k3 / 3.0) + (k4 / 6.0)
     }
 
+    #[must_use]
     pub fn process(&mut self, h: f32) -> f32 {
         let h = h as f64;
         let (h_d, m) = {

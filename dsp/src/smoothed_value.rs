@@ -21,6 +21,7 @@ enum State {
 }
 
 impl SmoothedValue {
+    #[must_use]
     pub fn new(value: f32, steps: u32) -> Self {
         Self {
             step: 1.0 / steps as f32,
@@ -33,6 +34,7 @@ impl SmoothedValue {
         self.state = State::Converging(last_value, value, 0.0);
     }
 
+    #[must_use]
     pub fn value(&self) -> f32 {
         match self.state {
             State::Stable(value) => value,

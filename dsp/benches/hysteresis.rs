@@ -1,3 +1,5 @@
+#![allow(clippy::items_after_statements)]
+
 use criterion::{criterion_group, criterion_main, Criterion};
 
 fn criterion_benchmark(c: &mut Criterion) {

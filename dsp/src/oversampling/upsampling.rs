@@ -5,7 +5,7 @@ use core::fmt;
 use sirena::ring_buffer::RingBuffer;
 use sirena::signal::{self, Signal};
 
-use super::coefficients::*;
+use super::coefficients::COEFFICIENTS_8;
 
 pub struct Upsampler<const N: usize, const M: usize> {
     factor: usize,
@@ -33,6 +33,7 @@ impl<const N: usize, const M: usize> defmt::Format for Upsampler<N, M> {
 pub type Upsampler8 = Upsampler<{ COEFFICIENTS_8.len() }, { COEFFICIENTS_8.len() / 2 + 1 }>;
 
 impl Upsampler8 {
+    #[must_use]
     pub fn new_8() -> Self {
         Self {
             factor: 8,
@@ -70,26 +71,24 @@ where
     S: Signal,
 {
     fn next(&mut self) -> f32 {
-        let upsampler = &mut self.upsampler;
-
-        if upsampler.coefficients_offset == 0 {
-            upsampler.buffer.write(self.source.next());
+        if self.upsampler.coefficients_offset == 0 {
+            self.upsampler.buffer.write(self.source.next());
         }
 
         let mut output = signal::EQUILIBRIUM;
-        let mut coefficients_index = upsampler.coefficients_offset;
+        let mut coefficients_index = self.upsampler.coefficients_offset;
 
-        while coefficients_index < upsampler.coefficients.len() {
-            let past_value_index = -(coefficients_index as i32) / upsampler.factor as i32;
-            let past_value = upsampler.buffer.peek(past_value_index);
-            let amplification = upsampler.coefficients[coefficients_index];
-            output += past_value * amplification * upsampler.factor as f32;
+        while coefficients_index < self.upsampler.coefficients.len() {
+            let past_value_index = -(coefficients_index as i32) / self.upsampler.factor as i32;
+            let past_value = self.upsampler.buffer.peek(past_value_index);
+            let amplification = self.upsampler.coefficients[coefficients_index];
+            output += past_value * amplification * self.upsampler.factor as f32;
 
-            coefficients_index += upsampler.factor;
+            coefficients_index += self.upsampler.factor;
         }
 
-        upsampler.coefficients_offset += 1;
-        upsampler.coefficients_offset %= upsampler.factor;
+        self.upsampler.coefficients_offset += 1;
+        self.upsampler.coefficients_offset %= self.upsampler.factor;
 
         output
     }

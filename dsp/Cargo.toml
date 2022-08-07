@@ -21,3 +21,7 @@ defmt = ["dep:defmt", "sirena/defmt"]
 [[bench]]
 name = "hysteresis"
 harness = false
+
+[[bench]]
+name = "oversampling"
+harness = false

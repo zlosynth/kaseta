@@ -28,6 +28,7 @@ pub struct Attributes {
 
 impl Processor {
     #[allow(clippy::let_and_return)]
+    #[must_use]
     pub fn new(fs: f32, attributes: Attributes) -> Self {
         let upsampler = Upsampler8::new_8();
         let downsampler = Downsampler8::new_8();
@@ -67,9 +68,9 @@ impl Processor {
             )
             .downsample(&mut self.downsampler);
 
-        block.iter_mut().for_each(|f| {
+        for f in block.iter_mut() {
             *f = instrument.next();
-        });
+        }
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {

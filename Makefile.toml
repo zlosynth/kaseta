@@ -26,7 +26,7 @@ command = "taplo"
 args = ["format", "${CARGO_MAKE_FORMAT_TOML_FILES}", "--check"]
 
 [tasks.clippy]
-env = { CARGO_MAKE_CLIPPY_ARGS = "-- -D warnings" }
+env = { CARGO_MAKE_CLIPPY_ARGS = "--tests --benches -- -Dclippy::all -Dclippy::pedantic" }
 
 [tasks.format-black]
 condition_script = ["python3 -m black --help >/dev/null"]

@@ -5,7 +5,7 @@ use core::fmt;
 use sirena::ring_buffer::RingBuffer;
 use sirena::signal::{self, Signal};
 
-use super::coefficients::*;
+use super::coefficients::COEFFICIENTS_8;
 
 pub struct Downsampler<const N: usize> {
     factor: usize,
@@ -32,6 +32,7 @@ impl<const N: usize> defmt::Format for Downsampler<N> {
 pub type Downsampler8 = Downsampler<{ COEFFICIENTS_8.len() }>;
 
 impl Downsampler8 {
+    #[must_use]
     pub fn new_8() -> Self {
         Self {
             factor: 8,
@@ -65,15 +66,14 @@ where
     S: Signal,
 {
     fn next(&mut self) -> f32 {
-        let downsampler = &mut self.downsampler;
-
-        (0..downsampler.factor).for_each(|_| downsampler.buffer.write(self.source.next()));
+        (0..self.downsampler.factor)
+            .for_each(|_| self.downsampler.buffer.write(self.source.next()));
 
         let mut output = signal::EQUILIBRIUM;
 
-        for (i, coefficient) in downsampler.coefficients.iter().enumerate() {
+        for (i, coefficient) in self.downsampler.coefficients.iter().enumerate() {
             let past_value_index = -(i as i32);
-            let past_value = downsampler.buffer.peek(past_value_index);
+            let past_value = self.downsampler.buffer.peek(past_value_index);
             output += past_value * coefficient;
         }
 
