@@ -194,7 +194,7 @@ def analyze_processor(axs, column, processor, attributes):
     legend = []
 
     # plot only the second half, after hysteresis stabilizes
-    signal = generate_sine(FREQUENCY, length=LENGTH) * 3
+    signal = generate_sine(FREQUENCY, length=LENGTH)
     half = int(len(signal) / 2)
     half_signal = signal[half:]
     time = np.linspace(0, LENGTH, int(FS * LENGTH))
@@ -262,10 +262,10 @@ def amplitude_generate():
     W = 20
 
     input_configs = []
-    for i in np.linspace(0.1, 1.0, I):
-        for d in np.linspace(0.1, 20.0, D):
+    for i in np.linspace(0.2, 1.0, I):
+        for d in np.linspace(0.2, 20.0, D):
             for s in np.linspace(0, 1, S):
-                for w in np.linspace(0, 0.999, W):
+                for w in np.linspace(0, 0.9999, W):
                     input_configs.append(
                         {
                             "i": i,
