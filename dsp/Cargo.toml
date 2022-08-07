@@ -13,6 +13,11 @@ sirena = { path = "../../sirena" }
 
 [dev-dependencies]
 approx = "0.4"
+criterion = "0.3"
 
 [features]
 defmt = ["dep:defmt", "sirena/defmt"]
+
+[[bench]]
+name = "hysteresis"
+harness = false

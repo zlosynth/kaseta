@@ -12,3 +12,9 @@ Run formatting, checks, build and tests:
 ```sh
 cargo make dev
 ```
+
+Run benchmarks:
+
+```sh
+cargo bench
+```
