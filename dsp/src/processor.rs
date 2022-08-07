@@ -37,7 +37,7 @@ impl Processor {
         let drive = SmoothedValue::new(0.0, SMOOTHING_STEPS);
         let saturation = SmoothedValue::new(0.0, SMOOTHING_STEPS);
         let width = SmoothedValue::new(0.0, SMOOTHING_STEPS);
-        let hysteresis = Hysteresis::new(fs, drive.value(), saturation.value(), width.value());
+        let hysteresis = Hysteresis::new(fs);
 
         let mut uninitialized_processor = Self {
             upsampler,

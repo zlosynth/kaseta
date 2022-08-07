@@ -16,7 +16,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         const DRIVE: f32 = 0.5;
         const SATURATION: f32 = 0.5;
         const WIDTH: f32 = 0.5;
-        let mut hysteresis = Hysteresis::new(FS, DRIVE, SATURATION, WIDTH);
+        let mut hysteresis = Hysteresis::new(FS);
         let mut drive = signal::constant(DRIVE);
         let mut saturation = signal::constant(SATURATION);
         let mut width = signal::constant(WIDTH);

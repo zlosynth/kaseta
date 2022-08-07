@@ -94,7 +94,7 @@ impl Hysteresis {
     const ALPHA: f64 = 1.6e-3;
 
     #[must_use]
-    pub fn new(fs: f32, drive: f32, saturation: f32, width: f32) -> Self {
+    pub fn new(fs: f32) -> Self {
         let fs = fs as f64;
         let mut hysteresis = Self {
             drive: 0.0,
@@ -111,9 +111,9 @@ impl Hysteresis {
             h_n1: 0.0,
             h_d_n1: 0.0,
         };
-        hysteresis.set_drive(drive);
-        hysteresis.set_saturation(saturation);
-        hysteresis.set_width(width);
+        hysteresis.set_drive(0.0);
+        hysteresis.set_saturation(0.0);
+        hysteresis.set_width(0.0);
         hysteresis
     }
 
@@ -252,7 +252,10 @@ mod tests {
         const DRIVE: f32 = 0.5;
         const SATURATION: f32 = 0.5;
         const WIDTH: f32 = 0.5;
-        let mut hysteresis = Hysteresis::new(FS, DRIVE, SATURATION, WIDTH);
+        let mut hysteresis = Hysteresis::new(FS);
+        hysteresis.set_drive(DRIVE);
+        hysteresis.set_saturation(SATURATION);
+        hysteresis.set_width(WIDTH);
 
         for x in buffer.iter_mut() {
             *x = hysteresis.process(*x);
