@@ -223,3 +223,55 @@ impl Hysteresis {
         m as f32
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn given_hysteresis_when_given_simple_sine_it_adds_odd_harmonics() {
+        use sirena::signal::{self, SignalTake};
+        use sirena::spectral_analysis::SpectralAnalysis;
+
+        const FS: f32 = 1024.0;
+        const FREQ: f32 = 32.0;
+        const SAMPLES: usize = 1024;
+
+        let mut buffer: [f32; SAMPLES] = signal::sine(FS, FREQ)
+            .take(SAMPLES)
+            .collect::<Vec<_>>()
+            .as_slice()
+            .try_into()
+            .unwrap();
+
+        const DRIVE: f32 = 0.5;
+        const SATURATION: f32 = 0.5;
+        const WIDTH: f32 = 0.5;
+        let mut hysteresis = Hysteresis::new(FS, DRIVE, SATURATION, WIDTH);
+
+        for x in buffer.iter_mut() {
+            *x = hysteresis.process(*x);
+        }
+
+        let analysis = SpectralAnalysis::analyze(&buffer, FS as u32);
+        let harmonic_1 = analysis.magnitude(FREQ);
+        let harmonic_2 = analysis.magnitude(FREQ * 2.0);
+        let harmonic_3 = analysis.magnitude(FREQ * 3.0);
+        let harmonic_4 = analysis.magnitude(FREQ * 4.0);
+        let harmonic_5 = analysis.magnitude(FREQ * 5.0);
+        let harmonic_6 = analysis.magnitude(FREQ * 6.0);
+        let harmonic_7 = analysis.magnitude(FREQ * 7.0);
+        let harmonic_8 = analysis.magnitude(FREQ * 8.0);
+        let harmonic_9 = analysis.magnitude(FREQ * 9.0);
+
+        assert!(harmonic_1 > harmonic_3);
+        assert!(harmonic_3 > harmonic_5);
+        assert!(harmonic_5 > harmonic_7);
+        assert!(harmonic_7 > harmonic_9);
+
+        assert!(harmonic_2 < harmonic_9);
+        assert!(harmonic_4 < harmonic_9);
+        assert!(harmonic_6 < harmonic_9);
+        assert!(harmonic_8 < harmonic_9);
+    }
+}
