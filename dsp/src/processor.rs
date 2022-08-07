@@ -18,25 +18,37 @@ pub struct Processor {
     width: SmoothedValue,
 }
 
+#[derive(Default, Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct Attributes {
+    pub drive: f32,
+    pub saturation: f32,
+    pub width: f32,
+}
+
 impl Processor {
-    pub fn new(fs: f32) -> Self {
+    pub fn new(fs: f32, attributes: Attributes) -> Self {
         let upsampler = Upsampler8::new_8();
         let downsampler = Downsampler8::new_8();
 
         const SMOOTHING_STEPS: u32 = 32;
-        let drive = SmoothedValue::new(1.0, SMOOTHING_STEPS);
-        let saturation = SmoothedValue::new(1.0, SMOOTHING_STEPS);
-        let width = SmoothedValue::new(1.0, SMOOTHING_STEPS);
+        let drive = SmoothedValue::new(0.0, SMOOTHING_STEPS);
+        let saturation = SmoothedValue::new(0.0, SMOOTHING_STEPS);
+        let width = SmoothedValue::new(0.0, SMOOTHING_STEPS);
         let hysteresis = Hysteresis::new(fs, drive.value(), saturation.value(), width.value());
 
-        Self {
+        let mut processor = Self {
             upsampler,
             downsampler,
             hysteresis,
             drive,
             saturation,
             width,
-        }
+        };
+
+        processor.set_attributes(attributes);
+
+        processor
     }
 
     pub fn process(&mut self, block: &mut [f32; 32]) {
@@ -56,5 +68,11 @@ impl Processor {
         block.iter_mut().for_each(|f| {
             *f = instrument.next();
         });
+    }
+
+    pub fn set_attributes(&mut self, attributes: Attributes) {
+        self.drive.set(attributes.drive);
+        self.saturation.set(attributes.saturation);
+        self.width.set(attributes.width);
     }
 }
