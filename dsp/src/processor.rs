@@ -27,6 +27,7 @@ pub struct Attributes {
 }
 
 impl Processor {
+    #[allow(clippy::let_and_return)]
     pub fn new(fs: f32, attributes: Attributes) -> Self {
         let upsampler = Upsampler8::new_8();
         let downsampler = Downsampler8::new_8();
@@ -37,7 +38,7 @@ impl Processor {
         let width = SmoothedValue::new(0.0, SMOOTHING_STEPS);
         let hysteresis = Hysteresis::new(fs, drive.value(), saturation.value(), width.value());
 
-        let mut processor = Self {
+        let mut uninitialized_processor = Self {
             upsampler,
             downsampler,
             hysteresis,
@@ -46,7 +47,8 @@ impl Processor {
             width,
         };
 
-        processor.set_attributes(attributes);
+        uninitialized_processor.set_attributes(attributes);
+        let processor = uninitialized_processor;
 
         processor
     }
