@@ -4,7 +4,7 @@
 //!
 //! ```
 //! use sirena::signal::{self, Signal};
-//! use dsp::oversampling::{SignalDownsample, SignalUpsample, Downsampler8, Upsampler8};
+//! use kaseta_dsp::oversampling::{SignalDownsample, SignalUpsample, Downsampler8, Upsampler8};
 //!
 //! let mut upsampler = Upsampler8::new_8();
 //! let mut downsampler = Downsampler8::new_8();
