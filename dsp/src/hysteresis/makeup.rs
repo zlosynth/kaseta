@@ -1,3 +1,8 @@
+//! Unify loudness across different hysteresis configurations.
+//!
+//! This function was selected through fitting optimization performed via
+//! `hack/hysteresis.py` and benchmarked through `dsp/benches/makeup.rs`.
+
 #[must_use]
 pub fn calculate_makeup(drive: f32, saturation: f32, width: f32) -> f32 {
     const A1: f32 = 1.367_927_7;
