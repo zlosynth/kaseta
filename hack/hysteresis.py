@@ -166,19 +166,23 @@ class Hysteresis:
         s = saturation
         w = width
 
-        # func_n_exp
-        a1 = -4.985852190747078
-        a2 = 2.3355657304697566
-        a3 = -0.46539331771132414
-        a4 = 1.7736307894824253
-        a5 = -1.477059385501493
-        a6 = 1.0499135659068435
-        a7 = -4.527344643626089
-        a8 = -1.754272970770751
-        a9 = 2.2943289972238383
-        b = 0.20847101741156088
+        # func_j_pow2
+        a1 = 1.3679276126999933
+        a2 = 0.912466149478303
+        a3 = -1.4378610485082859
+        a4 = 1.1241058501596586
+        a5 = -0.9857491597967852
+        a6 = -0.06688050055567513
+        a7 = 3.673698118236408
+        a8 = 1.490835962046328
+        a9 = 0.0328655854088019
+        b = 0.3650935010127353
 
-        return 1 / (((a1 + a2 * d ** a3) * (a4 + a5 * s ** a6)) / (a7 + a8 * w ** a9) + b)
+        return 1 / (
+            ((a1 + a2 * d + a3 * w**2) * (a4 + a5 * s + a6 * s**2))
+            / (a7 + a8 * w + a9 * d**2)
+            + b
+        )
 
 
 def generate_sine(frequency, length):
@@ -337,28 +341,26 @@ def amplitude_fitting():
     a_data = data_frame["a"].values
 
     functions = (
-        func_n_exp, # rmse=0.03
-        func_o_exp, # rmse=0.03
-        func_d_exp, # rmse=0.07
-        func_q_pow3, # rmse=0.09
-        func_j_pow2, # rmse=0.11
-        func_p_exp, # rmse=0.12
-        func_c_pow2, # rmse=0.13
-        func_f_pow2, # rmse=0.15
-        func_h_pow2, # rmse=0.15
-        func_b_simple, # rmse=0.17
-        func_a_linear, # rmse=0.18
-        func_k_exp, # rmse=0.19
-        func_i_pow2, # rmse=0.19
-        func_g_pow2, # rmse=0.36
-        func_e_pow2, # rmse=0.37
-        func_m_exp, # rmse=0.41
-        func_l_exp, # rmse=0.44
+        func_n_exp,  # rmse=0.03
+        func_o_exp,  # rmse=0.03
+        func_d_exp,  # rmse=0.07
+        func_q_pow3,  # rmse=0.09
+        func_j_pow2,  # rmse=0.11
+        func_p_exp,  # rmse=0.12
+        func_c_pow2,  # rmse=0.13
+        func_f_pow2,  # rmse=0.15
+        func_h_pow2,  # rmse=0.15
+        func_b_simple,  # rmse=0.17
+        func_a_linear,  # rmse=0.18
+        func_k_exp,  # rmse=0.19
+        func_i_pow2,  # rmse=0.19
+        func_g_pow2,  # rmse=0.36
+        func_e_pow2,  # rmse=0.37
+        func_m_exp,  # rmse=0.41
+        func_l_exp,  # rmse=0.44
     )
 
-    input_configs = [
-        (func, d_data, s_data, w_data, a_data) for func in functions
-    ]
+    input_configs = [(func, d_data, s_data, w_data, a_data) for func in functions]
 
     print("Testing fitting functions:")
     configs = []
@@ -432,100 +434,156 @@ def func_a_linear(data, a1, a2, a3, b):
 
 def func_b_simple(data, a1, a2, a3, a4, a5, a6, b):
     d, s, w = data[0], data[1], data[2]
-    return a1 * d + a2 * s + a3 * w + a4 * d * s + a5 * d * w + a6 *  s * w + b
+    return a1 * d + a2 * s + a3 * w + a4 * d * s + a5 * d * w + a6 * s * w + b
 
 
 def func_c_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return a1 * d + a2 * s + a3 * w + a4 * d * s + a5 * d * w + a6 * s * w + a7 * d ** 2 + a8 * s ** 2 + a9 * w ** 2 + b
-
-
-def func_d_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    d, s, w = data[0], data[1], data[2]
-    return a1 * d + a2 * s + a3 * w + a4 * d * s + a5 * d * w + a6 * s * w + a7 * d ** a8 + a9 * s ** a10 + a11 * w ** a12 + b
-
-
-def func_e_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return (a1 + a2 * d + a3 * d ** 2) / ((a4 + a5 * s + a6 * s ** 2) * (a7 + a8 * w + a9 * w ** 2)) + b
-
-
-def func_f_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return (a1 + a2 * d + a3 * s ** 2) / ((a4 + a5 * s + a6 * d ** 2) * (a7 + a8 * w + a9 * w ** 2)) + b
-
-
-def func_g_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return (a1 + a2 * d + a3 * w ** 2) / ((a4 + a5 * s + a6 * d ** 2) * (a7 + a8 * w + a9 * s ** 2)) + b
-
-
-def func_h_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return ((a1 + a2 * d + a3 * d ** 2) * (a4 + a5 * s + a6 * s ** 2)) / (a7 + a8 * w + a9 * w ** 2) + b
-
-
-def func_i_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return ((a1 + a2 * d + a3 * s ** 2) * (a4 + a5 * s + a6 * d ** 2)) / (a7 + a8 * w + a9 * w ** 2) + b
-
-
-def func_j_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return ((a1 + a2 * d + a3 * w ** 2) * (a4 + a5 * s + a6 * s ** 2)) / (a7 + a8 * w + a9 * d ** 2) + b
-
-
-def func_k_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return (a1 + a2 * d ** a3) / ((a4 + a5 * s ** a6) * (a7 + a8 * w ** a9)) + b
-
-
-def func_l_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return (a1 + a2 * s ** a3) / ((a4 + a5 * d ** a6) * (a7 + a8 * w ** a9)) + b
-
-
-def func_m_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return (a1 + a2 * w ** a3) / ((a4 + a5 * d ** a6) * (a7 + a8 * s ** a9)) + b
-
-
-def func_n_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return ((a1 + a2 * d ** a3) * (a4 + a5 * s ** a6)) / (a7 + a8 * w ** a9) + b
-
-
-def func_o_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return ((a1 + a2 * s ** a3) * (a4 + a5 * d ** a6)) / (a7 + a8 * w ** a9) + b
-
-
-def func_p(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
-    d, s, w = data[0], data[1], data[2]
-    return ((a1 + a2 * w ** a3) * (a4 + a5 * s ** a6)) / (a7 + a8 * d ** a9) + b
-
-
-def func_q_pow3(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, b):
     d, s, w = data[0], data[1], data[2]
     return (
         a1 * d
         + a2 * s
         + a3 * w
-        + a4 * d ** 2
-        + a5 * s ** 2
-        + a6 * w ** 2
-        + a7 * d ** 3
-        + a8 * s ** 3
-        + a9 * w ** 3
+        + a4 * d * s
+        + a5 * d * w
+        + a6 * s * w
+        + a7 * d**2
+        + a8 * s**2
+        + a9 * w**2
+        + b
+    )
+
+
+def func_d_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
+    d, s, w = data[0], data[1], data[2]
+    return (
+        a1 * d
+        + a2 * s
+        + a3 * w
+        + a4 * d * s
+        + a5 * d * w
+        + a6 * s * w
+        + a7 * d**a8
+        + a9 * s**a10
+        + a11 * w**a12
+        + b
+    )
+
+
+def func_e_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * d + a3 * d**2) / (
+        (a4 + a5 * s + a6 * s**2) * (a7 + a8 * w + a9 * w**2)
+    ) + b
+
+
+def func_f_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * d + a3 * s**2) / (
+        (a4 + a5 * s + a6 * d**2) * (a7 + a8 * w + a9 * w**2)
+    ) + b
+
+
+def func_g_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * d + a3 * w**2) / (
+        (a4 + a5 * s + a6 * d**2) * (a7 + a8 * w + a9 * s**2)
+    ) + b
+
+
+def func_h_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * d + a3 * d**2) * (a4 + a5 * s + a6 * s**2)) / (
+        a7 + a8 * w + a9 * w**2
+    ) + b
+
+
+def func_i_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * d + a3 * s**2) * (a4 + a5 * s + a6 * d**2)) / (
+        a7 + a8 * w + a9 * w**2
+    ) + b
+
+
+def func_j_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * d + a3 * w**2) * (a4 + a5 * s + a6 * s**2)) / (
+        a7 + a8 * w + a9 * d**2
+    ) + b
+
+
+def func_k_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * d**a3) / ((a4 + a5 * s**a6) * (a7 + a8 * w**a9)) + b
+
+
+def func_l_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * s**a3) / ((a4 + a5 * d**a6) * (a7 + a8 * w**a9)) + b
+
+
+def func_m_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * w**a3) / ((a4 + a5 * d**a6) * (a7 + a8 * s**a9)) + b
+
+
+def func_n_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * d**a3) * (a4 + a5 * s**a6)) / (a7 + a8 * w**a9) + b
+
+
+def func_o_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * s**a3) * (a4 + a5 * d**a6)) / (a7 + a8 * w**a9) + b
+
+
+def func_p_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * w**a3) * (a4 + a5 * s**a6)) / (a7 + a8 * d**a9) + b
+
+
+def func_q_pow3(
+    data,
+    a1,
+    a2,
+    a3,
+    a4,
+    a5,
+    a6,
+    a7,
+    a8,
+    a9,
+    a10,
+    a11,
+    a12,
+    a13,
+    a14,
+    a15,
+    a16,
+    a17,
+    a18,
+    a19,
+    b,
+):
+    d, s, w = data[0], data[1], data[2]
+    return (
+        a1 * d
+        + a2 * s
+        + a3 * w
+        + a4 * d**2
+        + a5 * s**2
+        + a6 * w**2
+        + a7 * d**3
+        + a8 * s**3
+        + a9 * w**3
         + a10 * d * s
         + a11 * d * w
         + a12 * s * w
-        + a13 * d ** 2 * s
-        + a14 * d * s ** 2
-        + a15 * d ** 2 * w
-        + a16 * d * w ** 2
-        + a17 * s ** 2 * w
-        + a18 * s * w ** 2
+        + a13 * d**2 * s
+        + a14 * d * s**2
+        + a15 * d**2 * w
+        + a16 * d * w**2
+        + a17 * s**2 * w
+        + a18 * s * w**2
         + a19 * d * s * w
         + b
     )

@@ -25,3 +25,7 @@ harness = false
 [[bench]]
 name = "oversampling"
 harness = false
+
+[[bench]]
+name = "makeup"
+harness = false
