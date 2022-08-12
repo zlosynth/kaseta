@@ -3,7 +3,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("oversampling", |b| {
         use kaseta_dsp::oversampling::{
-            Downsampler8, SignalDownsample, SignalUpsample, Upsampler8,
+            Downsampler4, SignalDownsample, SignalUpsample, Upsampler4,
         };
         use sirena::signal::{self, Signal, SignalTake};
 
@@ -13,8 +13,8 @@ fn criterion_benchmark(c: &mut Criterion) {
         const FREQ: f32 = 100.0;
         let mut input = signal::sine(FS, FREQ);
 
-        let mut upsampler = Upsampler8::new_8();
-        let mut downsampler = Downsampler8::new_8();
+        let mut upsampler = Upsampler4::new_4();
+        let mut downsampler = Downsampler4::new_4();
 
         b.iter(|| {
             let _buffer: [f32; BUFFER_SIZE] = input

@@ -5,7 +5,7 @@ use core::fmt;
 use sirena::ring_buffer::RingBuffer;
 use sirena::signal::{self, Signal};
 
-use super::coefficients::COEFFICIENTS_8;
+use super::coefficients::COEFFICIENTS_4;
 
 pub struct Upsampler<const N: usize, const M: usize> {
     factor: usize,
@@ -29,15 +29,15 @@ impl<const N: usize, const M: usize> defmt::Format for Upsampler<N, M> {
     }
 }
 
-/// Upsample signal 8x.
-pub type Upsampler8 = Upsampler<{ COEFFICIENTS_8.len() }, { COEFFICIENTS_8.len() / 2 + 1 }>;
+/// Upsample signal 4x.
+pub type Upsampler4 = Upsampler<{ COEFFICIENTS_4.len() }, { COEFFICIENTS_4.len() / 2 + 1 }>;
 
-impl Upsampler8 {
+impl Upsampler4 {
     #[must_use]
-    pub fn new_8() -> Self {
+    pub fn new_4() -> Self {
         Self {
-            factor: 8,
-            coefficients: &COEFFICIENTS_8,
+            factor: 4,
+            coefficients: &COEFFICIENTS_4,
             buffer: RingBuffer::new(),
             coefficients_offset: 0,
         }

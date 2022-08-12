@@ -3,14 +3,14 @@
 use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 
 use crate::hysteresis::{self, Hysteresis, SignalApplyHysteresis};
-use crate::oversampling::{Downsampler8, SignalDownsample, SignalUpsample, Upsampler8};
+use crate::oversampling::{Downsampler4, SignalDownsample, SignalUpsample, Upsampler4};
 use crate::smoothed_value::SmoothedValue;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Processor {
-    upsampler: Upsampler8,
-    downsampler: Downsampler8,
+    upsampler: Upsampler4,
+    downsampler: Downsampler4,
 
     hysteresis: Hysteresis,
     drive: SmoothedValue,
@@ -31,11 +31,11 @@ impl Processor {
     #[allow(clippy::let_and_return)]
     #[must_use]
     pub fn new(fs: f32, attributes: Attributes) -> Self {
-        let upsampler = Upsampler8::new_8();
-        let downsampler = Downsampler8::new_8();
+        let upsampler = Upsampler4::new_4();
+        let downsampler = Downsampler4::new_4();
 
         const SMOOTHING_STEPS: u32 = 32;
-        const OVERSAMPLED_SMOOTHING_STEPS: u32 = 8 * SMOOTHING_STEPS;
+        const OVERSAMPLED_SMOOTHING_STEPS: u32 = 4 * SMOOTHING_STEPS;
         let drive = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
         let saturation = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
         let width = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);

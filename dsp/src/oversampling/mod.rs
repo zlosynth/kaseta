@@ -4,10 +4,10 @@
 //!
 //! ```
 //! use sirena::signal::{self, Signal};
-//! use kaseta_dsp::oversampling::{SignalDownsample, SignalUpsample, Downsampler8, Upsampler8};
+//! use kaseta_dsp::oversampling::{SignalDownsample, SignalUpsample, Downsampler4, Upsampler4};
 //!
-//! let mut upsampler = Upsampler8::new_8();
-//! let mut downsampler = Downsampler8::new_8();
+//! let mut upsampler = Upsampler4::new_4();
+//! let mut downsampler = Downsampler4::new_4();
 //!
 //! let processed_signal = signal::sine(48000.0, 200.0)
 //!      .upsample(&mut upsampler)
@@ -19,8 +19,8 @@ mod coefficients;
 pub mod downsampling;
 pub mod upsampling;
 
-pub use downsampling::{Downsampler8, SignalDownsample};
-pub use upsampling::{SignalUpsample, Upsampler8};
+pub use downsampling::{Downsampler4, SignalDownsample};
+pub use upsampling::{SignalUpsample, Upsampler4};
 
 #[cfg(test)]
 mod tests {
@@ -35,9 +35,9 @@ mod tests {
         const FS: f32 = 1024.0;
         const NYQUIST: f32 = FS / 2.0 - 1.0;
         const SAMPLES: usize = 1024;
-        const OVERSAMPLING: usize = 8;
+        const OVERSAMPLING: usize = 4;
 
-        let mut downsampler = Downsampler8::new_8();
+        let mut downsampler = Downsampler4::new_4();
 
         // Downsample oversampled signal with sine over original nyquist rate
         // and store it in a buffer.
@@ -63,8 +63,8 @@ mod tests {
         const NYQUIST: f32 = FS / 2.0 - 1.0;
         const SAMPLES: usize = 1024;
 
-        let mut upsampler = Upsampler8::new_8();
-        let mut downsampler = Downsampler8::new_8();
+        let mut upsampler = Upsampler4::new_4();
+        let mut downsampler = Downsampler4::new_4();
 
         let signal = signal::sine(FS, NYQUIST / 2.0);
 

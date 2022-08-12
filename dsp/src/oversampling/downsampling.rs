@@ -5,7 +5,7 @@ use core::fmt;
 use sirena::ring_buffer::RingBuffer;
 use sirena::signal::{self, Signal};
 
-use super::coefficients::COEFFICIENTS_8;
+use super::coefficients::COEFFICIENTS_4;
 
 pub struct Downsampler<const N: usize> {
     factor: usize,
@@ -28,15 +28,15 @@ impl<const N: usize> defmt::Format for Downsampler<N> {
     }
 }
 
-/// Downsample signal 8x.
-pub type Downsampler8 = Downsampler<{ COEFFICIENTS_8.len() }>;
+/// Downsample signal 4x.
+pub type Downsampler4 = Downsampler<{ COEFFICIENTS_4.len() }>;
 
-impl Downsampler8 {
+impl Downsampler4 {
     #[must_use]
-    pub fn new_8() -> Self {
+    pub fn new_4() -> Self {
         Self {
-            factor: 8,
-            coefficients: &COEFFICIENTS_8,
+            factor: 4,
+            coefficients: &COEFFICIENTS_4,
             buffer: RingBuffer::new(),
         }
     }
