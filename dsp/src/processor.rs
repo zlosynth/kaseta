@@ -1,8 +1,8 @@
 //! Main interface for the DSP loop.
 
-use sirena::signal::{self, Signal, SignalClipAmp};
+use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 
-use crate::hysteresis::{Hysteresis, SignalApplyHysteresis};
+use crate::hysteresis::{self, Hysteresis, SignalApplyHysteresis};
 use crate::oversampling::{Downsampler8, SignalDownsample, SignalUpsample, Upsampler8};
 use crate::smoothed_value::SmoothedValue;
 
@@ -16,6 +16,7 @@ pub struct Processor {
     drive: SmoothedValue,
     saturation: SmoothedValue,
     width: SmoothedValue,
+    makeup: SmoothedValue,
 }
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -34,9 +35,11 @@ impl Processor {
         let downsampler = Downsampler8::new_8();
 
         const SMOOTHING_STEPS: u32 = 32;
-        let drive = SmoothedValue::new(0.0, SMOOTHING_STEPS);
-        let saturation = SmoothedValue::new(0.0, SMOOTHING_STEPS);
-        let width = SmoothedValue::new(0.0, SMOOTHING_STEPS);
+        const OVERSAMPLED_SMOOTHING_STEPS: u32 = 8 * SMOOTHING_STEPS;
+        let drive = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
+        let saturation = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
+        let width = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
+        let makeup = SmoothedValue::new(0.0, SMOOTHING_STEPS);
         let hysteresis = Hysteresis::new(fs);
 
         let mut uninitialized_processor = Self {
@@ -46,6 +49,7 @@ impl Processor {
             drive,
             saturation,
             width,
+            makeup,
         };
 
         uninitialized_processor.set_attributes(attributes);
@@ -66,7 +70,8 @@ impl Processor {
                 self.saturation.by_ref(),
                 self.width.by_ref(),
             )
-            .downsample(&mut self.downsampler);
+            .downsample(&mut self.downsampler)
+            .mul_amp(self.makeup.by_ref());
 
         for f in block.iter_mut() {
             *f = instrument.next();
@@ -77,5 +82,10 @@ impl Processor {
         self.drive.set(attributes.drive);
         self.saturation.set(attributes.saturation);
         self.width.set(attributes.width);
+        self.makeup.set(hysteresis::calculate_makeup(
+            attributes.drive,
+            attributes.saturation,
+            attributes.width,
+        ));
     }
 }
