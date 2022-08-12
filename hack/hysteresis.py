@@ -162,27 +162,24 @@ class Hysteresis:
         return M_out
 
     def makeup(drive, saturation, width):
-        x1 = max(drive, 0.1)
-        x2 = saturation
-        x3 = width
-        x4 = 1.0
+        d = max(drive, 0.1)
+        s = saturation
+        w = width
 
-        # func_u_13_exp
-        a1 = 0.8520741612250788
-        a2 = -0.8525619069449913
-        a3 = 1.9902211821492115
-        a4 = -1.4660475978317764
-        a5 = -4.033266657270668
-        a6 = 1.2645654729014488
-        a7 = 0.0018519329228452867
-        a8 = 0.0015962762890290784
-        a9 = 0.00011242579498388368
-        a10 = 1.0609808177687021
-        a11 = 1.9030561556321686
-        a12 = -1.186218831819727
-        b = 0.02887903913851876
+        # func_n_exp
+        a1 = -4.985852190747078
+        a2 = 2.3355657304697566
+        a3 = -0.46539331771132414
+        a4 = 1.7736307894824253
+        a5 = -1.477059385501493
+        a6 = 1.0499135659068435
+        a7 = -4.527344643626089
+        a8 = -1.754272970770751
+        a9 = 2.2943289972238383
+        b = 0.20847101741156088
 
-        return 1 / (((a1 + a2 * x4**a9) * (a3 + a4 * x2**a10) * (a5 + a6 * x3**a11)) / (a7 + a8 * x1**a12) + b)
+        return 1 / (((a1 + a2 * d ** a3) * (a4 + a5 * s ** a6)) / (a7 + a8 * w ** a9) + b)
+
 
 def generate_sine(frequency, length):
     time = np.linspace(0, length, int(length * FS))
@@ -221,7 +218,7 @@ def analyze_processor(axs, column, processor, attributes):
     legend = []
 
     # plot only the second half, after hysteresis stabilizes
-    signal = generate_sine(FREQUENCY, length=LENGTH) * 0.2
+    signal = generate_sine(FREQUENCY, length=LENGTH) * 1
     half = int(len(signal) / 2)
     half_signal = signal[half:]
     time = np.linspace(0, LENGTH, int(FS * LENGTH))
@@ -253,7 +250,9 @@ def response():
         saturation=0.9,
         width=1.0,
     ):
-        return Hysteresis(drive, saturation, width, FS, makeup=True).process_block(block)
+        return Hysteresis(drive, saturation, width, FS, makeup=True).process_block(
+            block
+        )
 
     axs[0, 0].set_title("Drive")
     analyze_processor(
@@ -283,27 +282,24 @@ def response():
 
 
 def amplitude_generate():
-    I = 10
     D = 20
     S = 20
     W = 20
 
     input_configs = []
-    for i in np.linspace(0.2, 1.0, I):
-        for d in np.linspace(0.2, 20.0, D):
-            for s in np.linspace(0, 1, S):
-                for w in np.linspace(0, 0.9999, W):
-                    input_configs.append(
-                        {
-                            "i": i,
-                            "d": d,
-                            "s": s,
-                            "w": w,
-                        }
-                    )
+    for d in np.linspace(0.2, 20.0, D):
+        for s in np.linspace(0, 1, S):
+            for w in np.linspace(0, 0.9999, W):
+                input_configs.append(
+                    {
+                        "d": d,
+                        "s": s,
+                        "w": w,
+                    }
+                )
 
     i = 1
-    m = I * D * S * W
+    m = D * S * W
     configs = []
     with concurrent.futures.ProcessPoolExecutor() as executor:
         for config in executor.map(set_max_amplitude, input_configs):
@@ -322,7 +318,7 @@ def amplitude_generate():
 def set_max_amplitude(config):
     FREQUENCY = 100.0
     LENGTH = 0.02
-    signal = generate_sine(FREQUENCY, length=LENGTH) * config["i"]
+    signal = generate_sine(FREQUENCY, length=LENGTH) * 0.7
     config["a"] = np.max(
         Hysteresis(config["d"], config["s"], config["w"], FS).process_block(signal)
     )
@@ -338,65 +334,30 @@ def amplitude_fitting():
     d_data = data_frame["d"].values
     s_data = data_frame["s"].values
     w_data = data_frame["w"].values
-    i_data = data_frame["i"].values
     a_data = data_frame["a"].values
 
-
     functions = (
-        func_u_13_exp, # rmse=0.08
-        # func_u_11_exp_opt1, # rmse=0.18
-        # func_u_12_exp_opt2, # rmse=0.39
-
-        # func_e_31_pow3, # rmse=0.09
-        # func_e_28_pow3_opt1, # rmse=0.12
-        # func_e_23_pow3_opt2, # rmse=0.13
-
-        # func_m_13_exp, # rmse=0.09
-        # func_m_12_exp_opt1, # rmse=0.09
-        # func_m_5_exp_opt2, # rmse=0.40
-
-        # func_q_13_exp, # rmse=0.09
-
-        # func_r_13_exp, # rmse=0.11
-
-        # func_t_13_exp, # rmse=0.11
-
-        # func_c_15_pow2, # rmse=0.13
-        # func_c_13_pow2_opt1, # rmse=0.17
-
-        # func_l_13_exp, # rmse=0.13
-
-        # func_gg_13_pow2, # rmse=0.14
-        # func_hh_13_pow2, # rmse=0.14
-        # func_w_13_pow2, # rmse=0.14
-        # func_x_13_pow2, # rmse=0.14
-        # func_ii_13_pow2, # rmse=0.14
-        # func_y_13_pow2, # rmse=0.14
-        # func_d_13_pow3, # rmse=0.14
-        # func_a_5, # rmse=0.20
-        # func_b_9, # rmse=0.16
-        # func_f_9, # rmse=0.19
-        # func_g_9, # rmse=0.18
-        # func_h_13, # rmse=0.40
-        # func_i_13, # rmse=0.36
-        # func_j_13, # Unable to fit
-        # func_k_13, # Unable to fit
-        # func_n_13, # Unable to fit
-        # func_o_13, # rmse=0.46
-        # func_p_13, # rmse=0.42
-        # func_s_13, # rmse=0.40
-        # func_z_13, # rmse=0.32
-        # func_aa_13, # Unable to fit
-        # func_bb_13, # rmse=0.38
-        # func_cc_13, # rmse=0.41
-        # func_dd_13, # Unable to fit
-        # func_ee_13, # rmse=0.43
-        # func_ff_13, # rmse=0.43
-        # func_jj_13, # Unable to fit
+        func_n_exp, # rmse=0.03
+        func_o_exp, # rmse=0.03
+        func_d_exp, # rmse=0.07
+        func_q_pow3, # rmse=0.09
+        func_j_pow2, # rmse=0.11
+        func_p_exp, # rmse=0.12
+        func_c_pow2, # rmse=0.13
+        func_f_pow2, # rmse=0.15
+        func_h_pow2, # rmse=0.15
+        func_b_simple, # rmse=0.17
+        func_a_linear, # rmse=0.18
+        func_k_exp, # rmse=0.19
+        func_i_pow2, # rmse=0.19
+        func_g_pow2, # rmse=0.36
+        func_e_pow2, # rmse=0.37
+        func_m_exp, # rmse=0.41
+        func_l_exp, # rmse=0.44
     )
 
     input_configs = [
-        (func, d_data, s_data, w_data, i_data, a_data) for func in functions
+        (func, d_data, s_data, w_data, a_data) for func in functions
     ]
 
     print("Testing fitting functions:")
@@ -435,12 +396,11 @@ def measure_fitting_accuracy(config):
     d_data = config[1]
     s_data = config[2]
     w_data = config[3]
-    i_data = config[4]
-    a_data = config[5]
+    a_data = config[4]
 
     try:
         fitted_parameters, _ = curve_fit(
-            f, [d_data, s_data, w_data, i_data], a_data, maxfev=60000
+            f, [d_data, s_data, w_data], a_data, maxfev=60000
         )
     except RuntimeError:
         print("Unable to fit")
@@ -451,7 +411,7 @@ def measure_fitting_accuracy(config):
             "parameters": [],
         }
 
-    model_predictions = f([d_data, s_data, w_data, i_data, a_data], *fitted_parameters)
+    model_predictions = f([d_data, s_data, w_data, a_data], *fitted_parameters)
     abs_errors = model_predictions - a_data
     squared_errors = np.square(abs_errors)
     mean_squared_errors = np.mean(squared_errors)
@@ -465,495 +425,115 @@ def measure_fitting_accuracy(config):
     }
 
 
-def func_a_5(data, a1, a2, a3, a4, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return a1 * x1 + a2 * x2 + a3 * x3 + a4 * x4 + b
+def func_a_linear(data, a1, a2, a3, b):
+    d, s, w = data[0], data[1], data[2]
+    return a1 * d + a2 * s + a3 * w + b
 
 
-def func_b_9(data, a1, a2, a3, a4, a5, a6, a7, a8, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
+def func_b_simple(data, a1, a2, a3, a4, a5, a6, b):
+    d, s, w = data[0], data[1], data[2]
+    return a1 * d + a2 * s + a3 * w + a4 * d * s + a5 * d * w + a6 *  s * w + b
+
+
+def func_c_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return a1 * d + a2 * s + a3 * w + a4 * d * s + a5 * d * w + a6 * s * w + a7 * d ** 2 + a8 * s ** 2 + a9 * w ** 2 + b
+
+
+def func_d_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
+    d, s, w = data[0], data[1], data[2]
+    return a1 * d + a2 * s + a3 * w + a4 * d * s + a5 * d * w + a6 * s * w + a7 * d ** a8 + a9 * s ** a10 + a11 * w ** a12 + b
+
+
+def func_e_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * d + a3 * d ** 2) / ((a4 + a5 * s + a6 * s ** 2) * (a7 + a8 * w + a9 * w ** 2)) + b
+
+
+def func_f_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * d + a3 * s ** 2) / ((a4 + a5 * s + a6 * d ** 2) * (a7 + a8 * w + a9 * w ** 2)) + b
+
+
+def func_g_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * d + a3 * w ** 2) / ((a4 + a5 * s + a6 * d ** 2) * (a7 + a8 * w + a9 * s ** 2)) + b
+
+
+def func_h_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * d + a3 * d ** 2) * (a4 + a5 * s + a6 * s ** 2)) / (a7 + a8 * w + a9 * w ** 2) + b
+
+
+def func_i_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * d + a3 * s ** 2) * (a4 + a5 * s + a6 * d ** 2)) / (a7 + a8 * w + a9 * w ** 2) + b
+
+
+def func_j_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * d + a3 * w ** 2) * (a4 + a5 * s + a6 * s ** 2)) / (a7 + a8 * w + a9 * d ** 2) + b
+
+
+def func_k_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * d ** a3) / ((a4 + a5 * s ** a6) * (a7 + a8 * w ** a9)) + b
+
+
+def func_l_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * s ** a3) / ((a4 + a5 * d ** a6) * (a7 + a8 * w ** a9)) + b
+
+
+def func_m_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return (a1 + a2 * w ** a3) / ((a4 + a5 * d ** a6) * (a7 + a8 * s ** a9)) + b
+
+
+def func_n_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * d ** a3) * (a4 + a5 * s ** a6)) / (a7 + a8 * w ** a9) + b
+
+
+def func_o_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * s ** a3) * (a4 + a5 * d ** a6)) / (a7 + a8 * w ** a9) + b
+
+
+def func_p(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, b):
+    d, s, w = data[0], data[1], data[2]
+    return ((a1 + a2 * w ** a3) * (a4 + a5 * s ** a6)) / (a7 + a8 * d ** a9) + b
+
+
+def func_q_pow3(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, a15, a16, a17, a18, a19, b):
+    d, s, w = data[0], data[1], data[2]
     return (
-        a1 * x1
-        + a2 * x2
-        + a3 * x3
-        + a4 * x4
-        + a5 * x1**2
-        + a6 * x2**2
-        + a7 * x3**2
-        + a8 * x4**2
+        a1 * d
+        + a2 * s
+        + a3 * w
+        + a4 * d ** 2
+        + a5 * s ** 2
+        + a6 * w ** 2
+        + a7 * d ** 3
+        + a8 * s ** 3
+        + a9 * w ** 3
+        + a10 * d * s
+        + a11 * d * w
+        + a12 * s * w
+        + a13 * d ** 2 * s
+        + a14 * d * s ** 2
+        + a15 * d ** 2 * w
+        + a16 * d * w ** 2
+        + a17 * s ** 2 * w
+        + a18 * s * w ** 2
+        + a19 * d * s * w
         + b
     )
-
-
-def func_c_15_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, a13, a14, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (
-        a1 * x1
-        + a2 * x2
-        + a3 * x3
-        + a4 * x4
-        + a5 * x1**2
-        + a6 * x2**2
-        + a7 * x3**2
-        + a8 * x4**2
-        + a9 * x1 * x2
-        + a10 * x1 * x3
-        + a11 * x1 * x4
-        + a12 * x2 * x3
-        + a13 * x2 * x4
-        + a14 * x3 * x4
-        + b
-    )
-
-
-# Removed 10^-3, a5, a10
-def func_c_13_pow2_opt1(data, a1, a2, a3, a4, a6, a7, a8, a9, a11, a12, a13, a14, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (
-        a1 * x1
-        + a2 * x2
-        + a3 * x3
-        + a4 * x4
-        + a6 * x2**2
-        + a7 * x3**2
-        + a8 * x4**2
-        + a9 * x1 * x2
-        + a11 * x1 * x4
-        + a12 * x2 * x3
-        + a13 * x2 * x4
-        + a14 * x3 * x4
-        + b
-    )
-
-
-def func_d_13_pow3(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (
-        a1 * x1
-        + a2 * x2
-        + a3 * x3
-        + a4 * x4
-        + a5 * x1**2
-        + a6 * x2**2
-        + a7 * x3**2
-        + a8 * x4**2
-        + a9 * x1**3
-        + a10 * x2**3
-        + a11 * x3**3
-        + a12 * x4**3
-        + b
-    )
-
-
-def func_e_31_pow3(
-    data,
-    a1,
-    a2,
-    a3,
-    a4,
-    a5,
-    a6,
-    a7,
-    a8,
-    a9,
-    a10,
-    a11,
-    a12,
-    a13,
-    a14,
-    a15,
-    a16,
-    a17,
-    a18,
-    a19,
-    a20,
-    a21,
-    a22,
-    a23,
-    a24,
-    a25,
-    a26,
-    a27,
-    a28,
-    a29,
-    a30,
-    b,
-):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (
-        a1 * x1
-        + a2 * x2
-        + a3 * x3
-        + a4 * x4
-        + a5 * x1**2
-        + a6 * x2**2
-        + a7 * x3**2
-        + a8 * x4**2
-        + a9 * x1**3
-        + a10 * x2**3
-        + a11 * x3**3
-        + a12 * x4**3
-        + a13 * x1 * x2
-        + a14 * x1 * x3
-        + a15 * x1 * x4
-        + a16 * x2 * x3
-        + a17 * x2 * x4
-        + a18 * x3 * x4
-        + a19 * x1**2 * x2
-        + a20 * x1**2 * x3
-        + a21 * x1**2 * x4
-        + a22 * x2**2 * x3
-        + a23 * x2**2 * x4
-        + a24 * x3**2 * x4
-        + a25 * x1 * x2**2
-        + a26 * x1 * x3**2
-        + a27 * x1 * x4**2
-        + a28 * x2 * x3**2
-        + a29 * x2 * x4**2
-        + a30 * x3 * x4**2
-        + b
-    )
-
-
-# removed 10^-4 elements, a9, a20, a21,
-def func_e_28_pow3_opt1(
-    data,
-    a1,
-    a2,
-    a3,
-    a4,
-    a5,
-    a6,
-    a7,
-    a8,
-    a10,
-    a11,
-    a12,
-    a13,
-    a14,
-    a15,
-    a16,
-    a17,
-    a18,
-    a19,
-    a22,
-    a23,
-    a24,
-    a25,
-    a26,
-    a27,
-    a28,
-    a29,
-    a30,
-    b,
-):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (
-        a1 * x1
-        + a2 * x2
-        + a3 * x3
-        + a4 * x4
-        + a5 * x1**2
-        + a6 * x2**2
-        + a7 * x3**2
-        + a8 * x4**2
-        + a10 * x2**3
-        + a11 * x3**3
-        + a12 * x4**3
-        + a13 * x1 * x2
-        + a14 * x1 * x3
-        + a15 * x1 * x4
-        + a16 * x2 * x3
-        + a17 * x2 * x4
-        + a18 * x3 * x4
-        + a19 * x1**2 * x2
-        + a22 * x2**2 * x3
-        + a23 * x2**2 * x4
-        + a24 * x3**2 * x4
-        + a25 * x1 * x2**2
-        + a26 * x1 * x3**2
-        + a27 * x1 * x4**2
-        + a28 * x2 * x3**2
-        + a29 * x2 * x4**2
-        + a30 * x3 * x4**2
-        + b
-    )
-
-
-# removed 10^-3 elements, a9, a20, a21, a19, a22, a25, a26, b
-def func_e_23_pow3_opt2(
-    data,
-    a1,
-    a2,
-    a3,
-    a4,
-    a5,
-    a6,
-    a7,
-    a8,
-    a10,
-    a11,
-    a12,
-    a13,
-    a14,
-    a15,
-    a16,
-    a17,
-    a18,
-    a23,
-    a24,
-    a27,
-    a28,
-    a29,
-    a30,
-):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (
-        a1 * x1
-        + a2 * x2
-        + a3 * x3
-        + a4 * x4
-        + a5 * x1**2
-        + a6 * x2**2
-        + a7 * x3**2
-        + a8 * x4**2
-        + a10 * x2**3
-        + a11 * x3**3
-        + a12 * x4**3
-        + a13 * x1 * x2
-        + a14 * x1 * x3
-        + a15 * x1 * x4
-        + a16 * x2 * x3
-        + a17 * x2 * x4
-        + a18 * x3 * x4
-        + a23 * x2**2 * x4
-        + a24 * x3**2 * x4
-        + a27 * x1 * x4**2
-        + a28 * x2 * x3**2
-        + a29 * x2 * x4**2
-        + a30 * x3 * x4**2
-    )
-
-
-def func_f_9(data, a1, a2, a3, a4, a5, a6, a7, a8, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1) * (a3 + a4 * x2)) / ((a5 + a6 * x3) * (a7 + a8 * x4)) + b
-
-
-def func_g_9(data, a1, a2, a3, a4, a5, a6, a7, a8, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1) * (a3 + a4 * x2)) * ((a5 + a6 * x3) * (a7 + a8 * x4)) + b
-
-
-def func_h_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1**a9) * (a3 + a4 * x2**a10)) / (
-        (a5 + a6 * x3**a11) * (a7 + a8 * x4**a12)
-    ) + b
-
-
-def func_i_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1**a9) * (a3 + a4 * x3**a10)) / (
-        (a5 + a6 * x2**a11) * (a7 + a8 * x4**a12)
-    ) + b
-
-
-def func_j_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1**a9) * (a3 + a4 * x4**a10)) / (
-        (a5 + a6 * x2**a11) * (a7 + a8 * x3**a12)
-    ) + b
-
-
-def func_k_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x2**a9) * (a3 + a4 * x3**a10)) / (
-        (a5 + a6 * x1**a11) * (a7 + a8 * x4**a12)
-    ) + b
-
-
-def func_l_13_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x2**a9) * (a3 + a4 * x4**a10)) / (
-        (a5 + a6 * x1**a11) * (a7 + a8 * x3**a12)
-    ) + b
-
-
-def func_m_13_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x3**a9) * (a3 + a4 * x4**a10)) / (
-        (a5 + a6 * x1**a11) * (a7 + a8 * x2**a12)
-    ) + b
-
-
-# Removing 10^-4, a10
-def func_m_12_exp_opt1(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x3**a9) * (a3 + a4 * x4)) / (
-        (a5 + a6 * x1**a11) * (a7 + a8 * x2**a12)
-    ) + b
-
-
-# Removing 10^-2, a10, a5, a6, a7, a8, a11, a12, b
-def func_m_5_exp_opt2(data, a1, a2, a3, a4, a9, a12):
-    x3, x4 = data[2], data[3]
-    return (a1 + a2 * x3**a9) * (a3 + a4 * x4)
-
-
-def func_n_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (a1 + a2 * x1**a9) / ((a3 + a4 * x2**a10) *
-        (a5 + a6 * x3**a11) * (a7 + a8 * x4**a12)
-    ) + b
-
-
-def func_o_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (a1 + a2 * x2**a9) / ((a3 + a4 * x1**a10) *
-        (a5 + a6 * x3**a11) * (a7 + a8 * x4**a12)
-    ) + b
-
-
-def func_p_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (a1 + a2 * x3**a9) / ((a3 + a4 * x1**a10) *
-        (a5 + a6 * x2**a11) * (a7 + a8 * x4**a12)
-    ) + b
-
-
-def func_q_13_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (a1 + a2 * x4**a9) / ((a3 + a4 * x1**a10) *
-        (a5 + a6 * x2**a11) * (a7 + a8 * x3**a12)
-    ) + b
-
-
-def func_r_13_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1**a9) * (a3 + a4 * x2**a10) * (a5 + a6 * x3**a11)) / (a7 + a8 * x4**a12) + b
-
-
-def func_s_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1**a9) * (a3 + a4 * x2**a10) * (a5 + a6 * x4**a11)) / (a7 + a8 * x3**a12) + b
-
-
-def func_t_13_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1**a9) * (a3 + a4 * x4**a10) * (a5 + a6 * x3**a11)) / (a7 + a8 * x2**a12) + b
-
-
-def func_u_13_exp(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x4**a9) * (a3 + a4 * x2**a10) * (a5 + a6 * x3**a11)) / (a7 + a8 * x1**a12) + b
-
-
-# a9 replaced with 0, x4 removed
-def func_u_11_exp_opt1(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, b):
-    x1, x2, x3 = data[0], data[1], data[2]
-    return (a1 * (a2 + a3 * x2**a8) * (a4 + a5 * x3**a9)) / (a6 + a7 * x1**a10) + b
-
-
-# a10 removed
-def func_u_12_exp_opt2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x4**a9) * (a3 + a4 * x2) * (a5 + a6 * x3**a10)) / (a7 + a8 * x1**a11) + b
-
-
-def func_w_13_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1 + a9 * x1 **2) * (a3 + a4 * x2 + a10 * x2 **2)) / (
-        (a5 + a6 * x3 + a11 * x3**2) * (a7 + a8 * x4 + a12 * x4**2)
-    ) + b
-
-
-def func_x_13_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1 + a9 * x1 ** 2) * (a3 + a4 * x3 + a10 * x3 **2)) / (
-        (a5 + a6 * x2 + a11 * x2 ** 2) * (a7 + a8 * x4 + a12 ** x4 ** 2)
-    ) + b
-
-
-def func_y_13_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1 + a9 * x1 **2) * (a3 + a4 * x4 + a10 * x4 **2)) / (
-        (a5 + a6 * x2 + a11 * x2 ** 2) * (a7 + a8 * x3 + a12 * x3 ** 2)
-    ) + b
-
-
-def func_z_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x2 + a9 * x2 ** 2) * (a3 + a4 * x3 + a10) * x3 ** 2) / (
-        (a5 + a6 * x1 + a11 * x1 **2) * (a7 + a8 * x4 + a12 * x4 ** 2)
-    ) + b
-
-
-def func_aa_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x2 + a9 * x2 ** 2) * (a3 + a4 * x4 + a10 * x4 ** 2)) / (
-        (a5 + a6 * x1 + a11 * x1 ** 2) * (a7 + a8 * x3 + a12 * x3 ** 2)
-    ) + b
-
-
-def func_bb_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x3 + a9 * x3 ** 2) * (a3 + a4 * x4 + a10 * x4 ** 2)) / (
-        (a5 + a6 * x1 + a11 * x1 ** 2) * (a7 + a8 * x2 + a12 * x2 ** 2)
-    ) + b
-
-
-def func_cc_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (a1 + a2 * x1 + a9 * x1 ** 2) / ((a3 + a4 * x2 + a10 * x2 ** 2) *
-        (a5 + a6 * x3 + a11 * x3 ** 2) * (a7 + a8 * x4 + a12 * x4 ** 2)
-    ) + b
-
-
-def func_dd_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (a1 + a2 * x2 + a9 * x2 ** 2) / ((a3 + a4 * x1 + a10 * x1 ** 2) *
-        (a5 + a6 * x3 + a11 * x3 ** 2) * (a7 + a8 * x4 + a12 * x4 ** 2)
-    ) + b
-
-
-def func_ee_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (a1 + a2 * x3 + a9 * x3 ** 2) / ((a3 + a4 * x1 + a10 * x1 ** 2) *
-        (a5 + a6 * x2 + a11 * x2 ** 2) * (a7 + a8 * x4 + a12 * x4 ** 2)
-    ) + b
-
-
-def func_ff_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return (a1 + a2 * x4 + a9 * x4 ** 2) / ((a3 + a4 * x1 + a10 * x1 ** 2) *
-        (a5 + a6 * x2 + a11 * x2 ** 2) * (a7 + a8 * x3 + a12 * x3 ** 2)
-    ) + b
-
-
-def func_gg_13_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1 + a9 * x1 ** 2) * (a3 + a4 * x2 + a10 * x2 ** 2) * (a5 + a6 * x3 + a11 * x3 ** 2)) / (a7 + a8 * x4 + a12 * x4 ** 2) + b
-
-
-def func_hh_13_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1 + a9 * x1 ** 2) * (a3 + a4 * x2 + a10 * x2 ** 2) * (a5 + a6 * x4 + a11 * x4 ** 2)) / (a7 + a8 * x3 + a12 * x3 ** 2) + b
-
-
-def func_ii_13_pow2(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x1 + a9 * x1 ** 2) * (a3 + a4 * x4 + a10 * x4 ** 2) * (a5 + a6 * x3 + a11 * x3 ** 2)) / (a7 + a8 * x2 + a12 * x2 ** 2) + b
-
-
-def func_jj_13(data, a1, a2, a3, a4, a5, a6, a7, a8, a9, a10, a11, a12, b):
-    x1, x2, x3, x4 = data[0], data[1], data[2], data[3]
-    return ((a1 + a2 * x4 + a9 * x4 ** 2) * (a3 + a4 * x2 + a10* x2 **2) * (a5 + a6 * x3 + a11 * x3 ** 2)) / (a7 + a8 * x1 + a12 * x1**2) + b
 
 
 def print_parameters(parameters):
     for (i, a) in enumerate(parameters[: len(parameters) - 1]):
-        print("a{} = {}".format(i+1, a))
+        print("a{} = {}".format(i + 1, a))
     print("b = {}".format(parameters[-1]))
 
 
