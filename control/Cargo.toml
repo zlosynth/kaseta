@@ -1,0 +1,17 @@
+[package]
+name = "kaseta-control"
+version = "0.1.0"
+edition = "2021"
+authors = ["Petr Horáček <hrck@protonmail.com>"]
+license = "GPL-3.0-or-later"
+publish = false
+
+[dependencies]
+libm = "0.2"
+defmt = { version = "0.3", optional = true }
+
+[dev-dependencies]
+approx = "0.4"
+
+[features]
+defmt = ["dep:defmt"]

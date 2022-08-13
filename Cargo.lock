@@ -366,6 +366,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "kaseta-control"
+version = "0.1.0"
+dependencies = [
+ "approx",
+ "defmt",
+ "libm",
+]
+
+[[package]]
 name = "kaseta-dsp"
 version = "0.1.0"
 dependencies = [
