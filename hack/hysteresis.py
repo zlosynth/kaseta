@@ -271,7 +271,7 @@ def response():
         axs,
         1,
         lambda block, saturation: processor(block, saturation=saturation),
-        [0.0, 0.5, 1.0],
+        [0.0, 0.25, 0.5, 0.75, 1.0],
     )
 
     axs[0, 2].set_title("Width")
@@ -279,7 +279,7 @@ def response():
         axs,
         2,
         lambda block, width: processor(block, width=width),
-        [0.0, 0.5, 0.99],
+        [0.0, 0.25, 0.5, 0.75, 0.99],
     )
 
     plt.show()
