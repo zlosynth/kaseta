@@ -42,7 +42,7 @@ mod taper;
 
 // 0.1 is almost clean, and with high pre-amp it still passes through signal.
 // 30 is well in the extreme, but still somehow stable.
-const DRIVE_RANGE: (f32, f32) = (0.1, 30.0);
+const DRIVE_RANGE: (f32, f32) = (0.05, 30.0);
 
 const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
 
