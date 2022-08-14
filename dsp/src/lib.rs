@@ -1,5 +1,6 @@
 //! Digital signal processing components that must run in real-time.
 
+#![no_std]
 #![allow(clippy::items_after_statements)]
 #![allow(clippy::module_name_repetitions)]
 #![allow(clippy::cast_possible_truncation)]

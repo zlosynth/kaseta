@@ -9,6 +9,7 @@ publish = false
 [dependencies]
 kaseta-dsp = { path = "../dsp" }
 libm = "0.2"
+micromath = "1.1"
 defmt = { version = "0.3", optional = true }
 
 [dev-dependencies]

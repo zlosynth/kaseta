@@ -232,6 +232,7 @@ impl Hysteresis {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use heapless::Vec;
 
     #[test]
     fn given_hysteresis_when_given_simple_sine_it_adds_odd_harmonics() {
@@ -244,7 +245,7 @@ mod tests {
 
         let mut buffer: [f32; SAMPLES] = signal::sine(FS, FREQ)
             .take(SAMPLES)
-            .collect::<Vec<_>>()
+            .collect::<Vec<_, SAMPLES>>()
             .as_slice()
             .try_into()
             .unwrap();

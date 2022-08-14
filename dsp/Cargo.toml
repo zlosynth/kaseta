@@ -14,6 +14,7 @@ sirena = { path = "../../sirena" }
 [dev-dependencies]
 approx = "0.4"
 criterion = "0.3"
+heapless = "0.7"
 
 [features]
 defmt = ["dep:defmt", "sirena/defmt"]

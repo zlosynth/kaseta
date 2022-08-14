@@ -25,6 +25,7 @@ pub use upsampling::{SignalUpsample, Upsampler4};
 #[cfg(test)]
 mod tests {
     use super::*;
+    use heapless::Vec;
 
     #[test]
     fn given_oversampled_signal_with_tone_above_original_nyquist_when_downsampling_it_removes_the_tone(
@@ -45,7 +46,7 @@ mod tests {
             .downsample(&mut downsampler)
             .by_ref()
             .take(SAMPLES)
-            .collect::<Vec<_>>()
+            .collect::<Vec<_, SAMPLES>>()
             .as_slice()
             .try_into()
             .unwrap();
@@ -72,7 +73,7 @@ mod tests {
             .clone()
             .by_ref()
             .take(SAMPLES)
-            .collect::<Vec<_>>()
+            .collect::<Vec<_, SAMPLES>>()
             .as_slice()
             .try_into()
             .unwrap();
@@ -81,7 +82,7 @@ mod tests {
             .downsample(&mut downsampler)
             .by_ref()
             .take(SAMPLES)
-            .collect::<Vec<_>>()
+            .collect::<Vec<_, SAMPLES>>()
             .as_slice()
             .try_into()
             .unwrap();
