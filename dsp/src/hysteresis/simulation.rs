@@ -284,4 +284,28 @@ mod tests {
         assert!(harmonic_6 < harmonic_9);
         assert!(harmonic_8 < harmonic_9);
     }
+
+    #[test]
+    fn when_input_is_above_nyquist_given_hysteresis_when_given_noise_it_remains_stable() {
+        const PRE_AMP: f32 = 20.0;
+        const FS: f32 = 1024.0;
+        const DRIVE: f32 = 1.0;
+        const SATURATION: f32 = 1.0;
+        const WIDTH: f32 = 0.0;
+        let mut hysteresis = Hysteresis::new(FS);
+        hysteresis.set_drive(DRIVE);
+        hysteresis.set_saturation(SATURATION);
+        hysteresis.set_width(WIDTH);
+
+        use rand::Rng;
+        let mut rng = rand::thread_rng();
+        for _ in 0..100 {
+            let input = rng.gen_range(-PRE_AMP..PRE_AMP);
+            let output = hysteresis.process(input);
+            assert!(
+                output > -1000.0 && output < 1000.0,
+                "Hysteresis output is unstable: {output}"
+            );
+        }
+    }
 }
