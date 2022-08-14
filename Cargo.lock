@@ -371,6 +371,7 @@ version = "0.1.0"
 dependencies = [
  "approx",
  "defmt",
+ "kaseta-dsp",
  "libm",
 ]
 
@@ -747,7 +748,7 @@ dependencies = [
 
 [[package]]
 name = "sirena"
-version = "0.0.1"
+version = "0.1.0"
 dependencies = [
  "defmt",
  "heapless",
