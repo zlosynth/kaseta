@@ -215,16 +215,17 @@ impl Hysteresis {
             let m = self.rk4(self.m_n1, h, self.h_n1, h_d, self.h_d_n1);
 
             const UPPER_LIMIT: f64 = 20.0;
-            if m > UPPER_LIMIT {
-                (0.0, 0.0)
-            } else {
+            if (-UPPER_LIMIT..=UPPER_LIMIT).contains(&m) {
                 (h_d, m)
+            } else {
+                (0.0, 0.0)
             }
         };
 
         self.m_n1 = m;
         self.h_n1 = h;
         self.h_d_n1 = h_d;
+
         m as f32
     }
 }
