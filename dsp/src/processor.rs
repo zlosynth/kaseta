@@ -12,6 +12,8 @@ pub struct Processor {
     upsampler: Upsampler4,
     downsampler: Downsampler4,
 
+    pre_amp: SmoothedValue,
+
     hysteresis: Hysteresis,
     drive: SmoothedValue,
     saturation: SmoothedValue,
@@ -22,6 +24,7 @@ pub struct Processor {
 #[derive(Default, Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {
+    pub pre_amp: f32,
     pub drive: f32,
     pub saturation: f32,
     pub width: f32,
@@ -35,6 +38,8 @@ impl Processor {
         let downsampler = Downsampler4::new_4();
 
         const SMOOTHING_STEPS: u32 = 32;
+        let pre_amp = SmoothedValue::new(0.0, SMOOTHING_STEPS);
+
         const OVERSAMPLED_SMOOTHING_STEPS: u32 = 4 * SMOOTHING_STEPS;
         let drive = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
         let saturation = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
@@ -45,6 +50,7 @@ impl Processor {
         let mut uninitialized_processor = Self {
             upsampler,
             downsampler,
+            pre_amp,
             hysteresis,
             drive,
             saturation,
@@ -62,7 +68,8 @@ impl Processor {
         let block_copy = *block;
 
         let mut instrument = signal::from_iter(block_copy.into_iter())
-            .clip_amp(10.0)
+            .mul_amp(self.pre_amp.by_ref())
+            .clip_amp(25.0)
             .upsample(&mut self.upsampler)
             .apply_hysteresis(
                 &mut self.hysteresis,
@@ -79,6 +86,7 @@ impl Processor {
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
+        self.pre_amp.set(attributes.pre_amp);
         self.drive.set(attributes.drive);
         self.saturation.set(attributes.saturation);
         self.width.set(attributes.width);

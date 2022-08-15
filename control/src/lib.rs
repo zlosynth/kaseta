@@ -40,6 +40,9 @@ use kaseta_dsp::processor::Attributes;
 
 mod taper;
 
+// Pre-amp scales between -20 to +28 dB.
+const PRE_AMP_RANGE: (f32, f32) = (0.1, 25.0);
+
 // 0.1 is almost clean, and with high pre-amp it still passes through signal.
 // 30 is well in the extreme, but still somehow stable.
 const DRIVE_RANGE: (f32, f32) = (0.05, 30.0);
@@ -52,6 +55,7 @@ const BIAS_RANGE: (f32, f32) = (0.0001, 1.0);
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ControlAction {
+    SetPreAmpPot(f32),
     SetDrivePot(f32),
     SetDriveCV(f32),
     SetSaturationPot(f32),
@@ -63,6 +67,7 @@ pub enum ControlAction {
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct DSPReaction {
+    pub pre_amp: f32,
     pub drive: f32,
     pub saturation: f32,
     pub bias: f32,
@@ -71,6 +76,7 @@ pub struct DSPReaction {
 impl From<DSPReaction> for Attributes {
     fn from(other: DSPReaction) -> Self {
         Attributes {
+            pre_amp: other.pre_amp,
             drive: other.drive,
             saturation: other.saturation,
             width: 1.0 - other.bias,
@@ -81,6 +87,7 @@ impl From<DSPReaction> for Attributes {
 #[derive(Default, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
+    pub pre_amp_pot: f32,
     pub drive_pot: f32,
     pub drive_cv: f32,
     pub saturation_pot: f32,
@@ -97,14 +104,23 @@ pub fn reduce_control_action(action: ControlAction, cache: &mut Cache) -> DSPRea
 
 #[must_use]
 pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
+    let pre_amp = calculate_pre_amp(cache);
     let drive = calculate_drive(cache);
     let saturation = calculate_saturation(cache);
     let bias = calculate_bias(cache);
     DSPReaction {
+        pre_amp,
         drive,
         saturation,
         bias,
     }
+}
+
+#[allow(clippy::let_and_return)]
+fn calculate_pre_amp(cache: &Cache) -> f32 {
+    let pre_amp_curved = taper::log(cache.pre_amp_pot);
+    let pre_amp_scaled = pre_amp_curved * (PRE_AMP_RANGE.1 - PRE_AMP_RANGE.0) + PRE_AMP_RANGE.0;
+    pre_amp_scaled
 }
 
 #[allow(clippy::let_and_return)]
@@ -136,6 +152,9 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
     #[allow(clippy::enum_glob_use)]
     use ControlAction::*;
     match action {
+        SetPreAmpPot(x) => {
+            cache.pre_amp_pot = x;
+        }
         SetDrivePot(x) => {
             cache.drive_pot = x;
         }
