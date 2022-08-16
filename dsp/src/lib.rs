@@ -13,7 +13,10 @@
 #[macro_use]
 extern crate approx;
 
+pub mod processor;
+
+// Public for the sake of benchmarks
 pub mod hysteresis;
 pub mod oversampling;
-pub mod processor;
-pub mod smoothed_value;
+
+mod smoothed_value;
