@@ -3,8 +3,10 @@
 use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 
 use crate::hysteresis::{self, Hysteresis, SignalApplyHysteresis};
+use crate::memory_manager::MemoryManager;
 use crate::oversampling::{Downsampler4, SignalDownsample, SignalUpsample, Upsampler4};
 use crate::smoothed_value::SmoothedValue;
+use crate::wow_flutter::{SignalApplyWowFlutter, WowFlutter};
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -19,6 +21,8 @@ pub struct Processor {
     saturation: SmoothedValue,
     width: SmoothedValue,
     makeup: SmoothedValue,
+
+    wow_flutter: WowFlutter,
 }
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -33,7 +37,7 @@ pub struct Attributes {
 impl Processor {
     #[allow(clippy::let_and_return)]
     #[must_use]
-    pub fn new(fs: f32, attributes: Attributes) -> Self {
+    pub fn new(fs: f32, attributes: Attributes, memory_manager: &mut MemoryManager) -> Self {
         let upsampler = Upsampler4::new_4();
         let downsampler = Downsampler4::new_4();
 
@@ -47,6 +51,8 @@ impl Processor {
         let makeup = SmoothedValue::new(0.0, SMOOTHING_STEPS);
         let hysteresis = Hysteresis::new(fs);
 
+        let wow_flutter = WowFlutter::new(fs as u32, memory_manager);
+
         let mut uninitialized_processor = Self {
             upsampler,
             downsampler,
@@ -56,6 +62,7 @@ impl Processor {
             saturation,
             width,
             makeup,
+            wow_flutter,
         };
 
         uninitialized_processor.set_attributes(attributes);
@@ -78,7 +85,8 @@ impl Processor {
                 self.width.by_ref(),
             )
             .downsample(&mut self.downsampler)
-            .mul_amp(self.makeup.by_ref());
+            .mul_amp(self.makeup.by_ref())
+            .apply_wow_flutter(&mut self.wow_flutter);
 
         for f in block.iter_mut() {
             *f = instrument.next();
