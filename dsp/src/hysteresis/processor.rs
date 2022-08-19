@@ -1,5 +1,6 @@
 use sirena::signal::Signal;
 
+use super::makeup;
 use super::simulation::Simulation;
 use crate::smoothed_value::SmoothedValue;
 
@@ -10,6 +11,7 @@ pub struct State {
     drive: SmoothedValue,
     saturation: SmoothedValue,
     width: SmoothedValue,
+    makeup: SmoothedValue,
 }
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -29,6 +31,7 @@ impl State {
         let drive = SmoothedValue::new(0.0, smoothing_steps);
         let saturation = SmoothedValue::new(0.0, smoothing_steps);
         let width = SmoothedValue::new(0.0, smoothing_steps);
+        let makeup = SmoothedValue::new(0.0, smoothing_steps);
 
         let state = {
             let mut state = Self {
@@ -36,6 +39,7 @@ impl State {
                 drive,
                 saturation,
                 width,
+                makeup,
             };
             state.set_attributes(Attributes::default());
             state
@@ -48,6 +52,11 @@ impl State {
         self.drive.set(attributes.drive);
         self.saturation.set(attributes.saturation);
         self.width.set(attributes.width);
+        self.makeup.set(makeup::calculate(
+            attributes.drive,
+            attributes.saturation,
+            attributes.width,
+        ));
     }
 }
 
@@ -75,11 +84,15 @@ where
     S: Signal,
 {
     fn next(&mut self) -> f32 {
-        self.state.simulation.set_drive(self.state.drive.next());
-        self.state
-            .simulation
-            .set_saturation(self.state.saturation.next());
-        self.state.simulation.set_width(self.state.width.next());
-        self.state.simulation.process(self.source.next())
+        let drive = self.state.drive.next();
+        let saturation = self.state.saturation.next();
+        let width = self.state.width.next();
+
+        let makeup = makeup::calculate(drive, saturation, width);
+
+        self.state.simulation.set_drive(drive);
+        self.state.simulation.set_saturation(saturation);
+        self.state.simulation.set_width(width);
+        self.state.simulation.process(self.source.next()) * makeup
     }
 }

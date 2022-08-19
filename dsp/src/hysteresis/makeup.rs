@@ -4,7 +4,7 @@
 //! `hack/hysteresis.py` and benchmarked through `dsp/benches/makeup.rs`.
 
 #[must_use]
-pub fn calculate_makeup(drive: f32, saturation: f32, width: f32) -> f32 {
+pub fn calculate(drive: f32, saturation: f32, width: f32) -> f32 {
     const A1: f32 = 1.367_927_7;
     const A2: f32 = 0.912_466_17;
     const A3: f32 = -1.437_861_1;

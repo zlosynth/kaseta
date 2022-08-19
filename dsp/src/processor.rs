@@ -2,9 +2,7 @@
 
 use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 
-use crate::hysteresis::{
-    self, Attributes as HysteresisAttributes, Hysteresis, SignalApplyHysteresis,
-};
+use crate::hysteresis::{Attributes as HysteresisAttributes, Hysteresis, SignalApplyHysteresis};
 use crate::memory_manager::MemoryManager;
 use crate::oversampling::{Downsampler4, SignalDownsample, SignalUpsample, Upsampler4};
 use crate::smoothed_value::SmoothedValue;
@@ -15,12 +13,8 @@ use crate::wow_flutter::{SignalApplyWowFlutter, WowFlutter};
 pub struct Processor {
     upsampler: Upsampler4,
     downsampler: Downsampler4,
-
     pre_amp: SmoothedValue,
-
     hysteresis: Hysteresis,
-    makeup: SmoothedValue,
-
     wow_flutter: WowFlutter,
 }
 
@@ -43,7 +37,6 @@ impl Processor {
         const SMOOTHING_STEPS: u32 = 32;
         let pre_amp = SmoothedValue::new(0.0, SMOOTHING_STEPS);
 
-        let makeup = SmoothedValue::new(0.0, SMOOTHING_STEPS);
         let hysteresis = Hysteresis::new(fs);
 
         let wow_flutter = WowFlutter::new(fs as u32, memory_manager);
@@ -53,7 +46,6 @@ impl Processor {
             downsampler,
             pre_amp,
             hysteresis,
-            makeup,
             wow_flutter,
         };
 
@@ -72,7 +64,6 @@ impl Processor {
             .upsample(&mut self.upsampler)
             .apply_hysteresis(&mut self.hysteresis)
             .downsample(&mut self.downsampler)
-            .mul_amp(self.makeup.by_ref())
             .apply_wow_flutter(&mut self.wow_flutter);
 
         for f in block.iter_mut() {
@@ -83,11 +74,6 @@ impl Processor {
     pub fn set_attributes(&mut self, attributes: Attributes) {
         self.pre_amp.set(attributes.pre_amp);
         self.hysteresis.set_attributes(attributes.into());
-        self.makeup.set(hysteresis::calculate_makeup(
-            attributes.drive,
-            attributes.saturation,
-            attributes.width,
-        ));
     }
 }
 
