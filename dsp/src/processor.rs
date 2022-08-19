@@ -2,7 +2,9 @@
 
 use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 
-use crate::hysteresis::{self, Hysteresis, SignalApplyHysteresis};
+use crate::hysteresis::{
+    self, simulation::Simulation as HysteresisSimulation, SignalApplyHysteresis,
+};
 use crate::memory_manager::MemoryManager;
 use crate::oversampling::{Downsampler4, SignalDownsample, SignalUpsample, Upsampler4};
 use crate::smoothed_value::SmoothedValue;
@@ -16,7 +18,7 @@ pub struct Processor {
 
     pre_amp: SmoothedValue,
 
-    hysteresis: Hysteresis,
+    hysteresis: HysteresisSimulation,
     drive: SmoothedValue,
     saturation: SmoothedValue,
     width: SmoothedValue,
@@ -49,7 +51,7 @@ impl Processor {
         let saturation = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
         let width = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
         let makeup = SmoothedValue::new(0.0, SMOOTHING_STEPS);
-        let hysteresis = Hysteresis::new(fs);
+        let hysteresis = HysteresisSimulation::new(fs);
 
         let wow_flutter = WowFlutter::new(fs as u32, memory_manager);
 

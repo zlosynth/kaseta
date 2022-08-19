@@ -4,7 +4,9 @@ use criterion::{criterion_group, criterion_main, Criterion};
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("hysteresis", |b| {
-        use kaseta_dsp::hysteresis::{Hysteresis, SignalApplyHysteresis};
+        use kaseta_dsp::hysteresis::{
+            simulation::Simulation as HysteresisSimulation, SignalApplyHysteresis,
+        };
         use sirena::signal::{self, Signal, SignalTake};
 
         const BUFFER_SIZE: usize = 32;
@@ -16,7 +18,7 @@ fn criterion_benchmark(c: &mut Criterion) {
         const DRIVE: f32 = 0.5;
         const SATURATION: f32 = 0.5;
         const WIDTH: f32 = 0.5;
-        let mut hysteresis = Hysteresis::new(FS);
+        let mut hysteresis = HysteresisSimulation::new(FS);
         let mut drive = signal::constant(DRIVE);
         let mut saturation = signal::constant(SATURATION);
         let mut width = signal::constant(WIDTH);

@@ -60,7 +60,7 @@ fn langevin_deriv(x: f64) -> f64 {
 /// Applying hysteresis on input signal.
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Hysteresis {
+pub struct Simulation {
     /// Drive level
     drive: f32,
     /// Saturation level
@@ -86,7 +86,7 @@ pub struct Hysteresis {
     h_d_n1: f64,
 }
 
-impl Hysteresis {
+impl Simulation {
     /// Hysteresis loop width / coercivity
     const K: f64 = 0.47875;
 
@@ -254,7 +254,7 @@ mod tests {
         const DRIVE: f32 = 0.5;
         const SATURATION: f32 = 0.5;
         const WIDTH: f32 = 0.5;
-        let mut hysteresis = Hysteresis::new(FS);
+        let mut hysteresis = Simulation::new(FS);
         hysteresis.set_drive(DRIVE);
         hysteresis.set_saturation(SATURATION);
         hysteresis.set_width(WIDTH);
@@ -292,7 +292,7 @@ mod tests {
         const DRIVE: f32 = 1.0;
         const SATURATION: f32 = 1.0;
         const WIDTH: f32 = 0.0;
-        let mut hysteresis = Hysteresis::new(FS);
+        let mut hysteresis = Simulation::new(FS);
         hysteresis.set_drive(DRIVE);
         hysteresis.set_saturation(SATURATION);
         hysteresis.set_width(WIDTH);

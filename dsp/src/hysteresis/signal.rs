@@ -2,12 +2,12 @@
 
 use sirena::signal::Signal;
 
-use super::simulation::Hysteresis;
+use super::simulation::Simulation;
 
 pub trait SignalApplyHysteresis: Signal {
     fn apply_hysteresis<A>(
         self,
-        hysteresis: &mut Hysteresis,
+        hysteresis: &mut Simulation,
         drive: A,
         saturation: A,
         width: A,
@@ -29,7 +29,7 @@ impl<T> SignalApplyHysteresis for T where T: Signal {}
 
 pub struct ApplyHysteresis<'a, S, A> {
     source: S,
-    hysteresis: &'a mut Hysteresis,
+    hysteresis: &'a mut Simulation,
     drive: A,
     saturation: A,
     width: A,
