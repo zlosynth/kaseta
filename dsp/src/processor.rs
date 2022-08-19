@@ -37,7 +37,7 @@ pub struct Attributes {
 impl Processor {
     #[allow(clippy::let_and_return)]
     #[must_use]
-    pub fn new(fs: f32, attributes: Attributes, memory_manager: &mut MemoryManager) -> Self {
+    pub fn new(fs: f32, memory_manager: &mut MemoryManager) -> Self {
         let upsampler = Upsampler4::new_4();
         let downsampler = Downsampler4::new_4();
 
@@ -65,7 +65,7 @@ impl Processor {
             wow_flutter,
         };
 
-        uninitialized_processor.set_attributes(attributes);
+        uninitialized_processor.set_attributes(Attributes::default());
         let processor = uninitialized_processor;
 
         processor
