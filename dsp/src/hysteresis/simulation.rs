@@ -122,30 +122,15 @@ impl Simulation {
         self.a = self.m_s / (0.01 + 6.0 * drive as f64);
     }
 
-    #[must_use]
-    pub fn drive(&self) -> f32 {
-        self.drive
-    }
-
     pub fn set_saturation(&mut self, saturation: f32) {
         self.saturation = saturation;
         self.m_s = 0.5 + 1.5 * (1.0 - saturation as f64);
         self.set_drive(self.drive);
     }
 
-    #[must_use]
-    pub fn saturation(&self) -> f32 {
-        self.saturation
-    }
-
     pub fn set_width(&mut self, width: f32) {
         self.width = width;
         self.c = sqrt(1.0 - width as f64) - 0.01;
-    }
-
-    #[must_use]
-    pub fn width(&self) -> f32 {
-        self.width
     }
 
     /// Jiles-Atherton differential equation.

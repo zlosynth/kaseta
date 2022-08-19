@@ -3,7 +3,7 @@
 use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 
 use crate::hysteresis::{
-    self, simulation::Simulation as HysteresisSimulation, SignalApplyHysteresis,
+    self, Attributes as HysteresisAttributes, Hysteresis, SignalApplyHysteresis,
 };
 use crate::memory_manager::MemoryManager;
 use crate::oversampling::{Downsampler4, SignalDownsample, SignalUpsample, Upsampler4};
@@ -18,10 +18,7 @@ pub struct Processor {
 
     pre_amp: SmoothedValue,
 
-    hysteresis: HysteresisSimulation,
-    drive: SmoothedValue,
-    saturation: SmoothedValue,
-    width: SmoothedValue,
+    hysteresis: Hysteresis,
     makeup: SmoothedValue,
 
     wow_flutter: WowFlutter,
@@ -46,12 +43,8 @@ impl Processor {
         const SMOOTHING_STEPS: u32 = 32;
         let pre_amp = SmoothedValue::new(0.0, SMOOTHING_STEPS);
 
-        const OVERSAMPLED_SMOOTHING_STEPS: u32 = 4 * SMOOTHING_STEPS;
-        let drive = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
-        let saturation = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
-        let width = SmoothedValue::new(0.0, OVERSAMPLED_SMOOTHING_STEPS);
         let makeup = SmoothedValue::new(0.0, SMOOTHING_STEPS);
-        let hysteresis = HysteresisSimulation::new(fs);
+        let hysteresis = Hysteresis::new(fs);
 
         let wow_flutter = WowFlutter::new(fs as u32, memory_manager);
 
@@ -60,9 +53,6 @@ impl Processor {
             downsampler,
             pre_amp,
             hysteresis,
-            drive,
-            saturation,
-            width,
             makeup,
             wow_flutter,
         };
@@ -80,12 +70,7 @@ impl Processor {
             .mul_amp(self.pre_amp.by_ref())
             .clip_amp(25.0)
             .upsample(&mut self.upsampler)
-            .apply_hysteresis(
-                &mut self.hysteresis,
-                self.drive.by_ref(),
-                self.saturation.by_ref(),
-                self.width.by_ref(),
-            )
+            .apply_hysteresis(&mut self.hysteresis)
             .downsample(&mut self.downsampler)
             .mul_amp(self.makeup.by_ref())
             .apply_wow_flutter(&mut self.wow_flutter);
@@ -97,13 +82,21 @@ impl Processor {
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
         self.pre_amp.set(attributes.pre_amp);
-        self.drive.set(attributes.drive);
-        self.saturation.set(attributes.saturation);
-        self.width.set(attributes.width);
+        self.hysteresis.set_attributes(attributes.into());
         self.makeup.set(hysteresis::calculate_makeup(
             attributes.drive,
             attributes.saturation,
             attributes.width,
         ));
+    }
+}
+
+impl From<Attributes> for HysteresisAttributes {
+    fn from(other: Attributes) -> Self {
+        Self {
+            drive: other.drive,
+            saturation: other.saturation,
+            width: other.width,
+        }
     }
 }
