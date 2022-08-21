@@ -61,12 +61,12 @@ impl Processor {
         let block_copy = *block;
 
         let mut instrument = signal::from_iter(block_copy.into_iter())
+            .apply_wow_flutter(&mut self.wow_flutter)
             .mul_amp(self.pre_amp.by_ref())
             .clip_amp(25.0)
             .upsample(&mut self.upsampler)
             .apply_hysteresis(&mut self.hysteresis)
-            .downsample(&mut self.downsampler)
-            .apply_wow_flutter(&mut self.wow_flutter);
+            .downsample(&mut self.downsampler);
 
         for f in block.iter_mut() {
             *f = instrument.next();
