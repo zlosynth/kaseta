@@ -6,7 +6,7 @@ use crate::hysteresis::{Attributes as HysteresisAttributes, Hysteresis, SignalAp
 use crate::memory_manager::MemoryManager;
 use crate::oversampling::{Downsampler4, SignalDownsample, SignalUpsample, Upsampler4};
 use crate::smoothed_value::SmoothedValue;
-use crate::wow_flutter::{SignalApplyWowFlutter, WowFlutter};
+use crate::wow_flutter::{Attributes as WowFlutterAttributes, SignalApplyWowFlutter, WowFlutter};
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -25,6 +25,8 @@ pub struct Attributes {
     pub drive: f32,
     pub saturation: f32,
     pub width: f32,
+    pub wow_frequency: f32,
+    pub wow_depth: f32,
 }
 
 impl Processor {
@@ -74,6 +76,7 @@ impl Processor {
     pub fn set_attributes(&mut self, attributes: Attributes) {
         self.pre_amp.set(attributes.pre_amp);
         self.hysteresis.set_attributes(attributes.into());
+        self.wow_flutter.set_attributes(attributes.into());
     }
 }
 
@@ -83,6 +86,15 @@ impl From<Attributes> for HysteresisAttributes {
             drive: other.drive,
             saturation: other.saturation,
             width: other.width,
+        }
+    }
+}
+
+impl From<Attributes> for WowFlutterAttributes {
+    fn from(other: Attributes) -> Self {
+        Self {
+            wow_frequency: other.wow_frequency,
+            wow_depth: other.wow_depth,
         }
     }
 }

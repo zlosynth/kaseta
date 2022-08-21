@@ -52,6 +52,9 @@ const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
 // Width (1.0 - bias) must never reach 1.0, otherwise it panics due to division by zero
 const BIAS_RANGE: (f32, f32) = (0.0001, 1.0);
 
+const WOW_FREQUENCY_RANGE: (f32, f32) = (0.05, 4.0);
+const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 10.0);
+
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ControlAction {
@@ -62,6 +65,10 @@ pub enum ControlAction {
     SetSaturationCV(f32),
     SetBiasPot(f32),
     SetBiasCV(f32),
+    SetWowFrequencyPot(f32),
+    SetWowFrequencyCV(f32),
+    SetWowDepthPot(f32),
+    SetWowDepthCV(f32),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -71,6 +78,8 @@ pub struct DSPReaction {
     pub drive: f32,
     pub saturation: f32,
     pub bias: f32,
+    pub wow_frequency: f32,
+    pub wow_depth: f32,
 }
 
 impl From<DSPReaction> for Attributes {
@@ -80,6 +89,8 @@ impl From<DSPReaction> for Attributes {
             drive: other.drive,
             saturation: other.saturation,
             width: 1.0 - other.bias,
+            wow_frequency: other.wow_frequency,
+            wow_depth: other.wow_depth,
         }
     }
 }
@@ -94,6 +105,10 @@ pub struct Cache {
     pub saturation_cv: f32,
     pub bias_pot: f32,
     pub bias_cv: f32,
+    pub wow_frequency_pot: f32,
+    pub wow_frequency_cv: f32,
+    pub wow_depth_pot: f32,
+    pub wow_depth_cv: f32,
 }
 
 #[must_use]
@@ -108,11 +123,15 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let drive = calculate_drive(cache);
     let saturation = calculate_saturation(cache);
     let bias = calculate_bias(cache);
+    let wow_frequency = calculate_wow_frequency(cache);
+    let wow_depth = calculate_wow_depth(cache);
     DSPReaction {
         pre_amp,
         drive,
         saturation,
         bias,
+        wow_frequency,
+        wow_depth,
     }
 }
 
@@ -148,6 +167,25 @@ fn calculate_bias(cache: &Cache) -> f32 {
     bias_scaled
 }
 
+#[allow(clippy::let_and_return)]
+fn calculate_wow_frequency(cache: &Cache) -> f32 {
+    let wow_frequency_sum = (cache.wow_frequency_pot + cache.wow_frequency_cv).clamp(0.0, 1.0);
+    let wow_frequency_curved = taper::reverse_log(wow_frequency_sum);
+    let wow_frequency_scaled = wow_frequency_curved
+        * (WOW_FREQUENCY_RANGE.1 - WOW_FREQUENCY_RANGE.0)
+        + WOW_FREQUENCY_RANGE.0;
+    wow_frequency_scaled
+}
+
+#[allow(clippy::let_and_return)]
+fn calculate_wow_depth(cache: &Cache) -> f32 {
+    let wow_depth_sum = (cache.wow_depth_pot + cache.wow_depth_cv).clamp(0.0, 1.0);
+    let wow_depth_curved = taper::log(wow_depth_sum);
+    let wow_depth_scaled =
+        wow_depth_curved * (WOW_DEPTH_RANGE.1 - WOW_DEPTH_RANGE.0) + WOW_DEPTH_RANGE.0;
+    wow_depth_scaled
+}
+
 fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
     #[allow(clippy::enum_glob_use)]
     use ControlAction::*;
@@ -172,6 +210,18 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         }
         SetBiasCV(x) => {
             cache.bias_cv = x;
+        }
+        SetWowFrequencyPot(x) => {
+            cache.wow_frequency_pot = x;
+        }
+        SetWowFrequencyCV(x) => {
+            cache.wow_frequency_cv = x;
+        }
+        SetWowDepthPot(x) => {
+            cache.wow_depth_pot = x;
+        }
+        SetWowDepthCV(x) => {
+            cache.wow_depth_cv = x;
         }
     }
 }

@@ -13,6 +13,13 @@ pub struct WowFlutter {
     wow: Wow,
 }
 
+#[derive(Default, Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct Attributes {
+    pub wow_frequency: f32,
+    pub wow_depth: f32,
+}
+
 impl WowFlutter {
     pub fn new(sample_rate: u32, memory_manager: &mut MemoryManager) -> Self {
         let slice = memory_manager.allocate(sample_rate as usize).unwrap();
@@ -30,6 +37,12 @@ impl WowFlutter {
         let delayed = self.buffer.peek(-delay as i32);
         self.buffer.write(x);
         delayed
+    }
+
+    pub fn set_attributes(&mut self, attributes: Attributes) {
+        // TODO: Use smoothed value
+        self.wow.frequency = attributes.wow_frequency;
+        self.wow.depth = attributes.wow_depth;
     }
 }
 
