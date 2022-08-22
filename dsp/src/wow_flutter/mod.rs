@@ -34,7 +34,7 @@ impl WowFlutter {
 
     pub fn process(&mut self, x: f32) -> f32 {
         let delay = self.wow.pop() * self.sample_rate as f32;
-        let delayed = self.buffer.peek(-delay as i32);
+        let delayed = self.buffer.peek(delay as i32);
         self.buffer.write(x);
         delayed
     }
