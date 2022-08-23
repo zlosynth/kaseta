@@ -52,8 +52,11 @@ const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
 // Width (1.0 - bias) must never reach 1.0, otherwise it panics due to division by zero
 const BIAS_RANGE: (f32, f32) = (0.0001, 1.0);
 
-const WOW_FREQUENCY_RANGE: (f32, f32) = (0.05, 4.0);
-const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 10.0);
+const WOW_FREQUENCY_RANGE: (f32, f32) = (0.02, 4.0);
+// The max depth is limited by frequency, in a way that the playing signal never
+// goes backwards. For 0.02 minimal frequency, the maximum depth is defined by:
+// (1.0 / 0.01) * 0.31
+const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 16.0);
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -124,7 +127,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let saturation = calculate_saturation(cache);
     let bias = calculate_bias(cache);
     let wow_frequency = calculate_wow_frequency(cache);
-    let wow_depth = calculate_wow_depth(cache);
+    let wow_depth = calculate_wow_depth(cache, wow_frequency);
     DSPReaction {
         pre_amp,
         drive,
@@ -178,11 +181,11 @@ fn calculate_wow_frequency(cache: &Cache) -> f32 {
 }
 
 #[allow(clippy::let_and_return)]
-fn calculate_wow_depth(cache: &Cache) -> f32 {
+fn calculate_wow_depth(cache: &Cache, wow_frequency: f32) -> f32 {
     let wow_depth_sum = (cache.wow_depth_pot + cache.wow_depth_cv).clamp(0.0, 1.0);
     let wow_depth_curved = taper::log(wow_depth_sum);
-    let wow_depth_scaled =
-        wow_depth_curved * (WOW_DEPTH_RANGE.1 - WOW_DEPTH_RANGE.0) + WOW_DEPTH_RANGE.0;
+    let max_depth = f32::min(WOW_DEPTH_RANGE.1, (1.0 / wow_frequency) * 0.31);
+    let wow_depth_scaled = wow_depth_curved * (max_depth - WOW_DEPTH_RANGE.0) + WOW_DEPTH_RANGE.0;
     wow_depth_scaled
 }
 
