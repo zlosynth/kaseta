@@ -1,9 +1,10 @@
 mod wow;
 
 use self::wow::Wow;
-use crate::memory_manager::MemoryManager;
 use crate::ring_buffer::RingBuffer;
+
 use sirena::signal::Signal;
+use sirena::memory_manager::MemoryManager;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]

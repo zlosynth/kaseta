@@ -13,7 +13,6 @@
 #[macro_use]
 extern crate approx;
 
-pub mod memory_manager;
 pub mod processor;
 
 // Public for the sake of benchmarks

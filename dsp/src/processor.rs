@@ -1,9 +1,9 @@
 //! Main interface for the DSP loop.
 
+use sirena::memory_manager::MemoryManager;
 use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 
 use crate::hysteresis::{Attributes as HysteresisAttributes, Hysteresis, SignalApplyHysteresis};
-use crate::memory_manager::MemoryManager;
 use crate::oversampling::{Downsampler4, SignalDownsample, SignalUpsample, Upsampler4};
 use crate::smoothed_value::SmoothedValue;
 use crate::wow_flutter::{Attributes as WowFlutterAttributes, SignalApplyWowFlutter, WowFlutter};
