@@ -22,9 +22,9 @@ cargo bench
 Profiling:
 
 ``` sh
-rm -f target/release/deps/bench-*
-rm -f callgrind.out.*
 TEST=processor
+rm -f target/release/deps/${TEST}-*
+rm -f callgrind.out.*
 RUSTFLAGS="-g" cargo bench --bench ${TEST} --no-run
 BENCH=$(find target/release/deps -type f -executable -name "${TEST}-*")
 valgrind \
