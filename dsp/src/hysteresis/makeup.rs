@@ -16,8 +16,8 @@ pub fn calculate(drive: f32, saturation: f32, width: f32) -> f32 {
     const A9: f32 = 0.032_865_584;
     const B: f32 = 0.365_093_5;
 
-    1.0 / (((A1 + A2 * drive + A3 * libm::powf(width, 2.0))
-        * (A4 + A5 * saturation + A6 * libm::powf(saturation, 2.0)))
-        / (A7 + A8 * width + A9 * libm::powf(drive, 2.0))
+    1.0 / (((A1 + A2 * drive + A3 * width * width)
+        * (A4 + A5 * saturation + A6 * saturation * saturation))
+        / (A7 + A8 * width + A9 * drive * drive)
         + B)
 }
