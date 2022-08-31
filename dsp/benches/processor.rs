@@ -1,6 +1,6 @@
 #![allow(clippy::items_after_statements)]
 
-use criterion::{criterion_group, criterion_main, Criterion, black_box};
+use criterion::{black_box, criterion_group, criterion_main, Criterion};
 
 fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("processor", |b| {

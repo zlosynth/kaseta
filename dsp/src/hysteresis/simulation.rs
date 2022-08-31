@@ -7,7 +7,7 @@
 //! * <https://ccrma.stanford.edu/~jatin/papers/Complex_NLs.pdf>
 //! * <https://github.com/jatinchowdhury18/audio_dspy>
 
-use libm::{fabs, sqrt, tanh};
+use libm::{fabs, sqrt};
 
 /// Time domain differentiation using the trapezoidal rule.
 #[derive(Debug)]
@@ -37,6 +37,12 @@ impl Differentiator {
         self.x_d_n1 = x_d;
         x_d
     }
+}
+
+/// Approximation of tanh.
+fn tanh(x: f64) -> f64 {
+    let x2 = x * x;
+    x / (1.0 + (x2 / (3.0 + (x2 / 5.0 + (x2 / 7.0)))))
 }
 
 /// Langevin function: coth(x) - (1/x)
