@@ -46,8 +46,8 @@ impl RingBuffer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::memory_manager::MemoryManager;
     use core::mem::MaybeUninit;
+    use sirena::memory_manager::MemoryManager;
 
     #[test]
     fn foo() {

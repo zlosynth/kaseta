@@ -31,3 +31,7 @@ harness = false
 [[bench]]
 name = "makeup"
 harness = false
+
+[[bench]]
+name = "processor"
+harness = false
