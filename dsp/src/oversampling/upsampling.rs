@@ -82,7 +82,7 @@ where
             let past_value_index = -(coefficients_index as i32) / self.upsampler.factor as i32;
             let past_value = self.upsampler.buffer.peek(past_value_index);
             let amplification = self.upsampler.coefficients[coefficients_index];
-            output += past_value * amplification * self.upsampler.factor as f32;
+            output += past_value * amplification;
 
             coefficients_index += self.upsampler.factor;
         }
@@ -90,6 +90,6 @@ where
         self.upsampler.coefficients_offset += 1;
         self.upsampler.coefficients_offset %= self.upsampler.factor;
 
-        output
+        output * self.upsampler.factor as f32
     }
 }
