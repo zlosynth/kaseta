@@ -466,6 +466,7 @@ dependencies = [
  "defmt-rtt",
  "kaseta-dsp",
  "panic-probe",
+ "sirena",
 ]
 
 [[package]]
