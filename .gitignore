@@ -1,3 +1,4 @@
 /target
+/benches/target
 callgrind.out.*
 amplitude_dataset.csv

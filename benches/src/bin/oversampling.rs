@@ -6,16 +6,18 @@
 //! * Original signal-based implementation: 11936078
 //! * Enable icache: 3760126
 //! * Enable dcache: 3648398
+//! * Move outside workspaces: 122000
 //!
 //! TODO: Unroll loops
 //! TODO: Check more in CMSIS
+//! TODO: Apply formatting and checks to this module too
 
 #![no_main]
 #![no_std]
 
 use kaseta_benches as _;
 
-use daisy::pac::{DWT};
+use daisy::pac::DWT;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngCore;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngExt;
 use daisy::hal::rng::Rng;
