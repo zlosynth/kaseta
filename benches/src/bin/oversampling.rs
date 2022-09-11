@@ -9,6 +9,7 @@
 //! * Move outside workspaces: 188568
 //! * Optimized pow2 buffer for upsampling: 142556
 //! * Optimized pow2 buffer for downsampling: 92428
+//! * Upsampling the whole buffer at once: 71730
 //!
 //! TODO: Unroll loops
 //! TODO: Keep ring buffer on stack
@@ -94,8 +95,10 @@ fn main() -> ! {
             let input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
             let mut output = [0.0; BUFFER_SIZE];
 
-            let mut processed_signal = signal::from_iter(input)
-                .upsample(&mut upsampler)
+            let mut upsampled = [0.0; BUFFER_SIZE * 4];
+            upsampler.process(&input, &mut upsampled);
+
+            let mut processed_signal = signal::from_iter(upsampled)
                 .downsample(&mut downsampler);
 
             for x in output.iter_mut() {

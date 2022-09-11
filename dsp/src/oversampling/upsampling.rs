@@ -44,6 +44,27 @@ impl Upsampler4 {
             coefficients_offset: 0,
         }
     }
+
+    pub fn process(&mut self, input_buffer: &[f32], output_buffer: &mut [f32]) {
+        for (i, x) in input_buffer.iter().enumerate() {
+            self.buffer.write(*x);
+            for coefficients_offset in 0..4 {
+                let mut output = signal::EQUILIBRIUM;
+                let mut coefficients_index = coefficients_offset;
+
+                while coefficients_index < self.coefficients.len() {
+                    let past_value_index = coefficients_index / self.factor;
+                    let past_value = self.buffer.peek(past_value_index);
+                    let amplification = self.coefficients[coefficients_index];
+                    output += past_value * amplification;
+
+                    coefficients_index += self.factor;
+                }
+
+                output_buffer[i * self.factor + coefficients_offset] = output * self.factor as f32;
+            }
+        }
+    }
 }
 
 pub trait SignalUpsample: Signal {
