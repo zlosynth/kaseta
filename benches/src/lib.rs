@@ -1,9 +1,9 @@
 #![no_main]
 #![no_std]
 
+use daisy::hal as _;
 use defmt_rtt as _;
 use panic_probe as _;
-use daisy::hal as _;
 
 // same panicking *behavior* as `panic-probe` but doesn't print a panic message
 // this prevents the panic message being printed *twice* when `defmt::panic` is invoked

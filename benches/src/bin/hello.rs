@@ -1,11 +1,11 @@
 #![no_main]
 #![no_std]
 
-use kaseta_bench as _;
+use kaseta_benches as _;
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
     defmt::println!("Hello, world!");
 
-    kaseta_bench::exit()
+    kaseta_benches::exit()
 }

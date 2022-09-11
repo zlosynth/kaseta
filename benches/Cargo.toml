@@ -1,5 +1,5 @@
 [package]
-name = "kaseta-bench"
+name = "kaseta-benches"
 version = "0.1.0"
 authors = ["Petr Horáček <hrck@protonmail.com>"]
 edition = "2021"

@@ -39,6 +39,6 @@ kcachegrind callgrind.out.*
 Run benchmarks on hardware:
 
 ```sh
-cd bench
+cd benches
 cargo run --bin hello
 ```

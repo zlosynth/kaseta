@@ -456,7 +456,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "kaseta-bench"
+name = "kaseta-benches"
 version = "0.1.0"
 dependencies = [
  "cortex-m",
@@ -913,12 +913,7 @@ dependencies = [
  "libm",
  "microfft",
  "micromath",
- "sirena-cmsis-dsp-sys",
 ]
-
-[[package]]
-name = "sirena-cmsis-dsp-sys"
-version = "0.1.0"
 
 [[package]]
 name = "spin"
