@@ -42,6 +42,24 @@ impl Downsampler4 {
             buffer: RingBuffer::from(memory_manager.allocate(256).unwrap()),
         }
     }
+
+    pub fn process(&mut self, input_buffer: &[f32], output_buffer: &mut [f32]) {
+        for (i, chunk) in input_buffer.chunks(self.factor).enumerate() {
+            for x in chunk.iter() {
+                self.buffer.write(*x);
+            }
+
+            let mut output = signal::EQUILIBRIUM;
+
+            for (i, coefficient) in self.coefficients.iter().enumerate() {
+                let past_value_index = i;
+                let past_value = self.buffer.peek(past_value_index);
+                output += past_value * coefficient;
+            }
+
+            output_buffer[i] = output;
+        }
+    }
 }
 
 pub trait SignalDownsample: Signal {

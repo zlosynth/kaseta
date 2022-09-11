@@ -63,14 +63,25 @@ impl Processor {
         let mut instrument = signal::from_iter(block_copy.into_iter())
             .apply_wow_flutter(&mut self.wow_flutter)
             .mul_amp(self.pre_amp.by_ref())
-            .clip_amp(25.0)
-            .upsample(&mut self.upsampler)
-            .apply_hysteresis(&mut self.hysteresis)
-            .downsample(&mut self.downsampler);
+            .clip_amp(25.0);
 
-        for f in block.iter_mut() {
-            *f = instrument.next();
+        let mut buffer_1 = [0.0; 32];
+        for x in buffer_1.iter_mut() {
+            *x = instrument.next();
         }
+
+        let mut buffer_2 = [0.0; 32 * 4];
+        self.upsampler.process(&buffer_1, &mut buffer_2);
+
+        let mut instrument = signal::from_iter(buffer_2.into_iter())
+            .apply_hysteresis(&mut self.hysteresis);
+
+        let mut buffer_3 = [0.0; 32 * 4];
+        for x in buffer_3.iter_mut() {
+            *x = instrument.next();
+        }
+
+        self.downsampler.process(&buffer_3, &mut block[..]);
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {

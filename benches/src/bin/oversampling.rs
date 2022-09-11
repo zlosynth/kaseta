@@ -11,6 +11,7 @@
 //! * Optimized pow2 buffer for downsampling: 92428
 //! * Upsampling the whole buffer at once: 71730
 //! * Further tweaking of the buffer: 70714
+//! * Downsampling the whole buffer at once: 41241
 //!
 //! TODO: Unroll loops
 //! TODO: Keep ring buffer on stack
@@ -30,9 +31,8 @@ use daisy::hal::prelude::_stm32h7xx_hal_rng_RngExt;
 use daisy::hal::rng::Rng;
 
 use kaseta_dsp::oversampling::{
-    Downsampler4, SignalDownsample, SignalUpsample, Upsampler4,
+    Downsampler4, Upsampler4,
 };
-use sirena::signal::{self, Signal};
 
 static mut MEMORY: [MaybeUninit<u32>; 512] = unsafe { MaybeUninit::uninit().assume_init() };
 
@@ -98,13 +98,7 @@ fn main() -> ! {
 
             let mut upsampled = [0.0; BUFFER_SIZE * 4];
             upsampler.process(&input, &mut upsampled);
-
-            let mut processed_signal = signal::from_iter(upsampled)
-                .downsample(&mut downsampler);
-
-            for x in output.iter_mut() {
-                *x = processed_signal.next();
-            }
+            downsampler.process(&upsampled, &mut output);
         }
     });
 
