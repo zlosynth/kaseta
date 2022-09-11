@@ -2,15 +2,16 @@
 
 use core::fmt;
 
-use sirena::ring_buffer::RingBuffer;
 use sirena::signal::{self, Signal};
+use sirena::memory_manager::MemoryManager;
 
 use super::coefficients::COEFFICIENTS_4;
+use crate::ring_buffer::RingBuffer;
 
 pub struct Downsampler<const N: usize> {
     factor: usize,
     coefficients: &'static [f32; N],
-    buffer: RingBuffer<N>,
+    buffer: RingBuffer,
 }
 
 impl<const N: usize> fmt::Debug for Downsampler<N> {
@@ -33,11 +34,12 @@ pub type Downsampler4 = Downsampler<{ COEFFICIENTS_4.len() }>;
 
 impl Downsampler4 {
     #[must_use]
-    pub fn new_4() -> Self {
+    pub fn new_4(memory_manager: &mut MemoryManager) -> Self {
         Self {
             factor: 4,
             coefficients: &COEFFICIENTS_4,
-            buffer: RingBuffer::new(),
+            // TODO: Calculate needed size
+            buffer: RingBuffer::from(memory_manager.allocate(256).unwrap()),
         }
     }
 }
@@ -72,7 +74,7 @@ where
         let mut output = signal::EQUILIBRIUM;
 
         for (i, coefficient) in self.downsampler.coefficients.iter().enumerate() {
-            let past_value_index = -(i as i32);
+            let past_value_index = i;
             let past_value = self.downsampler.buffer.peek(past_value_index);
             output += past_value * coefficient;
         }

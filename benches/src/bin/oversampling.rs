@@ -8,7 +8,7 @@
 //! * Enable dcache: 3648398
 //! * Move outside workspaces: 188568
 //! * Optimized pow2 buffer for upsampling: 142556
-//! * Optimized pow2 buffer for downsampling:
+//! * Optimized pow2 buffer for downsampling: 92428
 //!
 //! TODO: Unroll loops
 //! TODO: Keep ring buffer on stack
@@ -20,19 +20,19 @@
 
 use kaseta_benches as _;
 
+use core::mem::MaybeUninit;
+
 use daisy::pac::DWT;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngCore;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngExt;
 use daisy::hal::rng::Rng;
 
-use core::mem::MaybeUninit;
-#[link_section = ".ram"]
-static mut MEMORY: [MaybeUninit<u32>; 512] = unsafe { MaybeUninit::uninit().assume_init() };
-
 use kaseta_dsp::oversampling::{
     Downsampler4, SignalDownsample, SignalUpsample, Upsampler4,
 };
 use sirena::signal::{self, Signal};
+
+static mut MEMORY: [MaybeUninit<u32>; 512] = unsafe { MaybeUninit::uninit().assume_init() };
 
 macro_rules! op_cyccnt_diff {
     ( $cp:expr, $x:expr ) => {
@@ -87,7 +87,7 @@ fn main() -> ! {
 
     let mut randomizer = dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks);
     let mut upsampler = Upsampler4::new_4(&mut memory_manager);
-    let mut downsampler = Downsampler4::new_4();
+    let mut downsampler = Downsampler4::new_4(&mut memory_manager);
 
     let cycles = op_cyccnt_diff!(cp, {
         for _ in 0..300 {
