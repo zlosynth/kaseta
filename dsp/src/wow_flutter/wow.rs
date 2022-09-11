@@ -13,14 +13,14 @@ impl Wow {
     pub fn new(sample_rate: u32) -> Self {
         Self {
             sample_rate,
-            phase: 0.0,
+            phase: 0.5,
             frequency: 0.0,
             depth: 0.0,
         }
     }
 
     pub fn pop(&mut self) -> f32 {
-        let x = (libm::cosf(self.phase * 2.0 * PI) - 1.0) * self.depth / 2.0;
+        let x = (libm::cosf(self.phase * 2.0 * PI) + 1.0) * self.depth / 2.0;
         self.phase += self.frequency / self.sample_rate as f32;
         self.phase %= 1.0;
         x
@@ -51,8 +51,8 @@ mod tests {
             }
         }
 
-        assert_relative_eq!(min, -1.0);
-        assert_relative_eq!(max, 0.0);
+        assert_relative_eq!(min, 0.0);
+        assert_relative_eq!(max, 1.0);
     }
 
     #[test]
@@ -63,7 +63,7 @@ mod tests {
         wow.depth = 1.0;
 
         let x = wow.pop();
-        assert!(x <= 0.0);
+        assert!(x >= 0.0);
         assert_relative_eq!(x, 0.0);
     }
 
@@ -75,11 +75,11 @@ mod tests {
         wow.depth = 1.0;
 
         for _ in 0..SAMPLE_RATE / 2 {
-            assert!(wow.pop() > -0.9999);
+            assert!(wow.pop() < 0.9999);
         }
-        assert_relative_eq!(wow.pop(), -1.0);
+        assert_relative_eq!(wow.pop(), 1.0);
         for _ in 0..SAMPLE_RATE / 2 - 1 {
-            assert!(wow.pop() > -0.9999);
+            assert!(wow.pop() < 0.9999);
         }
         assert_relative_eq!(wow.pop(), 0.0);
     }
