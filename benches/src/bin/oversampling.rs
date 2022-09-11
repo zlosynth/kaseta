@@ -6,9 +6,12 @@
 //! * Original signal-based implementation: 11936078
 //! * Enable icache: 3760126
 //! * Enable dcache: 3648398
-//! * Move outside workspaces: 122000
+//! * Move outside workspaces: 188568
+//! * Optimized pow2 buffer for upsampling: 142556
+//! * Optimized pow2 buffer for downsampling:
 //!
 //! TODO: Unroll loops
+//! TODO: Keep ring buffer on stack
 //! TODO: Check more in CMSIS
 //! TODO: Apply formatting and checks to this module too
 
@@ -21,6 +24,10 @@ use daisy::pac::DWT;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngCore;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngExt;
 use daisy::hal::rng::Rng;
+
+use core::mem::MaybeUninit;
+#[link_section = ".ram"]
+static mut MEMORY: [MaybeUninit<u32>; 512] = unsafe { MaybeUninit::uninit().assume_init() };
 
 use kaseta_dsp::oversampling::{
     Downsampler4, SignalDownsample, SignalUpsample, Upsampler4,
@@ -72,11 +79,14 @@ fn main() -> ! {
     let board = daisy::Board::take().unwrap();
     let ccdr = daisy::board_freeze_clocks!(board, dp);
 
+    use sirena::memory_manager::MemoryManager;
+    let mut memory_manager = MemoryManager::from(unsafe { &mut MEMORY[..] });
+
     cp.SCB.enable_icache();
     cp.SCB.enable_dcache(&mut cp.CPUID);
 
     let mut randomizer = dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks);
-    let mut upsampler = Upsampler4::new_4();
+    let mut upsampler = Upsampler4::new_4(&mut memory_manager);
     let mut downsampler = Downsampler4::new_4();
 
     let cycles = op_cyccnt_diff!(cp, {

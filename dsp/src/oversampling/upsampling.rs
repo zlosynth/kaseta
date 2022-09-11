@@ -2,15 +2,16 @@
 
 use core::fmt;
 
-use sirena::ring_buffer::RingBuffer;
 use sirena::signal::{self, Signal};
+use sirena::memory_manager::MemoryManager;
 
+use crate::ring_buffer::RingBuffer;
 use super::coefficients::COEFFICIENTS_4;
 
 pub struct Upsampler<const N: usize, const M: usize> {
     factor: usize,
     coefficients: &'static [f32; N],
-    buffer: RingBuffer<M>,
+    buffer: RingBuffer,
     coefficients_offset: usize,
 }
 
@@ -34,11 +35,12 @@ pub type Upsampler4 = Upsampler<{ COEFFICIENTS_4.len() }, { COEFFICIENTS_4.len()
 
 impl Upsampler4 {
     #[must_use]
-    pub fn new_4() -> Self {
+    pub fn new_4(memory_manager: &mut MemoryManager) -> Self {
         Self {
             factor: 4,
             coefficients: &COEFFICIENTS_4,
-            buffer: RingBuffer::new(),
+            // TODO: Calculate needed size
+            buffer: RingBuffer::from(memory_manager.allocate(256).unwrap()),
             coefficients_offset: 0,
         }
     }
@@ -79,7 +81,7 @@ where
         let mut coefficients_index = self.upsampler.coefficients_offset;
 
         while coefficients_index < self.upsampler.coefficients.len() {
-            let past_value_index = -(coefficients_index as i32) / self.upsampler.factor as i32;
+            let past_value_index = coefficients_index / self.upsampler.factor;
             let past_value = self.upsampler.buffer.peek(past_value_index);
             let amplification = self.upsampler.coefficients[coefficients_index];
             output += past_value * amplification;

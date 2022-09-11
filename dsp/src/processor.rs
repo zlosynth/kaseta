@@ -33,7 +33,7 @@ impl Processor {
     #[allow(clippy::let_and_return)]
     #[must_use]
     pub fn new(fs: f32, memory_manager: &mut MemoryManager) -> Self {
-        let upsampler = Upsampler4::new_4();
+        let upsampler = Upsampler4::new_4(memory_manager);
         let downsampler = Downsampler4::new_4();
 
         const SMOOTHING_STEPS: u32 = 32;

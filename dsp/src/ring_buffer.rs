@@ -35,14 +35,12 @@ impl From<&'static mut [f32]> for RingBuffer {
 
 impl RingBuffer {
     pub fn write(&mut self, value: f32) {
-        self.write_index %= self.buffer.len();
+        self.write_index = (self.write_index + 1) & self.mask;
         self.buffer[self.write_index] = value;
-        self.write_index += 1;
     }
 
     pub fn peek(&self, relative_index: usize) -> f32 {
-        let index =
-            ((self.write_index as i32 - relative_index as i32 - 1) & self.mask as i32) as usize;
+        let index = (self.write_index + relative_index) & self.mask;
         self.buffer[index]
     }
 }
