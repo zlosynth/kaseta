@@ -1,0 +1,36 @@
+[package]
+name = "kaseta-bench"
+version = "0.1.0"
+authors = ["Petr Horáček <hrck@protonmail.com>"]
+edition = "2021"
+license = "GPL-3.0-or-later"
+build = "build.rs"
+repository = "https://github.com/zlosynth/kaseta"
+publish = false
+
+[lib]
+harness = false
+
+[dependencies]
+cortex-m = "0.7.3"
+cortex-m-rt = "0.7.0"
+defmt = "0.3.0"
+defmt-rtt = "0.3.0"
+panic-probe = { version = "0.3.0", features = ["print-defmt"] }
+daisy = { version = "0.6", features = ["seed"] }
+kaseta-dsp = { path = "../dsp" }
+
+[profile.dev]
+codegen-units = 1 # better optimizations
+debug = true      # symbols are nice and they don't increase the size on flash
+lto = true        # better optimizations
+opt-level = 3     # optimize for speed
+
+[profile.release]
+codegen-units = 1
+debug = true
+lto = true
+opt-level = 3
+
+[[bin]]
+name = "hello"

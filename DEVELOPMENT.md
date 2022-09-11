@@ -13,7 +13,7 @@ Run formatting, checks, build and tests:
 cargo make dev
 ```
 
-Run benchmarks:
+Run software benchmarks:
 
 ```sh
 cargo bench
@@ -34,4 +34,11 @@ valgrind \
     --simulate-cache=yes \
     ${BENCH} --bench --profile-time 10 ${TEST}
 kcachegrind callgrind.out.*
+```
+
+Run benchmarks on hardware:
+
+```sh
+cd bench
+cargo run --bin hello
 ```
