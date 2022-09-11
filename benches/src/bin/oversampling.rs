@@ -10,6 +10,7 @@
 //! * Optimized pow2 buffer for upsampling: 142556
 //! * Optimized pow2 buffer for downsampling: 92428
 //! * Upsampling the whole buffer at once: 71730
+//! * Further tweaking of the buffer: 70714
 //!
 //! TODO: Unroll loops
 //! TODO: Keep ring buffer on stack

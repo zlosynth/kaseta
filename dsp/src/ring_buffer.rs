@@ -40,7 +40,7 @@ impl RingBuffer {
     }
 
     pub fn peek(&self, relative_index: usize) -> f32 {
-        let index = (self.write_index + relative_index) & self.mask;
+        let index = self.write_index.wrapping_sub(relative_index) & self.mask;
         self.buffer[index]
     }
 }
@@ -119,18 +119,41 @@ mod tests {
     }
 
     #[test]
-    fn cross_buffer_end_while_reading() {
-        static mut MEMORY: [MaybeUninit<u32>; 128] = unsafe { MaybeUninit::uninit().assume_init() };
+    fn follow_reads_and_writes_throughout_the_buffer() {
+        static mut MEMORY: [MaybeUninit<u32>; 4] = unsafe { MaybeUninit::uninit().assume_init() };
         let mut memory_manager = MemoryManager::from(unsafe { &mut MEMORY[..] });
 
-        let slice = memory_manager.allocate(128).unwrap();
+        let slice = memory_manager.allocate(4).unwrap();
         let mut buffer = RingBuffer::from(slice);
 
-        for x in 0..=127 {
-            buffer.write(x as f32);
-        }
+        buffer.write(1.0);
+        assert_eq!(buffer.peek(0) as usize, 1);
 
-        assert_eq!(buffer.peek(0) as usize, 127);
-        assert_eq!(buffer.peek(1) as usize, 127 - 1);
+        buffer.write(2.0);
+        assert_eq!(buffer.peek(0) as usize, 2);
+        assert_eq!(buffer.peek(1) as usize, 1);
+
+        buffer.write(3.0);
+        assert_eq!(buffer.peek(0) as usize, 3);
+        assert_eq!(buffer.peek(1) as usize, 2);
+        assert_eq!(buffer.peek(2) as usize, 1);
+
+        buffer.write(4.0);
+        assert_eq!(buffer.peek(0) as usize, 4);
+        assert_eq!(buffer.peek(1) as usize, 3);
+        assert_eq!(buffer.peek(2) as usize, 2);
+        assert_eq!(buffer.peek(3) as usize, 1);
+
+        buffer.write(5.0);
+        assert_eq!(buffer.peek(0) as usize, 5);
+        assert_eq!(buffer.peek(1) as usize, 4);
+        assert_eq!(buffer.peek(2) as usize, 3);
+        assert_eq!(buffer.peek(3) as usize, 2);
+
+        buffer.write(6.0);
+        assert_eq!(buffer.peek(0) as usize, 6);
+        assert_eq!(buffer.peek(1) as usize, 5);
+        assert_eq!(buffer.peek(2) as usize, 4);
+        assert_eq!(buffer.peek(3) as usize, 3);
     }
 }

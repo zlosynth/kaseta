@@ -26,6 +26,8 @@ pub use upsampling::{SignalUpsample, Upsampler4};
 mod tests {
     use super::*;
     use heapless::Vec;
+    use core::mem::MaybeUninit;
+    use sirena::memory_manager::MemoryManager;
 
     #[test]
     fn given_oversampled_signal_with_tone_above_original_nyquist_when_downsampling_it_removes_the_tone(
@@ -33,12 +35,15 @@ mod tests {
         use sirena::signal::{self, Signal, SignalTake};
         use sirena::spectral_analysis::SpectralAnalysis;
 
+        static mut MEMORY: [MaybeUninit<u32>; 512] = unsafe { MaybeUninit::uninit().assume_init() };
+        let mut memory_manager = MemoryManager::from(unsafe { &mut MEMORY[..] });
+
         const FS: f32 = 1024.0;
         const NYQUIST: f32 = FS / 2.0 - 1.0;
         const SAMPLES: usize = 1024;
         const OVERSAMPLING: usize = 4;
 
-        let mut downsampler = Downsampler4::new_4();
+        let mut downsampler = Downsampler4::new_4(&mut memory_manager);
 
         // Downsample oversampled signal with sine over original nyquist rate
         // and store it in a buffer.
@@ -60,12 +65,15 @@ mod tests {
         use sirena::signal::{self, Signal, SignalTake};
         use sirena::spectral_analysis::SpectralAnalysis;
 
+        static mut MEMORY: [MaybeUninit<u32>; 512] = unsafe { MaybeUninit::uninit().assume_init() };
+        let mut memory_manager = MemoryManager::from(unsafe { &mut MEMORY[..] });
+
         const FS: f32 = 1024.0;
         const NYQUIST: f32 = FS / 2.0 - 1.0;
         const SAMPLES: usize = 1024;
 
-        let mut upsampler = Upsampler4::new_4();
-        let mut downsampler = Downsampler4::new_4();
+        let mut upsampler = Upsampler4::new_4(&mut memory_manager);
+        let mut downsampler = Downsampler4::new_4(&mut memory_manager);
 
         let signal = signal::sine(FS, NYQUIST / 2.0);
 
