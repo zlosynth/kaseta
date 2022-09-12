@@ -1,5 +1,0 @@
-[workspace]
-members = ["dsp", "control"]
-# Keeping benches separate results into much higher performance and does not
-# spoil the rest of the project with STM specific target.
-exclude = ["benches"]
