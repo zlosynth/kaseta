@@ -80,7 +80,7 @@ impl Processor {
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
         self.pre_amp.set(attributes.pre_amp);
-        // self.hysteresis.set_attributes(attributes.into());
+        self.hysteresis.set_attributes(attributes.into());
         self.wow_flutter.set_attributes(attributes.into());
     }
 }
