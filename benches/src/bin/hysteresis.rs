@@ -6,25 +6,23 @@
 //! * Original signal-based implementation: 7701331
 //! * Enable icache: 3048425
 //! * Enable dcache: 2989626
-//! * Processing the whole buffer at once:
+//! * Replacing f64 with f32: 426773
+//! * Using RK2 instead of RK4: 356607
+//! * Remove attribute smoothening: 301686
+//! * Remove signal abstraction: 63257
 //!
 //! TODO: Unroll loops
-//! TODO: Move sinc tables to different memories
-//! TODO: Keep ring buffer on stack
-//! TODO: Check more in CMSIS
-//! TODO: Apply formatting and checks to this module too
 
 #![no_main]
 #![no_std]
 #![allow(clippy::similar_names)]
-#![allow(clippy::cast_lossless)]
-#![allow(clippy::cast_precision_loss)]
+
+use daisy::hal::prelude::_stm32h7xx_hal_rng_RngExt;
 
 use kaseta_benches as _;
-use kaseta_benches::op_cyccnt_diff;
+use kaseta_benches::{op_cyccnt_diff, random_buffer};
 
-use kaseta_dsp::hysteresis::{Attributes, Hysteresis, SignalApplyHysteresis};
-use sirena::signal::{self, Signal};
+use kaseta_dsp::hysteresis::{Attributes, Hysteresis};
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
@@ -33,37 +31,30 @@ fn main() -> ! {
     defmt::println!("Hysteresis benchmark");
 
     let mut cp = cortex_m::Peripherals::take().unwrap();
+    let dp = daisy::pac::Peripherals::take().unwrap();
+    let board = daisy::Board::take().unwrap();
+    let ccdr = daisy::board_freeze_clocks!(board, dp);
+    let mut randomizer = dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks);
 
     cp.SCB.enable_icache();
     cp.SCB.enable_dcache(&mut cp.CPUID);
 
-    const FS: f32 = 48_000.0;
-    const FREQ: f32 = 100.0;
-    let mut input = signal::sine(FS, FREQ);
-
-    const DRIVE: f32 = 0.5;
-    const SATURATION: f32 = 0.5;
-    const WIDTH: f32 = 0.5;
-    let mut hysteresis = Hysteresis::new(FS);
+    let mut hysteresis = Hysteresis::new(48_000.0);
     hysteresis.set_attributes(Attributes {
-        drive: DRIVE,
-        saturation: SATURATION,
-        width: WIDTH,
+        drive: 0.5,
+        saturation: 0.5,
+        width: 0.5,
     });
 
+    let mut buffer: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
+
     let cycles = op_cyccnt_diff!(cp, {
-        for _ in 0..30 {
-            let mut buffer = [0.0; BUFFER_SIZE];
-            let mut instrument = input
-                .by_ref()
-                .apply_hysteresis(&mut hysteresis);
-            for x in &mut buffer {
-                *x = instrument.next();
-            }
+        for _ in 0..300 {
+            hysteresis.process(&mut buffer);
         }
     });
 
-    defmt::println!("Cycles per oversampled buffer: {}", cycles / 30);
+    defmt::println!("Cycles per oversampled buffer: {}", cycles / 300);
 
     kaseta_benches::exit()
 }

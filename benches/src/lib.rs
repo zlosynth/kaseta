@@ -2,6 +2,8 @@
 #![no_std]
 
 use daisy::hal as _;
+use daisy::hal::prelude::_stm32h7xx_hal_rng_RngCore;
+use daisy::hal::rng::Rng;
 use defmt_rtt as _;
 use panic_probe as _;
 
@@ -17,6 +19,18 @@ pub fn exit() -> ! {
     loop {
         cortex_m::asm::bkpt();
     }
+}
+
+#[allow(clippy::cast_lossless)]
+#[allow(clippy::cast_precision_loss)]
+#[allow(clippy::missing_panics_doc)]
+pub fn random_buffer<const N: usize>(randomizer: &mut Rng) -> [f32; N] {
+    let mut buffer = [0.0; N];
+    for x in &mut buffer {
+        let r: u16 = randomizer.gen().unwrap();
+        *x = r as f32 / (2 << 14) as f32 - 1.0;
+    }
+    buffer
 }
 
 #[macro_export]

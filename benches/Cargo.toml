@@ -40,3 +40,7 @@ harness = false
 [[bin]]
 name = "oversampling"
 harness = false
+
+[[bin]]
+name = "hysteresis"
+harness = false
