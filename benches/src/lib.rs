@@ -18,3 +18,28 @@ pub fn exit() -> ! {
         cortex_m::asm::bkpt();
     }
 }
+
+#[macro_export]
+macro_rules! op_cyccnt_diff {
+    ( $cp:expr, $x:expr ) => {
+        {
+            use core::sync::atomic::{self, Ordering};
+            use daisy::pac::DWT;
+
+            $cp.DCB.enable_trace();
+            $cp.DWT.enable_cycle_counter();
+
+            atomic::compiler_fence(Ordering::Acquire);
+            let before = DWT::cycle_count();
+            $x
+            let after = DWT::cycle_count();
+            atomic::compiler_fence(Ordering::Release);
+
+            if after >= before {
+                after - before
+            } else {
+                after + (u32::MAX - before)
+            }
+        }
+    };
+}

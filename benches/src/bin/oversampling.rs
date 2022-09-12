@@ -26,41 +26,18 @@
 #![allow(clippy::cast_precision_loss)]
 
 use kaseta_benches as _;
+use kaseta_benches::op_cyccnt_diff;
 
 use core::mem::MaybeUninit;
 
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngCore;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngExt;
 use daisy::hal::rng::Rng;
-use daisy::pac::DWT;
 use sirena::memory_manager::MemoryManager;
 
 use kaseta_dsp::oversampling::{Downsampler4, Upsampler4};
 
 static mut MEMORY: [MaybeUninit<u32>; 512] = unsafe { MaybeUninit::uninit().assume_init() };
-
-macro_rules! op_cyccnt_diff {
-    ( $cp:expr, $x:expr ) => {
-        {
-            use core::sync::atomic::{self, Ordering};
-
-            $cp.DCB.enable_trace();
-            $cp.DWT.enable_cycle_counter();
-
-            atomic::compiler_fence(Ordering::Acquire);
-            let before = DWT::cycle_count();
-            $x
-            let after = DWT::cycle_count();
-            atomic::compiler_fence(Ordering::Release);
-
-            if after >= before {
-                after - before
-            } else {
-                after + (u32::MAX - before)
-            }
-        }
-    };
-}
 
 fn random_buffer(randomizer: &mut Rng) -> [f32; 32] {
     let mut buffer = [0.0; 32];
