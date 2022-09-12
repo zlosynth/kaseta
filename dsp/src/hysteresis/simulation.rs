@@ -101,7 +101,6 @@ impl Simulation {
 
     #[must_use]
     pub fn new(fs: f32) -> Self {
-        let fs = fs as f32;
         let mut hysteresis = Self {
             drive: 0.0,
             saturation: 0.0,
