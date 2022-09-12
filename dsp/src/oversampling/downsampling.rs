@@ -5,6 +5,7 @@ use core::fmt;
 use sirena::memory_manager::MemoryManager;
 
 use super::coefficients::COEFFICIENTS_4;
+use super::math;
 use crate::ring_buffer::RingBuffer;
 
 pub struct Downsampler<const N: usize> {
@@ -41,8 +42,11 @@ impl Downsampler4 {
         Self {
             factor: 4,
             coefficients: &COEFFICIENTS_4,
-            // TODO: Calculate needed size
-            buffer: RingBuffer::from(memory_manager.allocate(256).unwrap()),
+            buffer: RingBuffer::from(
+                memory_manager
+                    .allocate(math::upper_power_of_two(COEFFICIENTS_4.len()))
+                    .unwrap(),
+            ),
         }
     }
 
