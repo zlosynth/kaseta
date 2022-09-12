@@ -5,9 +5,13 @@
 //! ```
 //! use sirena::signal::{self, Signal};
 //! use kaseta_dsp::oversampling::{SignalDownsample, SignalUpsample, Downsampler4, Upsampler4};
+//! use sirena::memory_manager::MemoryManager;
+//! use core::mem::MaybeUninit;
 //!
-//! let mut upsampler = Upsampler4::new_4();
-//! let mut downsampler = Downsampler4::new_4();
+//! static mut MEMORY: [MaybeUninit<u32>; 512] = unsafe { MaybeUninit::uninit().assume_init() };
+//! let mut memory_manager = MemoryManager::from(unsafe { &mut MEMORY[..] });
+//! let mut upsampler = Upsampler4::new_4(&mut memory_manager);
+//! let mut downsampler = Downsampler4::new_4(&mut memory_manager);
 //!
 //! let processed_signal = signal::sine(48000.0, 200.0)
 //!      .upsample(&mut upsampler)
@@ -25,8 +29,8 @@ pub use upsampling::{SignalUpsample, Upsampler4};
 #[cfg(test)]
 mod tests {
     use super::*;
-    use heapless::Vec;
     use core::mem::MaybeUninit;
+    use heapless::Vec;
     use sirena::memory_manager::MemoryManager;
 
     #[test]

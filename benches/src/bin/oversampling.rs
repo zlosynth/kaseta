@@ -14,6 +14,7 @@
 //! * Downsampling the whole buffer at once: 41241
 //!
 //! TODO: Unroll loops
+//! TODO: Move sinc tables to different memories
 //! TODO: Keep ring buffer on stack
 //! TODO: Check more in CMSIS
 //! TODO: Apply formatting and checks to this module too
@@ -29,6 +30,7 @@ use daisy::pac::DWT;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngCore;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngExt;
 use daisy::hal::rng::Rng;
+use sirena::memory_manager::MemoryManager;
 
 use kaseta_dsp::oversampling::{
     Downsampler4, Upsampler4,
@@ -81,7 +83,6 @@ fn main() -> ! {
     let board = daisy::Board::take().unwrap();
     let ccdr = daisy::board_freeze_clocks!(board, dp);
 
-    use sirena::memory_manager::MemoryManager;
     let mut memory_manager = MemoryManager::from(unsafe { &mut MEMORY[..] });
 
     cp.SCB.enable_icache();

@@ -2,8 +2,8 @@
 
 use core::fmt;
 
-use sirena::signal::{self, Signal};
 use sirena::memory_manager::MemoryManager;
+use sirena::signal::{self, Signal};
 
 use super::coefficients::COEFFICIENTS_4;
 use crate::ring_buffer::RingBuffer;
@@ -33,6 +33,10 @@ impl<const N: usize> defmt::Format for Downsampler<N> {
 pub type Downsampler4 = Downsampler<{ COEFFICIENTS_4.len() }>;
 
 impl Downsampler4 {
+    /// # Panics
+    ///
+    /// Panics if there is not enough space in the memory manager to allocate a
+    /// buffer.
     #[must_use]
     pub fn new_4(memory_manager: &mut MemoryManager) -> Self {
         Self {

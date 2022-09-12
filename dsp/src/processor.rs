@@ -4,7 +4,7 @@ use sirena::memory_manager::MemoryManager;
 use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 
 use crate::hysteresis::{Attributes as HysteresisAttributes, Hysteresis, SignalApplyHysteresis};
-use crate::oversampling::{Downsampler4, SignalDownsample, SignalUpsample, Upsampler4};
+use crate::oversampling::{Downsampler4, Upsampler4};
 use crate::smoothed_value::SmoothedValue;
 use crate::wow_flutter::{Attributes as WowFlutterAttributes, SignalApplyWowFlutter, WowFlutter};
 
@@ -66,15 +66,15 @@ impl Processor {
             .clip_amp(25.0);
 
         let mut buffer_1 = [0.0; 32];
-        for x in buffer_1.iter_mut() {
+        for x in &mut buffer_1 {
             *x = instrument.next();
         }
 
         let mut buffer_2 = [0.0; 32 * 4];
         self.upsampler.process(&buffer_1, &mut buffer_2);
 
-        let mut instrument = signal::from_iter(buffer_2.into_iter())
-            .apply_hysteresis(&mut self.hysteresis);
+        let mut instrument =
+            signal::from_iter(buffer_2.into_iter()).apply_hysteresis(&mut self.hysteresis);
 
         let mut buffer_3 = [0.0; 32 * 4];
         for x in buffer_3.iter_mut() {

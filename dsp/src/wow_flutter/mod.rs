@@ -24,7 +24,7 @@ pub struct Attributes {
 impl WowFlutter {
     pub fn new(sample_rate: u32, memory_manager: &mut MemoryManager) -> Self {
         // TODO: Calculate this
-        let slice = memory_manager.allocate(262144).unwrap();
+        let slice = memory_manager.allocate(262_144).unwrap();
         let buffer = RingBuffer::from(slice);
         let wow = Wow::new(sample_rate);
         Self {

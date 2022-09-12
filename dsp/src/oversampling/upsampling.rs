@@ -2,11 +2,11 @@
 
 use core::fmt;
 
-use sirena::signal::{self, Signal};
 use sirena::memory_manager::MemoryManager;
+use sirena::signal::{self, Signal};
 
-use crate::ring_buffer::RingBuffer;
 use super::coefficients::COEFFICIENTS_4;
+use crate::ring_buffer::RingBuffer;
 
 pub struct Upsampler<const N: usize, const M: usize> {
     factor: usize,
@@ -34,6 +34,10 @@ impl<const N: usize, const M: usize> defmt::Format for Upsampler<N, M> {
 pub type Upsampler4 = Upsampler<{ COEFFICIENTS_4.len() }, { COEFFICIENTS_4.len() / 2 + 1 }>;
 
 impl Upsampler4 {
+    /// # Panics
+    ///
+    /// Panics if there is not enough space in the memory manager to allocate a
+    /// buffer.
     #[must_use]
     pub fn new_4(memory_manager: &mut MemoryManager) -> Self {
         Self {
