@@ -19,6 +19,9 @@ run_task = { name = "ci-workspace", fork = true }
 [tasks.ci-workspace]
 dependencies = ["check-format", "clippy", "build", "test"]
 
+[tasks.test]
+condition = { files_not_exist = [".cargo"] }
+
 [tasks.check-toml]
 env = { CARGO_MAKE_FORMAT_TOML_ARGS = "--check" }
 run_task = { name = "format-toml" }
