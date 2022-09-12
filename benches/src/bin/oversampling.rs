@@ -21,20 +21,21 @@
 
 #![no_main]
 #![no_std]
+#![allow(clippy::similar_names)]
+#![allow(clippy::cast_lossless)]
+#![allow(clippy::cast_precision_loss)]
 
 use kaseta_benches as _;
 
 use core::mem::MaybeUninit;
 
-use daisy::pac::DWT;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngCore;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngExt;
 use daisy::hal::rng::Rng;
+use daisy::pac::DWT;
 use sirena::memory_manager::MemoryManager;
 
-use kaseta_dsp::oversampling::{
-    Downsampler4, Upsampler4,
-};
+use kaseta_dsp::oversampling::{Downsampler4, Upsampler4};
 
 static mut MEMORY: [MaybeUninit<u32>; 512] = unsafe { MaybeUninit::uninit().assume_init() };
 
@@ -61,22 +62,20 @@ macro_rules! op_cyccnt_diff {
     };
 }
 
-
 fn random_buffer(randomizer: &mut Rng) -> [f32; 32] {
     let mut buffer = [0.0; 32];
-    for x in buffer.iter_mut() {
+    for x in &mut buffer {
         let r: u16 = randomizer.gen().unwrap();
         *x = r as f32 / (2 << 14) as f32 - 1.0;
     }
     buffer
 }
 
-
 #[cortex_m_rt::entry]
 fn main() -> ! {
-    defmt::println!("Oversampling benchmark");
-
     const BUFFER_SIZE: usize = 32;
+
+    defmt::println!("Oversampling benchmark");
 
     let mut cp = cortex_m::Peripherals::take().unwrap();
     let dp = daisy::pac::Peripherals::take().unwrap();
