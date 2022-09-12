@@ -3,7 +3,6 @@
 use core::fmt;
 
 use sirena::memory_manager::MemoryManager;
-use sirena::signal::{self, Signal};
 
 use super::coefficients::COEFFICIENTS_4;
 use crate::ring_buffer::RingBuffer;
@@ -53,7 +52,7 @@ impl Downsampler4 {
                 self.buffer.write(*x);
             }
 
-            let mut output = signal::EQUILIBRIUM;
+            let mut output = 0.0;
 
             for (i, coefficient) in self.coefficients.iter().enumerate() {
                 let past_value_index = i;
@@ -63,44 +62,5 @@ impl Downsampler4 {
 
             output_buffer[i] = output;
         }
-    }
-}
-
-pub trait SignalDownsample: Signal {
-    fn downsample<const N: usize>(self, downsampler: &mut Downsampler<N>) -> Downsample<Self, N>
-    where
-        Self: Sized,
-    {
-        Downsample {
-            source: self,
-            downsampler,
-        }
-    }
-}
-
-impl<T> SignalDownsample for T where T: Signal {}
-
-pub struct Downsample<'a, S, const N: usize> {
-    source: S,
-    downsampler: &'a mut Downsampler<N>,
-}
-
-impl<'a, S, const N: usize> Signal for Downsample<'a, S, N>
-where
-    S: Signal,
-{
-    fn next(&mut self) -> f32 {
-        (0..self.downsampler.factor)
-            .for_each(|_| self.downsampler.buffer.write(self.source.next()));
-
-        let mut output = signal::EQUILIBRIUM;
-
-        for (i, coefficient) in self.downsampler.coefficients.iter().enumerate() {
-            let past_value_index = i;
-            let past_value = self.downsampler.buffer.peek(past_value_index);
-            output += past_value * coefficient;
-        }
-
-        output
     }
 }
