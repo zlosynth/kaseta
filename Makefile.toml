@@ -27,7 +27,7 @@ env = { CARGO_MAKE_FORMAT_TOML_ARGS = "--check" }
 run_task = { name = "format-toml" }
 
 [tasks.clippy]
-env = { CARGO_MAKE_CLIPPY_ARGS = "--tests --benches -- -Dclippy::all -Dclippy::pedantic" }
+env = { CARGO_MAKE_CLIPPY_ARGS = "--tests --benches -- -Dclippy::all -Dclippy::pedantic -Dwarnings" }
 
 [tasks.format-black]
 condition_script = ["python3 -m black --help >/dev/null"]
