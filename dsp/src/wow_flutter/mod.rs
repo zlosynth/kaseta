@@ -1,10 +1,13 @@
 mod wow;
 
 use self::wow::Wow;
+use crate::math;
 use crate::ring_buffer::RingBuffer;
 
 use sirena::memory_manager::MemoryManager;
 use sirena::signal::Signal;
+
+const MAX_DEPTH_IN_SECONDS: usize = 20;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -23,8 +26,11 @@ pub struct Attributes {
 
 impl WowFlutter {
     pub fn new(sample_rate: u32, memory_manager: &mut MemoryManager) -> Self {
-        // TODO: Calculate this
-        let slice = memory_manager.allocate(262_144).unwrap();
+        let slice = memory_manager
+            .allocate(math::upper_power_of_two(
+                sample_rate as usize * MAX_DEPTH_IN_SECONDS,
+            ))
+            .unwrap();
         let buffer = RingBuffer::from(slice);
         let wow = Wow::new(sample_rate);
         Self {

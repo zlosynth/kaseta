@@ -5,7 +5,7 @@ use core::fmt;
 use sirena::memory_manager::MemoryManager;
 
 use super::coefficients::COEFFICIENTS_4;
-use super::math;
+use crate::math;
 use crate::ring_buffer::RingBuffer;
 
 pub struct Downsampler<const N: usize> {

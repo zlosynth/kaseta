@@ -23,7 +23,6 @@
 
 mod coefficients;
 pub mod downsampling;
-mod math;
 pub mod upsampling;
 
 pub use downsampling::Downsampler4;
