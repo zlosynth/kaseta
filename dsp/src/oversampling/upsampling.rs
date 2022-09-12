@@ -53,7 +53,7 @@ impl Upsampler4 {
     pub fn process(&mut self, input_buffer: &[f32], output_buffer: &mut [f32]) {
         for (i, x) in input_buffer.iter().enumerate() {
             self.buffer.write(*x);
-            for coefficients_offset in 0..4 {
+            for coefficients_offset in 0..self.factor {
                 let mut output = 0.0;
                 let mut coefficients_index = coefficients_offset;
 
