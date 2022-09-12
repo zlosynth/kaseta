@@ -14,7 +14,6 @@
 //! * Downsampling the whole buffer at once: 41241
 //!
 //! TODO: Unroll loops
-//! TODO: Move sinc tables to different memories
 //! TODO: Keep ring buffer on stack
 //! TODO: Check more in CMSIS
 
