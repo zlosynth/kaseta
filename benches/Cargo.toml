@@ -17,7 +17,7 @@ cortex-m-rt = "0.7.0"
 defmt = "0.3.0"
 defmt-rtt = "0.3.0"
 panic-probe = { version = "0.3.0", features = ["print-defmt"] }
-daisy = { path = "../../../daisy_bsp", features = ["seed"] }
+daisy = { path = "../../daisy", features = ["seed"] }
 sirena = { path = "../../sirena" }
 kaseta-dsp = { path = "../dsp" }
 
