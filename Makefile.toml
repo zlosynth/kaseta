@@ -3,6 +3,9 @@ CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 CARGO_MAKE_WORKSPACE_EMULATION = true
 CARGO_MAKE_CRATE_WORKSPACE_MEMBERS = ["dsp", "control", "benches"]
 
+[tasks.default]
+alias = "dev"
+
 [tasks.dev]
 workspace = false
 dependencies = ["format-black", "format-toml"]
