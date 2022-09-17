@@ -5,7 +5,6 @@ use crate::math;
 use crate::ring_buffer::RingBuffer;
 
 use sirena::memory_manager::MemoryManager;
-use sirena::signal::Signal;
 
 const MAX_DEPTH_IN_SECONDS: usize = 20;
 
@@ -40,44 +39,18 @@ impl WowFlutter {
         }
     }
 
-    pub fn process(&mut self, x: f32) -> f32 {
-        let delay = self.wow.pop() * self.sample_rate as f32;
-        let delayed = self.buffer.peek(delay as usize);
-        self.buffer.write(x);
-        delayed
+    pub fn process(&mut self, buffer: &mut [f32]) {
+        for x in buffer.iter_mut() {
+            let delay = self.wow.pop() * self.sample_rate as f32;
+            let delayed = self.buffer.peek(delay as usize);
+            self.buffer.write(*x);
+            *x = delayed;
+        }
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
         // TODO: Use smoothed value
         self.wow.frequency = attributes.wow_frequency;
         self.wow.depth = attributes.wow_depth;
-    }
-}
-
-pub trait SignalApplyWowFlutter: Signal {
-    fn apply_wow_flutter(self, wow_flutter: &mut WowFlutter) -> ApplyWowFlutter<Self>
-    where
-        Self: Sized,
-    {
-        ApplyWowFlutter {
-            source: self,
-            wow_flutter,
-        }
-    }
-}
-
-impl<T> SignalApplyWowFlutter for T where T: Signal {}
-
-pub struct ApplyWowFlutter<'a, S> {
-    source: S,
-    wow_flutter: &'a mut WowFlutter,
-}
-
-impl<'a, S> Signal for ApplyWowFlutter<'a, S>
-where
-    S: Signal,
-{
-    fn next(&mut self) -> f32 {
-        self.wow_flutter.process(self.source.next())
     }
 }

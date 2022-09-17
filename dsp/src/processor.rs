@@ -6,7 +6,7 @@ use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 use crate::hysteresis::{Attributes as HysteresisAttributes, Hysteresis};
 use crate::oversampling::{Downsampler4, Upsampler4};
 use crate::smoothed_value::SmoothedValue;
-use crate::wow_flutter::{Attributes as WowFlutterAttributes, SignalApplyWowFlutter, WowFlutter};
+use crate::wow_flutter::{Attributes as WowFlutterAttributes, WowFlutter};
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -58,10 +58,11 @@ impl Processor {
     }
 
     pub fn process(&mut self, block: &mut [f32; 32]) {
+        self.wow_flutter.process(block);
+
         let block_copy = *block;
 
         let mut instrument = signal::from_iter(block_copy.into_iter())
-            .apply_wow_flutter(&mut self.wow_flutter)
             .mul_amp(self.pre_amp.by_ref())
             .clip_amp(25.0);
 
