@@ -7,6 +7,13 @@ Start by installing it:
 cargo install --force cargo-make
 ```
 
+Furthermore, the embedded part of the project uses [flip
+link](https://github.com/knurling-rs/flip-link). Install it:
+
+```sh
+cargo install flip-link
+```
+
 Run formatting, checks, build and tests:
 
 ```sh
