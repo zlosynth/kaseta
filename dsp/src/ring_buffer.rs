@@ -43,6 +43,11 @@ impl RingBuffer {
         let index = self.write_index.wrapping_sub(relative_index) & self.mask;
         self.buffer[index]
     }
+
+    pub fn peek_mut(&mut self, relative_index: usize) -> &mut f32 {
+        let index = self.write_index.wrapping_sub(relative_index) & self.mask;
+        &mut self.buffer[index]
+    }
 }
 
 fn is_power_of_2(n: usize) -> bool {
@@ -116,6 +121,24 @@ mod tests {
         assert_relative_eq!(buffer.peek(0), 3.0);
         assert_relative_eq!(buffer.peek(1), 2.0);
         assert_relative_eq!(buffer.peek(2), 1.0);
+    }
+
+    #[test]
+    fn random_write_into_buffer() {
+        static mut MEMORY: [MaybeUninit<u32>; 16] = unsafe { MaybeUninit::uninit().assume_init() };
+        let mut memory_manager = MemoryManager::from(unsafe { &mut MEMORY[..] });
+
+        let slice = memory_manager.allocate(8).unwrap();
+        let mut buffer = RingBuffer::from(slice);
+
+        buffer.write(1.0);
+        buffer.write(2.0);
+        buffer.write(3.0);
+        *buffer.peek_mut(2) = 10.0;
+
+        assert_relative_eq!(buffer.peek(0), 3.0);
+        assert_relative_eq!(buffer.peek(1), 2.0);
+        assert_relative_eq!(buffer.peek(2), 10.0);
     }
 
     #[test]

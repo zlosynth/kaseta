@@ -40,6 +40,10 @@ pub struct Attributes {
     pub delay_head_2_play: bool,
     pub delay_head_3_play: bool,
     pub delay_head_4_play: bool,
+    pub delay_head_1_feedback: bool,
+    pub delay_head_2_feedback: bool,
+    pub delay_head_3_feedback: bool,
+    pub delay_head_4_feedback: bool,
 }
 
 impl Processor {
@@ -137,6 +141,10 @@ impl From<Attributes> for DelayAttributes {
             head_2_play: other.delay_head_2_play,
             head_3_play: other.delay_head_3_play,
             head_4_play: other.delay_head_4_play,
+            head_1_feedback: other.delay_head_1_feedback,
+            head_2_feedback: other.delay_head_2_feedback,
+            head_3_feedback: other.delay_head_3_feedback,
+            head_4_feedback: other.delay_head_4_feedback,
         }
     }
 }

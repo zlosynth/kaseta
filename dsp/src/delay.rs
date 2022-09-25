@@ -18,6 +18,7 @@ pub struct Delay {
 struct Head {
     position: f32,
     play: bool,
+    feedback: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -33,6 +34,10 @@ pub struct Attributes {
     pub head_2_play: bool,
     pub head_3_play: bool,
     pub head_4_play: bool,
+    pub head_1_feedback: bool,
+    pub head_2_feedback: bool,
+    pub head_3_feedback: bool,
+    pub head_4_feedback: bool,
 }
 
 impl Delay {
@@ -70,18 +75,47 @@ impl Delay {
             let x3 = self.process_head(2, age);
             let x4 = self.process_head(3, age);
 
-            *x = x1 + x2 + x3 + x4;
+            let mut feedback = 0.0;
+            if self.heads[0].feedback {
+                feedback += x1;
+            }
+            if self.heads[1].feedback {
+                feedback += x2;
+            }
+            if self.heads[2].feedback {
+                feedback += x3;
+            }
+            if self.heads[3].feedback {
+                feedback += x4;
+            }
+            *self.buffer.peek_mut(age) += feedback * 0.6;
+
+            let x1 = self.process_head(0, age);
+            let x2 = self.process_head(1, age);
+            let x3 = self.process_head(2, age);
+            let x4 = self.process_head(3, age);
+
+            let mut play = 0.0;
+            if self.heads[0].play {
+                play += x1;
+            }
+            if self.heads[1].play {
+                play += x2;
+            }
+            if self.heads[2].play {
+                play += x3;
+            }
+            if self.heads[3].play {
+                play += x4;
+            }
+            *x = play;
         }
     }
 
     fn process_head(&self, head_index: usize, age: usize) -> f32 {
         let head = &self.heads[head_index];
-        if head.play {
-            let head_offset = (self.length * head.position * self.sample_rate) as usize;
-            self.buffer.peek(head_offset + age)
-        } else {
-            0.0
-        }
+        let head_offset = (self.length * head.position * self.sample_rate) as usize;
+        self.buffer.peek(head_offset + age)
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
@@ -94,5 +128,9 @@ impl Delay {
         self.heads[1].play = attributes.head_2_play;
         self.heads[2].play = attributes.head_3_play;
         self.heads[3].play = attributes.head_4_play;
+        self.heads[0].feedback = attributes.head_1_feedback;
+        self.heads[1].feedback = attributes.head_2_feedback;
+        self.heads[2].feedback = attributes.head_3_feedback;
+        self.heads[3].feedback = attributes.head_4_feedback;
     }
 }
