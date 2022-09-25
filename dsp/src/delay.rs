@@ -19,6 +19,7 @@ struct Head {
     position: f32,
     play: bool,
     feedback: bool,
+    feedback_amount: f32,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -38,6 +39,10 @@ pub struct Attributes {
     pub head_2_feedback: bool,
     pub head_3_feedback: bool,
     pub head_4_feedback: bool,
+    pub head_1_feedback_amount: f32,
+    pub head_2_feedback_amount: f32,
+    pub head_3_feedback_amount: f32,
+    pub head_4_feedback_amount: f32,
 }
 
 impl Delay {
@@ -77,18 +82,18 @@ impl Delay {
 
             let mut feedback = 0.0;
             if self.heads[0].feedback {
-                feedback += x1;
+                feedback += x1 * self.heads[0].feedback_amount;
             }
             if self.heads[1].feedback {
-                feedback += x2;
+                feedback += x2 * self.heads[1].feedback_amount;
             }
             if self.heads[2].feedback {
-                feedback += x3;
+                feedback += x3 * self.heads[2].feedback_amount;
             }
             if self.heads[3].feedback {
-                feedback += x4;
+                feedback += x4 * self.heads[3].feedback_amount;
             }
-            *self.buffer.peek_mut(age) += feedback * 0.6;
+            *self.buffer.peek_mut(age) += feedback;
 
             let x1 = self.process_head(0, age);
             let x2 = self.process_head(1, age);
@@ -132,5 +137,9 @@ impl Delay {
         self.heads[1].feedback = attributes.head_2_feedback;
         self.heads[2].feedback = attributes.head_3_feedback;
         self.heads[3].feedback = attributes.head_4_feedback;
+        self.heads[0].feedback_amount = attributes.head_1_feedback_amount;
+        self.heads[1].feedback_amount = attributes.head_2_feedback_amount;
+        self.heads[2].feedback_amount = attributes.head_3_feedback_amount;
+        self.heads[3].feedback_amount = attributes.head_4_feedback_amount;
     }
 }

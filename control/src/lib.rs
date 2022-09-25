@@ -86,6 +86,7 @@ pub enum ControlAction {
     SetDelayQuantizationEight(bool),
     SetDelayHeadPlay(usize, bool),
     SetDelayHeadFeedback(usize, bool),
+    SetDelayHeadFeedbackAmount(usize, f32),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -101,6 +102,7 @@ pub struct DSPReaction {
     pub delay_head_position: [f32; 4],
     pub delay_head_play: [bool; 4],
     pub delay_head_feedback: [bool; 4],
+    pub delay_head_feedback_amount: [f32; 4],
 }
 
 impl From<DSPReaction> for Attributes {
@@ -125,6 +127,10 @@ impl From<DSPReaction> for Attributes {
             delay_head_2_feedback: other.delay_head_feedback[1],
             delay_head_3_feedback: other.delay_head_feedback[2],
             delay_head_4_feedback: other.delay_head_feedback[3],
+            delay_head_1_feedback_amount: other.delay_head_feedback_amount[0],
+            delay_head_2_feedback_amount: other.delay_head_feedback_amount[1],
+            delay_head_3_feedback_amount: other.delay_head_feedback_amount[2],
+            delay_head_4_feedback_amount: other.delay_head_feedback_amount[3],
         }
     }
 }
@@ -151,6 +157,7 @@ pub struct Cache {
     pub delay_quantization_8: bool,
     pub delay_head_play: [bool; 4],
     pub delay_head_feedback: [bool; 4],
+    pub delay_head_feedback_amount: [f32; 4],
 }
 
 #[must_use]
@@ -188,6 +195,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
         ],
         delay_head_play: cache.delay_head_play,
         delay_head_feedback: cache.delay_head_feedback,
+        delay_head_feedback_amount: cache.delay_head_feedback_amount,
     }
 }
 
@@ -330,6 +338,9 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         }
         SetDelayHeadFeedback(i, b) => {
             cache.delay_head_feedback[i] = b;
+        }
+        SetDelayHeadFeedbackAmount(i, x) => {
+            cache.delay_head_feedback_amount[i] = x;
         }
     }
 }

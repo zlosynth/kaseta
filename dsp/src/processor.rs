@@ -44,6 +44,10 @@ pub struct Attributes {
     pub delay_head_2_feedback: bool,
     pub delay_head_3_feedback: bool,
     pub delay_head_4_feedback: bool,
+    pub delay_head_1_feedback_amount: f32,
+    pub delay_head_2_feedback_amount: f32,
+    pub delay_head_3_feedback_amount: f32,
+    pub delay_head_4_feedback_amount: f32,
 }
 
 impl Processor {
@@ -145,6 +149,10 @@ impl From<Attributes> for DelayAttributes {
             head_2_feedback: other.delay_head_2_feedback,
             head_3_feedback: other.delay_head_3_feedback,
             head_4_feedback: other.delay_head_4_feedback,
+            head_1_feedback_amount: other.delay_head_1_feedback_amount,
+            head_2_feedback_amount: other.delay_head_2_feedback_amount,
+            head_3_feedback_amount: other.delay_head_3_feedback_amount,
+            head_4_feedback_amount: other.delay_head_4_feedback_amount,
         }
     }
 }
