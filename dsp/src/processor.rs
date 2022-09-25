@@ -23,6 +23,7 @@ pub struct Processor {
 // TODO: Just re-use and re-export component's attributes
 #[derive(Default, Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Attributes {
     pub pre_amp: f32,
     pub drive: f32,
@@ -35,6 +36,10 @@ pub struct Attributes {
     pub delay_head_2_position: f32,
     pub delay_head_3_position: f32,
     pub delay_head_4_position: f32,
+    pub delay_head_1_play: bool,
+    pub delay_head_2_play: bool,
+    pub delay_head_3_play: bool,
+    pub delay_head_4_play: bool,
 }
 
 impl Processor {
@@ -128,6 +133,10 @@ impl From<Attributes> for DelayAttributes {
             head_2_position: other.delay_head_2_position,
             head_3_position: other.delay_head_3_position,
             head_4_position: other.delay_head_4_position,
+            head_1_play: other.delay_head_1_play,
+            head_2_play: other.delay_head_2_play,
+            head_3_play: other.delay_head_3_play,
+            head_4_play: other.delay_head_4_play,
         }
     }
 }

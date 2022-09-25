@@ -17,16 +17,22 @@ pub struct Delay {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Head {
     position: f32,
+    play: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[allow(clippy::struct_excessive_bools)]
 pub struct Attributes {
     pub length: f32,
     pub head_1_position: f32,
     pub head_2_position: f32,
     pub head_3_position: f32,
     pub head_4_position: f32,
+    pub head_1_play: bool,
+    pub head_2_play: bool,
+    pub head_3_play: bool,
+    pub head_4_play: bool,
 }
 
 impl Delay {
@@ -59,19 +65,22 @@ impl Delay {
         for (i, x) in buffer.iter_mut().enumerate() {
             let age = buffer_len - i;
 
-            let head_1_offset = (self.length * self.heads[0].position * self.sample_rate) as usize;
-            let x1 = self.buffer.peek(head_1_offset + age);
-
-            let head_2_offset = (self.length * self.heads[1].position * self.sample_rate) as usize;
-            let x2 = self.buffer.peek(head_2_offset + age);
-
-            let head_3_offset = (self.length * self.heads[2].position * self.sample_rate) as usize;
-            let x3 = self.buffer.peek(head_3_offset + age);
-
-            let head_4_offset = (self.length * self.heads[3].position * self.sample_rate) as usize;
-            let x4 = self.buffer.peek(head_4_offset + age);
+            let x1 = self.process_head(0, age);
+            let x2 = self.process_head(1, age);
+            let x3 = self.process_head(2, age);
+            let x4 = self.process_head(3, age);
 
             *x = x1 + x2 + x3 + x4;
+        }
+    }
+
+    fn process_head(&self, head_index: usize, age: usize) -> f32 {
+        let head = &self.heads[head_index];
+        if head.play {
+            let head_offset = (self.length * head.position * self.sample_rate) as usize;
+            self.buffer.peek(head_offset + age)
+        } else {
+            0.0
         }
     }
 
@@ -81,5 +90,9 @@ impl Delay {
         self.heads[1].position = attributes.head_2_position;
         self.heads[2].position = attributes.head_3_position;
         self.heads[3].position = attributes.head_4_position;
+        self.heads[0].play = attributes.head_1_play;
+        self.heads[1].play = attributes.head_2_play;
+        self.heads[2].play = attributes.head_3_play;
+        self.heads[3].play = attributes.head_4_play;
     }
 }

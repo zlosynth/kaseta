@@ -84,6 +84,7 @@ pub enum ControlAction {
     SetDelayHeadPositionCV(usize, f32),
     SetDelayQuantizationSix(bool),
     SetDelayQuantizationEight(bool),
+    SetDelayHeadPlay(usize, bool),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -97,6 +98,7 @@ pub struct DSPReaction {
     pub wow_depth: f32,
     pub delay_length: f32,
     pub delay_head_position: [f32; 4],
+    pub delay_head_play: [bool; 4],
 }
 
 impl From<DSPReaction> for Attributes {
@@ -113,6 +115,10 @@ impl From<DSPReaction> for Attributes {
             delay_head_2_position: other.delay_head_position[1],
             delay_head_3_position: other.delay_head_position[2],
             delay_head_4_position: other.delay_head_position[3],
+            delay_head_1_play: other.delay_head_play[0],
+            delay_head_2_play: other.delay_head_play[1],
+            delay_head_3_play: other.delay_head_play[2],
+            delay_head_4_play: other.delay_head_play[3],
         }
     }
 }
@@ -137,6 +143,7 @@ pub struct Cache {
     pub delay_head_position_cv: [f32; 4],
     pub delay_quantization_6: bool,
     pub delay_quantization_8: bool,
+    pub delay_head_play: [bool; 4],
 }
 
 #[must_use]
@@ -172,6 +179,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
             delay_head_3_position,
             delay_head_4_position,
         ],
+        delay_head_play: cache.delay_head_play,
     }
 }
 
@@ -308,6 +316,9 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         }
         SetDelayQuantizationSix(b) => {
             cache.delay_quantization_6 = b;
+        }
+        SetDelayHeadPlay(i, b) => {
+            cache.delay_head_play[i] = b;
         }
     }
 }
