@@ -36,9 +36,12 @@
 #[macro_use]
 extern crate approx;
 
+mod quantization;
+mod taper;
+
 use kaseta_dsp::processor::Attributes;
 
-mod taper;
+use crate::quantization::{quantize, Quantization};
 
 // Pre-amp scales between -20 to +28 dB.
 const PRE_AMP_RANGE: (f32, f32) = (0.1, 25.0);
@@ -58,6 +61,9 @@ const WOW_FREQUENCY_RANGE: (f32, f32) = (0.02, 4.0);
 // (1.0 / 0.01) * 0.31
 const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 16.0);
 
+const DELAY_LENGTH_RANGE: (f32, f32) = (0.02, 8.0);
+const DELAY_HEAD_POSITION_RANGE: (f32, f32) = (0.0, 1.0);
+
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ControlAction {
@@ -72,6 +78,12 @@ pub enum ControlAction {
     SetWowFrequencyCV(f32),
     SetWowDepthPot(f32),
     SetWowDepthCV(f32),
+    SetDelayLengthPot(f32),
+    SetDelayLengthCV(f32),
+    SetDelayHeadPositionPot(usize, f32),
+    SetDelayHeadPositionCV(usize, f32),
+    SetDelayQuantizationSix(bool),
+    SetDelayQuantizationEight(bool),
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -83,6 +95,8 @@ pub struct DSPReaction {
     pub bias: f32,
     pub wow_frequency: f32,
     pub wow_depth: f32,
+    pub delay_length: f32,
+    pub delay_head_position: [f32; 4],
 }
 
 impl From<DSPReaction> for Attributes {
@@ -94,6 +108,11 @@ impl From<DSPReaction> for Attributes {
             width: 1.0 - other.bias,
             wow_frequency: other.wow_frequency,
             wow_depth: other.wow_depth,
+            delay_length: other.delay_length,
+            delay_head_1_position: other.delay_head_position[0],
+            delay_head_2_position: other.delay_head_position[1],
+            delay_head_3_position: other.delay_head_position[2],
+            delay_head_4_position: other.delay_head_position[3],
         }
     }
 }
@@ -112,6 +131,12 @@ pub struct Cache {
     pub wow_frequency_cv: f32,
     pub wow_depth_pot: f32,
     pub wow_depth_cv: f32,
+    pub delay_length_pot: f32,
+    pub delay_length_cv: f32,
+    pub delay_head_position_pot: [f32; 4],
+    pub delay_head_position_cv: [f32; 4],
+    pub delay_quantization_6: bool,
+    pub delay_quantization_8: bool,
 }
 
 #[must_use]
@@ -128,6 +153,11 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let bias = calculate_bias(cache);
     let wow_frequency = calculate_wow_frequency(cache);
     let wow_depth = calculate_wow_depth(cache, wow_frequency);
+    let delay_length = calculate_delay_length(cache);
+    let delay_head_1_position = calculate_delay_head_position(cache, 0);
+    let delay_head_2_position = calculate_delay_head_position(cache, 1);
+    let delay_head_3_position = calculate_delay_head_position(cache, 2);
+    let delay_head_4_position = calculate_delay_head_position(cache, 3);
     DSPReaction {
         pre_amp,
         drive,
@@ -135,6 +165,13 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
         bias,
         wow_frequency,
         wow_depth,
+        delay_length,
+        delay_head_position: [
+            delay_head_1_position,
+            delay_head_2_position,
+            delay_head_3_position,
+            delay_head_4_position,
+        ],
     }
 }
 
@@ -189,6 +226,34 @@ fn calculate_wow_depth(cache: &Cache, wow_frequency: f32) -> f32 {
     wow_depth_scaled
 }
 
+#[allow(clippy::let_and_return)]
+fn calculate_delay_length(cache: &Cache) -> f32 {
+    let delay_length_sum = (cache.delay_length_pot + cache.delay_length_cv).clamp(0.0, 1.0);
+    let delay_length_curved = taper::reverse_log(delay_length_sum);
+    let delay_length_scaled =
+        delay_length_curved * (DELAY_LENGTH_RANGE.1 - DELAY_LENGTH_RANGE.0) + DELAY_LENGTH_RANGE.0;
+    delay_length_scaled
+}
+
+#[allow(clippy::let_and_return)]
+fn calculate_delay_head_position(cache: &Cache, head: usize) -> f32 {
+    let delay_head_position_sum =
+        (cache.delay_head_position_pot[head] + cache.delay_head_position_cv[head]).clamp(0.0, 1.0);
+    let delay_head_position_scaled = delay_head_position_sum
+        * (DELAY_HEAD_POSITION_RANGE.1 - DELAY_HEAD_POSITION_RANGE.0)
+        + DELAY_HEAD_POSITION_RANGE.0;
+    let delay_head_position_quantized = if cache.delay_quantization_6 || cache.delay_quantization_8
+    {
+        let quantization =
+            Quantization::from((cache.delay_quantization_6, cache.delay_quantization_8));
+        quantize(delay_head_position_scaled, quantization)
+    } else {
+        delay_head_position_scaled
+    };
+
+    delay_head_position_quantized
+}
+
 fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
     #[allow(clippy::enum_glob_use)]
     use ControlAction::*;
@@ -225,6 +290,24 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         }
         SetWowDepthCV(x) => {
             cache.wow_depth_cv = x;
+        }
+        SetDelayLengthPot(x) => {
+            cache.delay_length_pot = x;
+        }
+        SetDelayLengthCV(x) => {
+            cache.delay_length_cv = x;
+        }
+        SetDelayHeadPositionPot(i, x) => {
+            cache.delay_head_position_pot[i] = x;
+        }
+        SetDelayHeadPositionCV(i, x) => {
+            cache.delay_head_position_cv[i] = x;
+        }
+        SetDelayQuantizationEight(b) => {
+            cache.delay_quantization_8 = b;
+        }
+        SetDelayQuantizationSix(b) => {
+            cache.delay_quantization_6 = b;
         }
     }
 }

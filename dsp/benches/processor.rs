@@ -22,6 +22,11 @@ fn criterion_benchmark(c: &mut Criterion) {
             width: 0.7,
             wow_frequency: 1.0,
             wow_depth: 0.01,
+            delay_length: 1.0,
+            delay_head_1_position: 0.0,
+            delay_head_2_position: 0.0,
+            delay_head_3_position: 0.0,
+            delay_head_4_position: 0.0,
         });
 
         b.iter(|| {

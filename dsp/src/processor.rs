@@ -3,6 +3,7 @@
 use sirena::memory_manager::MemoryManager;
 use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 
+use crate::delay::{Attributes as DelayAttributes, Delay};
 use crate::hysteresis::{Attributes as HysteresisAttributes, Hysteresis};
 use crate::oversampling::{Downsampler4, Upsampler4};
 use crate::smoothed_value::SmoothedValue;
@@ -16,8 +17,10 @@ pub struct Processor {
     pre_amp: SmoothedValue,
     hysteresis: Hysteresis,
     wow_flutter: WowFlutter,
+    delay: Delay,
 }
 
+// TODO: Just re-use and re-export component's attributes
 #[derive(Default, Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {
@@ -27,6 +30,11 @@ pub struct Attributes {
     pub width: f32,
     pub wow_frequency: f32,
     pub wow_depth: f32,
+    pub delay_length: f32,
+    pub delay_head_1_position: f32,
+    pub delay_head_2_position: f32,
+    pub delay_head_3_position: f32,
+    pub delay_head_4_position: f32,
 }
 
 impl Processor {
@@ -43,12 +51,15 @@ impl Processor {
 
         let wow_flutter = WowFlutter::new(fs as u32, memory_manager);
 
+        let delay = Delay::new(fs, memory_manager);
+
         let mut uninitialized_processor = Self {
             upsampler,
             downsampler,
             pre_amp,
             hysteresis,
             wow_flutter,
+            delay,
         };
 
         uninitialized_processor.set_attributes(Attributes::default());
@@ -77,12 +88,16 @@ impl Processor {
         self.hysteresis.process(&mut buffer_2);
 
         self.downsampler.process(&buffer_2, &mut block[..]);
+
+        // TODO: May be better on oversampled, for audio-rate delay
+        self.delay.process(&mut block[..]);
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
         self.pre_amp.set(attributes.pre_amp);
         self.hysteresis.set_attributes(attributes.into());
         self.wow_flutter.set_attributes(attributes.into());
+        self.delay.set_attributes(attributes.into());
     }
 }
 
@@ -101,6 +116,18 @@ impl From<Attributes> for WowFlutterAttributes {
         Self {
             wow_frequency: other.wow_frequency,
             wow_depth: other.wow_depth,
+        }
+    }
+}
+
+impl From<Attributes> for DelayAttributes {
+    fn from(other: Attributes) -> Self {
+        Self {
+            length: other.delay_length,
+            head_1_position: other.delay_head_1_position,
+            head_2_position: other.delay_head_2_position,
+            head_3_position: other.delay_head_3_position,
+            head_4_position: other.delay_head_4_position,
         }
     }
 }

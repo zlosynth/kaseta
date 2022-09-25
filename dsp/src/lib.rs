@@ -20,6 +20,7 @@ pub mod processor;
 pub mod hysteresis;
 pub mod oversampling;
 
+mod delay;
 mod math;
 mod ring_buffer;
 mod smoothed_value;
