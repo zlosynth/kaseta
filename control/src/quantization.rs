@@ -1,3 +1,4 @@
+#[derive(Clone, Copy)]
 pub enum Quantization {
     Six,
     Eight,
