@@ -19,6 +19,7 @@ impl Wow {
         }
     }
 
+    // TODO: Modulate the speed with brownian motion
     pub fn pop(&mut self) -> f32 {
         let x = (libm::cosf(self.phase * 2.0 * PI) + 1.0) * self.depth / 2.0;
         self.phase += self.frequency / self.sample_rate as f32;
