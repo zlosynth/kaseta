@@ -20,6 +20,7 @@ struct Head {
     play: bool,
     feedback: bool,
     feedback_amount: f32,
+    volume: f32,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -43,6 +44,10 @@ pub struct Attributes {
     pub head_2_feedback_amount: f32,
     pub head_3_feedback_amount: f32,
     pub head_4_feedback_amount: f32,
+    pub head_1_volume: f32,
+    pub head_2_volume: f32,
+    pub head_3_volume: f32,
+    pub head_4_volume: f32,
 }
 
 impl Delay {
@@ -120,7 +125,7 @@ impl Delay {
     fn process_head(&self, head_index: usize, age: usize) -> f32 {
         let head = &self.heads[head_index];
         let head_offset = (self.length * head.position * self.sample_rate) as usize;
-        self.buffer.peek(head_offset + age)
+        self.buffer.peek(head_offset + age) * head.volume
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
@@ -141,5 +146,9 @@ impl Delay {
         self.heads[1].feedback_amount = attributes.head_2_feedback_amount;
         self.heads[2].feedback_amount = attributes.head_3_feedback_amount;
         self.heads[3].feedback_amount = attributes.head_4_feedback_amount;
+        self.heads[0].volume = attributes.head_1_volume;
+        self.heads[1].volume = attributes.head_2_volume;
+        self.heads[2].volume = attributes.head_3_volume;
+        self.heads[3].volume = attributes.head_4_volume;
     }
 }

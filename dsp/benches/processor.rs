@@ -39,6 +39,10 @@ fn criterion_benchmark(c: &mut Criterion) {
             delay_head_2_feedback_amount: 1.0,
             delay_head_3_feedback_amount: 1.0,
             delay_head_4_feedback_amount: 1.0,
+            delay_head_1_volume: 1.0,
+            delay_head_2_volume: 1.0,
+            delay_head_3_volume: 1.0,
+            delay_head_4_volume: 1.0,
         });
 
         b.iter(|| {
