@@ -15,6 +15,7 @@
 extern crate approx;
 
 pub mod processor;
+pub mod random;
 
 // Public for the sake of benchmarks
 pub mod hysteresis;

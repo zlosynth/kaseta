@@ -2,6 +2,7 @@ mod wow;
 
 use self::wow::Wow;
 use crate::math;
+use crate::random::Random;
 use crate::ring_buffer::RingBuffer;
 
 use sirena::memory_manager::MemoryManager;
@@ -21,6 +22,7 @@ pub struct WowFlutter {
 pub struct Attributes {
     pub wow_frequency: f32,
     pub wow_depth: f32,
+    pub wow_amplitude_noise: f32,
 }
 
 impl WowFlutter {
@@ -39,9 +41,9 @@ impl WowFlutter {
         }
     }
 
-    pub fn process(&mut self, buffer: &mut [f32]) {
+    pub fn process(&mut self, buffer: &mut [f32], random: &mut impl Random) {
         for x in buffer.iter_mut() {
-            let delay = self.wow.pop() * self.sample_rate as f32;
+            let delay = self.wow.pop(random) * self.sample_rate as f32;
             let delayed = self.buffer.peek(delay as usize);
             self.buffer.write(*x);
             *x = delayed;
@@ -49,8 +51,8 @@ impl WowFlutter {
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
-        // TODO: Use smoothed value
         self.wow.frequency = attributes.wow_frequency;
         self.wow.depth = attributes.wow_depth;
+        self.wow.amplitude_noise = attributes.wow_amplitude_noise;
     }
 }

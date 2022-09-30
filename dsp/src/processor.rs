@@ -6,6 +6,7 @@ use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 use crate::delay::{Attributes as DelayAttributes, Delay};
 use crate::hysteresis::{Attributes as HysteresisAttributes, Hysteresis};
 use crate::oversampling::{Downsampler4, Upsampler4};
+use crate::random::Random;
 use crate::smoothed_value::SmoothedValue;
 use crate::wow_flutter::{Attributes as WowFlutterAttributes, WowFlutter};
 
@@ -31,6 +32,7 @@ pub struct Attributes {
     pub width: f32,
     pub wow_frequency: f32,
     pub wow_depth: f32,
+    pub wow_amplitude_noise: f32,
     pub delay_length: f32,
     pub delay_head_1_position: f32,
     pub delay_head_2_position: f32,
@@ -85,8 +87,8 @@ impl Processor {
         processor
     }
 
-    pub fn process(&mut self, block: &mut [f32; 32]) {
-        self.wow_flutter.process(block);
+    pub fn process(&mut self, block: &mut [f32; 32], random: &mut impl Random) {
+        self.wow_flutter.process(block, random);
 
         let block_copy = *block;
 
@@ -133,6 +135,7 @@ impl From<Attributes> for WowFlutterAttributes {
         Self {
             wow_frequency: other.wow_frequency,
             wow_depth: other.wow_depth,
+            wow_amplitude_noise: other.wow_amplitude_noise,
         }
     }
 }

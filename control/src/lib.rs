@@ -60,6 +60,7 @@ const WOW_FREQUENCY_RANGE: (f32, f32) = (0.02, 4.0);
 // goes backwards. For 0.02 minimal frequency, the maximum depth is defined by:
 // (1.0 / 0.01) * 0.31
 const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 16.0);
+const WOW_AMPLITUDE_NOISE_RANGE: (f32, f32) = (0.0, 0.001);
 
 const DELAY_LENGTH_RANGE: (f32, f32) = (0.02, 8.0);
 const DELAY_HEAD_POSITION_RANGE: (f32, f32) = (0.0, 1.0);
@@ -78,6 +79,7 @@ pub enum ControlAction {
     SetWowFrequencyCV(f32),
     SetWowDepthPot(f32),
     SetWowDepthCV(f32),
+    SetWowAmplitudeNoisePot(f32),
     SetDelayLengthPot(f32),
     SetDelayLengthCV(f32),
     SetDelayHeadPositionPot(usize, f32),
@@ -99,6 +101,7 @@ pub struct DSPReaction {
     pub bias: f32,
     pub wow_frequency: f32,
     pub wow_depth: f32,
+    pub wow_amplitude_noise: f32,
     pub delay_length: f32,
     pub delay_head_position: [f32; 4],
     pub delay_head_play: [bool; 4],
@@ -116,6 +119,7 @@ impl From<DSPReaction> for Attributes {
             width: 1.0 - other.bias,
             wow_frequency: other.wow_frequency,
             wow_depth: other.wow_depth,
+            wow_amplitude_noise: other.wow_amplitude_noise,
             delay_length: other.delay_length,
             delay_head_1_position: other.delay_head_position[0],
             delay_head_2_position: other.delay_head_position[1],
@@ -155,6 +159,7 @@ pub struct Cache {
     pub wow_frequency_cv: f32,
     pub wow_depth_pot: f32,
     pub wow_depth_cv: f32,
+    pub wow_amplitude_noise_pot: f32,
     pub delay_length_pot: f32,
     pub delay_length_cv: f32,
     pub delay_head_position_pot: [f32; 4],
@@ -181,6 +186,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let bias = calculate_bias(cache);
     let wow_frequency = calculate_wow_frequency(cache);
     let wow_depth = calculate_wow_depth(cache, wow_frequency);
+    let wow_amplitude_noise = calculate_wow_amplitude_noise(cache);
     let delay_length = calculate_delay_length(cache);
     let delay_head_1_position = calculate_delay_head_position(cache, 0);
     let delay_head_2_position = calculate_delay_head_position(cache, 1);
@@ -193,6 +199,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
         bias,
         wow_frequency,
         wow_depth,
+        wow_amplitude_noise,
         delay_length,
         delay_head_position: [
             delay_head_1_position,
@@ -259,6 +266,15 @@ fn calculate_wow_depth(cache: &Cache, wow_frequency: f32) -> f32 {
 }
 
 #[allow(clippy::let_and_return)]
+fn calculate_wow_amplitude_noise(cache: &Cache) -> f32 {
+    let wow_amplitude_noise_sum = cache.wow_amplitude_noise_pot.clamp(0.0, 1.0);
+    let wow_amplitude_noise_scaled = wow_amplitude_noise_sum
+        * (WOW_AMPLITUDE_NOISE_RANGE.1 - WOW_AMPLITUDE_NOISE_RANGE.0)
+        + WOW_AMPLITUDE_NOISE_RANGE.0;
+    wow_amplitude_noise_scaled
+}
+
+#[allow(clippy::let_and_return)]
 fn calculate_delay_length(cache: &Cache) -> f32 {
     let delay_length_sum = (cache.delay_length_pot + cache.delay_length_cv).clamp(0.0, 1.0);
     let delay_length_curved = taper::reverse_log(delay_length_sum);
@@ -322,6 +338,9 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         }
         SetWowDepthCV(x) => {
             cache.wow_depth_cv = x;
+        }
+        SetWowAmplitudeNoisePot(x) => {
+            cache.wow_amplitude_noise_pot = x;
         }
         SetDelayLengthPot(x) => {
             cache.delay_length_pot = x;

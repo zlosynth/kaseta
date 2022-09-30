@@ -6,7 +6,16 @@ fn criterion_benchmark(c: &mut Criterion) {
     c.bench_function("processor", |b| {
         use core::mem::MaybeUninit;
         use kaseta_dsp::processor::{Attributes, Processor};
+        use kaseta_dsp::random::Random;
         use sirena::memory_manager::MemoryManager;
+
+        struct BenchRandom;
+
+        impl Random for BenchRandom {
+            fn normal(&mut self) -> f32 {
+                0.01
+            }
+        }
 
         const BUFFER_SIZE: usize = 32;
         const FS: f32 = 48_000.0;
@@ -22,6 +31,7 @@ fn criterion_benchmark(c: &mut Criterion) {
             width: 0.7,
             wow_frequency: 1.0,
             wow_depth: 0.01,
+            wow_amplitude_noise: 0.01,
             delay_length: 1.0,
             delay_head_1_position: 0.0,
             delay_head_2_position: 0.0,
@@ -82,7 +92,7 @@ fn criterion_benchmark(c: &mut Criterion) {
                 0.405_583_32,
             ];
 
-            processor.process(&mut black_box(buffer));
+            processor.process(&mut black_box(buffer), &mut BenchRandom);
         });
     });
 }
