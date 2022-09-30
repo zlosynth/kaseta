@@ -1,3 +1,4 @@
+mod ornstein_uhlenbeck;
 mod wow;
 
 use self::wow::Wow;
@@ -53,6 +54,6 @@ impl WowFlutter {
     pub fn set_attributes(&mut self, attributes: Attributes) {
         self.wow.frequency = attributes.wow_frequency;
         self.wow.depth = attributes.wow_depth;
-        self.wow.amplitude_noise = attributes.wow_amplitude_noise;
+        self.wow.amplitude_ornstein_uhlenbeck.noise = attributes.wow_amplitude_noise;
     }
 }

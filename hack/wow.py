@@ -34,8 +34,8 @@ def process_ornstein_uhlenbeck(random, noise, spring, sample_rate):
 
     processed = np.zeros(length)
     for i in range(length):
-        output += noise * random[i] * sqrt_delta
         output += spring * (MEAN - output) * (1.0 / sample_rate)
+        output += noise * random[i] * sqrt_delta
         processed[i] = output
 
     return processed

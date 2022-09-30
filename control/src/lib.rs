@@ -60,7 +60,7 @@ const WOW_FREQUENCY_RANGE: (f32, f32) = (0.02, 4.0);
 // goes backwards. For 0.02 minimal frequency, the maximum depth is defined by:
 // (1.0 / 0.01) * 0.31
 const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 16.0);
-const WOW_AMPLITUDE_NOISE_RANGE: (f32, f32) = (0.0, 0.001);
+const WOW_AMPLITUDE_NOISE_RANGE: (f32, f32) = (0.0, 0.1);
 
 const DELAY_LENGTH_RANGE: (f32, f32) = (0.02, 8.0);
 const DELAY_HEAD_POSITION_RANGE: (f32, f32) = (0.0, 1.0);

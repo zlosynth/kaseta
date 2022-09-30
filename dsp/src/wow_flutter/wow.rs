@@ -1,32 +1,33 @@
 use core::f32::consts::PI;
 
+use super::ornstein_uhlenbeck::OrnsteinUhlenbeck;
 use crate::random::Random;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Wow {
-    sample_rate: u32,
+    sample_rate: f32,
     phase: f32,
+    pub amplitude_ornstein_uhlenbeck: OrnsteinUhlenbeck,
     pub frequency: f32,
     pub depth: f32,
-    pub amplitude_noise: f32,
 }
 
 impl Wow {
     pub fn new(sample_rate: u32) -> Self {
         Self {
-            sample_rate,
+            sample_rate: sample_rate as f32,
             phase: 0.5,
+            amplitude_ornstein_uhlenbeck: OrnsteinUhlenbeck::new(sample_rate as f32),
             frequency: 0.0,
             depth: 0.0,
-            amplitude_noise: 0.0,
         }
     }
 
     pub fn pop(&mut self, random: &mut impl Random) -> f32 {
         let mut x = (libm::cosf(self.phase * 2.0 * PI) + 1.0) * self.depth / 2.0;
-        x += random.normal() * self.amplitude_noise;
-        self.phase += self.frequency / self.sample_rate as f32;
+        x += self.amplitude_ornstein_uhlenbeck.pop(random);
+        self.phase += self.frequency / self.sample_rate;
         self.phase %= 1.0;
         x
     }
