@@ -91,7 +91,7 @@ def plot():
     INIT_AMPLITUDE_SPRING = 40.0
     INIT_PHASE_NOISE = 1.0
     INIT_PHASE_SPRING = 1.0
-    INIT_DRIFT = 0.3
+    INIT_PHASE_DRIFT = 0.3
 
     fig, ax = plt.subplots()
     ax.set_ylim([-0.02, 1.0])
@@ -111,7 +111,7 @@ def plot():
     )
     phase_noise_slider = add_slider(fig, "PNoise", INIT_PHASE_NOISE, 0.0, 5.0)
     phase_spring_slider = add_slider(fig, "PSpring", INIT_PHASE_SPRING, 0.0, 10.0)
-    drift_slider = add_slider(fig, "Drift", INIT_DRIFT, 0.0, 1.0)
+    phase_drift_slider = add_slider(fig, "PDrift", INIT_PHASE_DRIFT, 0.0, 1.0)
 
     (line,) = ax.plot(np.zeros(SAMPLE_RATE * TIME))
 
@@ -125,7 +125,7 @@ def plot():
         )
         carrier = (
             generate_carrier(
-                phase_ou, drift_slider.val, frequency_slider.val, SAMPLE_RATE
+                phase_ou, phase_drift_slider.val, frequency_slider.val, SAMPLE_RATE
             )
             * amplitude_slider.val
         )
@@ -149,7 +149,7 @@ def plot():
     amplitude_spring_slider.on_changed(update)
     phase_noise_slider.on_changed(update)
     phase_spring_slider.on_changed(update)
-    drift_slider.on_changed(update)
+    phase_drift_slider.on_changed(update)
 
     plt.show()
 

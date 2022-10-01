@@ -35,6 +35,9 @@ pub struct Attributes {
     pub wow_filter: f32,
     pub wow_amplitude_noise: f32,
     pub wow_amplitude_spring: f32,
+    pub wow_phase_noise: f32,
+    pub wow_phase_spring: f32,
+    pub wow_phase_drift: f32,
     pub delay_length: f32,
     pub delay_head_1_position: f32,
     pub delay_head_2_position: f32,
@@ -140,6 +143,9 @@ impl From<Attributes> for WowFlutterAttributes {
             wow_filter: other.wow_filter,
             wow_amplitude_noise: other.wow_amplitude_noise,
             wow_amplitude_spring: other.wow_amplitude_spring,
+            wow_phase_noise: other.wow_phase_noise,
+            wow_phase_spring: other.wow_phase_spring,
+            wow_phase_drift: other.wow_phase_drift,
         }
     }
 }

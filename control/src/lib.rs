@@ -61,8 +61,11 @@ const WOW_FREQUENCY_RANGE: (f32, f32) = (0.01, 4.0);
 // (1.0 / 0.01) * 0.31
 const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 16.0);
 const WOW_FILTER_RANGE: (f32, f32) = (0.0, 10.0);
-const WOW_AMPLITUDE_NOISE_RANGE: (f32, f32) = (0.0, 0.1);
-const WOW_AMPLITUDE_SPRING_RANGE: (f32, f32) = (0.0, 1000.0);
+const WOW_AMPLITUDE_NOISE_RANGE: (f32, f32) = (0.0, 5.0);
+const WOW_AMPLITUDE_SPRING_RANGE: (f32, f32) = (0.0, 300.0);
+const WOW_PHASE_NOISE_RANGE: (f32, f32) = (0.0, 5.0);
+const WOW_PHASE_SPRING_RANGE: (f32, f32) = (0.0, 10.0);
+const WOW_PHASE_DRIFT_RANGE: (f32, f32) = (0.0, 1.0);
 
 const DELAY_LENGTH_RANGE: (f32, f32) = (0.02, 8.0);
 const DELAY_HEAD_POSITION_RANGE: (f32, f32) = (0.0, 1.0);
@@ -84,6 +87,9 @@ pub enum ControlAction {
     SetWowFilterPot(f32),
     SetWowAmplitudeNoisePot(f32),
     SetWowAmplitudeSpringPot(f32),
+    SetWowPhaseNoisePot(f32),
+    SetWowPhaseSpringPot(f32),
+    SetWowPhaseDriftPot(f32),
     SetDelayLengthPot(f32),
     SetDelayLengthCV(f32),
     SetDelayHeadPositionPot(usize, f32),
@@ -108,6 +114,9 @@ pub struct DSPReaction {
     pub wow_filter: f32,
     pub wow_amplitude_noise: f32,
     pub wow_amplitude_spring: f32,
+    pub wow_phase_noise: f32,
+    pub wow_phase_spring: f32,
+    pub wow_phase_drift: f32,
     pub delay_length: f32,
     pub delay_head_position: [f32; 4],
     pub delay_head_play: [bool; 4],
@@ -128,6 +137,9 @@ impl From<DSPReaction> for Attributes {
             wow_filter: other.wow_filter,
             wow_amplitude_noise: other.wow_amplitude_noise,
             wow_amplitude_spring: other.wow_amplitude_spring,
+            wow_phase_noise: other.wow_phase_noise,
+            wow_phase_spring: other.wow_phase_spring,
+            wow_phase_drift: other.wow_phase_drift,
             delay_length: other.delay_length,
             delay_head_1_position: other.delay_head_position[0],
             delay_head_2_position: other.delay_head_position[1],
@@ -170,6 +182,9 @@ pub struct Cache {
     pub wow_filter_pot: f32,
     pub wow_amplitude_noise_pot: f32,
     pub wow_amplitude_spring_pot: f32,
+    pub wow_phase_noise_pot: f32,
+    pub wow_phase_spring_pot: f32,
+    pub wow_phase_drift_pot: f32,
     pub delay_length_pot: f32,
     pub delay_length_cv: f32,
     pub delay_head_position_pot: [f32; 4],
@@ -198,6 +213,9 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let wow_depth = calculate_wow_depth(cache, wow_frequency);
     let wow_amplitude_noise = calculate_wow_amplitude_noise(cache);
     let wow_amplitude_spring = calculate_wow_amplitude_spring(cache);
+    let wow_phase_noise = calculate_wow_phase_noise(cache);
+    let wow_phase_spring = calculate_wow_phase_spring(cache);
+    let wow_phase_drift = calculate_wow_phase_drift(cache);
     let wow_filter = calculate_wow_filter(cache);
     let delay_length = calculate_delay_length(cache);
     let delay_head_1_position = calculate_delay_head_position(cache, 0);
@@ -213,6 +231,9 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
         wow_depth,
         wow_amplitude_noise,
         wow_amplitude_spring,
+        wow_phase_noise,
+        wow_phase_spring,
+        wow_phase_drift,
         wow_filter,
         delay_length,
         delay_head_position: [
@@ -296,6 +317,33 @@ fn calculate_wow_amplitude_spring(cache: &Cache) -> f32 {
 }
 
 #[allow(clippy::let_and_return)]
+fn calculate_wow_phase_noise(cache: &Cache) -> f32 {
+    let wow_phase_noise_sum = cache.wow_phase_noise_pot.clamp(0.0, 1.0);
+    let wow_phase_noise_scaled = wow_phase_noise_sum
+        * (WOW_PHASE_NOISE_RANGE.1 - WOW_PHASE_NOISE_RANGE.0)
+        + WOW_PHASE_NOISE_RANGE.0;
+    wow_phase_noise_scaled
+}
+
+#[allow(clippy::let_and_return)]
+fn calculate_wow_phase_spring(cache: &Cache) -> f32 {
+    let wow_phase_spring_sum = cache.wow_phase_spring_pot.clamp(0.0, 1.0);
+    let wow_phase_spring_scaled = wow_phase_spring_sum
+        * (WOW_PHASE_SPRING_RANGE.1 - WOW_PHASE_SPRING_RANGE.0)
+        + WOW_PHASE_SPRING_RANGE.0;
+    wow_phase_spring_scaled
+}
+
+#[allow(clippy::let_and_return)]
+fn calculate_wow_phase_drift(cache: &Cache) -> f32 {
+    let wow_phase_drift_sum = cache.wow_phase_drift_pot.clamp(0.0, 1.0);
+    let wow_phase_drift_scaled = wow_phase_drift_sum
+        * (WOW_PHASE_DRIFT_RANGE.1 - WOW_PHASE_DRIFT_RANGE.0)
+        + WOW_PHASE_DRIFT_RANGE.0;
+    wow_phase_drift_scaled
+}
+
+#[allow(clippy::let_and_return)]
 fn calculate_wow_filter(cache: &Cache) -> f32 {
     let wow_filter_sum = cache.wow_filter_pot.clamp(0.0, 1.0);
     let wow_filter_scaled =
@@ -373,6 +421,15 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         }
         SetWowAmplitudeSpringPot(x) => {
             cache.wow_amplitude_spring_pot = x;
+        }
+        SetWowPhaseNoisePot(x) => {
+            cache.wow_phase_noise_pot = x;
+        }
+        SetWowPhaseSpringPot(x) => {
+            cache.wow_phase_spring_pot = x;
+        }
+        SetWowPhaseDriftPot(x) => {
+            cache.wow_phase_drift_pot = x;
         }
         SetWowFilterPot(x) => {
             cache.wow_filter_pot = x;
