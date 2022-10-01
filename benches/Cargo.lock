@@ -258,6 +258,7 @@ name = "kaseta-dsp"
 version = "0.1.0"
 dependencies = [
  "libm",
+ "micromath 2.0.0",
  "sirena",
 ]
 
@@ -305,6 +306,12 @@ name = "micromath"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "bc4010833aea396656c2f91ee704d51a6f1329ec2ab56ffd00bfd56f7481ea94"
+
+[[package]]
+name = "micromath"
+version = "2.0.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "39617bc909d64b068dcffd0e3e31679195b5576d0c83fadc52690268cc2b2b55"
 
 [[package]]
 name = "nb"
@@ -487,7 +494,7 @@ dependencies = [
  "heapless",
  "libm",
  "microfft",
- "micromath",
+ "micromath 1.1.1",
 ]
 
 [[package]]

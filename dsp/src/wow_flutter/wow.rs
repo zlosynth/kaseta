@@ -1,5 +1,8 @@
 use core::f32::consts::PI;
 
+#[allow(unused_imports)]
+use micromath::F32Ext as _;
+
 use super::ornstein_uhlenbeck::OrnsteinUhlenbeck;
 use crate::random::Random;
 use sirena::state_variable_filter::{Bandform, StateVariableFilter};
@@ -64,7 +67,8 @@ impl Wow {
 
             x
         };
-        self.filter.tick(self.amplitude_ou.pop(target, random))
+        self.filter
+            .tick(f32::abs(self.amplitude_ou.pop(target, random)))
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
