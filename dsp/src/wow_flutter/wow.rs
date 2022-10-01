@@ -8,9 +8,6 @@ use super::wavefolder;
 use crate::random::Random;
 use sirena::state_variable_filter::{Bandform, StateVariableFilter};
 
-// TODO: Test that with any attributes, the output does not go beyond depth
-// TODO: Test that with any attributes, the output does not go to negative numbers
-
 #[derive(Debug, Default, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {
@@ -66,11 +63,15 @@ impl Wow {
             self.phase %= 1.0;
             x
         };
-        self.filter.tick(wavefolder::fold(
-            self.amplitude_ou.pop(target, random),
+        f32::clamp(
+            self.filter.tick(wavefolder::fold(
+                self.amplitude_ou.pop(target, random),
+                0.0,
+                self.depth,
+            )),
             0.0,
             self.depth,
-        ))
+        )
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
@@ -91,6 +92,8 @@ mod tests {
     use super::*;
     use proptest::prelude::*;
 
+    const SAMPLE_RATE: u32 = 1000;
+
     struct TestRandom;
 
     impl Random for TestRandom {
@@ -103,7 +106,6 @@ mod tests {
 
     #[test]
     fn it_spans_in_expected_range() {
-        const SAMPLE_RATE: u32 = 1000;
         let mut wow = Wow::new(SAMPLE_RATE);
         wow.set_attributes(Attributes {
             frequency: 1.0,
@@ -133,7 +135,6 @@ mod tests {
 
     #[test]
     fn it_starts_near_zero() {
-        const SAMPLE_RATE: u32 = 1000;
         let mut wow = Wow::new(SAMPLE_RATE);
         wow.set_attributes(Attributes {
             frequency: 1.0,
@@ -151,7 +152,6 @@ mod tests {
 
     #[test]
     fn it_cycles_in_expected_interval() {
-        const SAMPLE_RATE: u32 = 1000;
         let mut wow = Wow::new(SAMPLE_RATE);
         wow.set_attributes(Attributes {
             frequency: 1.0,
@@ -177,18 +177,18 @@ mod tests {
         fn it_never_falls_bellow_zero(
             frequency in 0.0f32..499.0,
             depth in 0.0f32..10.0,
+            filter in 0.0..SAMPLE_RATE as f32 * 0.2,
             amplitude_noise in 0.0f32..5.0,
             amplitude_spring in 0.0f32..1000.0,
             phase_noise in 0.0f32..5.0,
             phase_spring in 0.0f32..1000.0,
             phase_drift in 0.0f32..10.0,
         ) {
-            const SAMPLE_RATE: u32 = 1000;
             let mut wow = Wow::new(SAMPLE_RATE);
             wow.set_attributes(Attributes {
                 frequency,
                 depth,
-                filter: SAMPLE_RATE as f32 * 0.1,
+                filter,
                 amplitude_noise,
                 amplitude_spring,
                 phase_noise,
@@ -205,18 +205,18 @@ mod tests {
         fn it_never_exceeds_given_depth(
             frequency in 0.0f32..499.0,
             depth in 0.0f32..10.0,
+            filter in 0.0..SAMPLE_RATE as f32 * 0.2,
             amplitude_noise in 0.0f32..5.0,
             amplitude_spring in 0.0f32..1000.0,
             phase_noise in 0.0f32..5.0,
             phase_spring in 0.0f32..1000.0,
             phase_drift in 0.0f32..10.0,
         ) {
-            const SAMPLE_RATE: u32 = 1000;
             let mut wow = Wow::new(SAMPLE_RATE);
             wow.set_attributes(Attributes {
                 frequency,
                 depth,
-                filter: SAMPLE_RATE as f32 * 0.1,
+                filter,
                 amplitude_noise,
                 amplitude_spring,
                 phase_noise,

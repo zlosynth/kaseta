@@ -150,10 +150,14 @@ def plot():
             amplitude_spring_slider.val,
             SAMPLE_RATE,
         )
-        wow = low_pass_filter(
-            wavefolder(amplitude_ou, 0.0, amplitude_slider.val),
-            filter_slider.val,
-            SAMPLE_RATE,
+        wow = np.clip(
+            low_pass_filter(
+                wavefolder(amplitude_ou, 0.0, amplitude_slider.val),
+                filter_slider.val,
+                SAMPLE_RATE,
+            ),
+            0.0,
+            amplitude_slider.val,
         )
         line.set_ydata(wow)
         fig.canvas.draw_idle()
