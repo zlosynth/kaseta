@@ -60,6 +60,7 @@ impl Wow {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
     struct TestRandom;
 
@@ -76,7 +77,7 @@ mod tests {
         wow.set_attributes(Attributes {
             frequency: 1.0,
             depth: 1.0,
-            amplitude_noise: 1.0,
+            amplitude_noise: 0.0,
             amplitude_spring: 1000.0,
         });
 
@@ -104,7 +105,7 @@ mod tests {
         wow.set_attributes(Attributes {
             frequency: 1.0,
             depth: 1.0,
-            amplitude_noise: 1.0,
+            amplitude_noise: 0.0,
             amplitude_spring: 1000.0,
         });
 
@@ -120,7 +121,7 @@ mod tests {
         wow.set_attributes(Attributes {
             frequency: 1.0,
             depth: 1.0,
-            amplitude_noise: 1.0,
+            amplitude_noise: 0.0,
             amplitude_spring: 1000.0,
         });
 
@@ -132,5 +133,49 @@ mod tests {
             assert!(wow.pop(&mut TestRandom) < 1.0);
         }
         assert_relative_eq!(wow.pop(&mut TestRandom), 0.0);
+    }
+
+    proptest! {
+        #[test]
+        fn it_never_falls_bellow_zero(
+            frequency in 0.0f32..499.0,
+            depth in 0.0f32..10.0,
+            amplitude_noise in 0.0f32..5.0,
+            amplitude_spring in 0.0f32..1000.0,
+        ) {
+            const SAMPLE_RATE: u32 = 1000;
+            let mut wow = Wow::new(SAMPLE_RATE);
+            wow.set_attributes(Attributes {
+                frequency,
+                depth,
+                amplitude_noise,
+                amplitude_spring,
+            });
+
+            for _ in 0..SAMPLE_RATE {
+                assert!(wow.pop(&mut TestRandom) >= 0.0);
+            }
+        }
+
+        #[test]
+        fn it_never_exceeds_given_depth(
+            frequency in 0.0f32..499.0,
+            depth in 0.0f32..10.0,
+            amplitude_noise in 0.0f32..5.0,
+            amplitude_spring in 0.0f32..1000.0,
+        ) {
+            const SAMPLE_RATE: u32 = 1000;
+            let mut wow = Wow::new(SAMPLE_RATE);
+            wow.set_attributes(Attributes {
+                frequency,
+                depth,
+                amplitude_noise,
+                amplitude_spring,
+            });
+
+            for _ in 0..SAMPLE_RATE {
+                assert!(wow.pop(&mut TestRandom) <= depth);
+            }
+        }
     }
 }
