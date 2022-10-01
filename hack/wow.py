@@ -84,14 +84,14 @@ def add_slider(fig, name, init, valmin, valmax):
 def plot():
     TIME = 2
     SAMPLE_RATE = 500
+    INIT_FREQUENCY = 3.0
+    INIT_AMPLITUDE = 0.3
+    INIT_FILTER = SAMPLE_RATE / 12.0
     INIT_AMPLITUDE_NOISE = 0.5
     INIT_AMPLITUDE_SPRING = 40.0
-    INIT_AMPLITUDE_FILTER = SAMPLE_RATE / 12.0
     INIT_PHASE_NOISE = 1.0
     INIT_PHASE_SPRING = 1.0
     INIT_DRIFT = 0.3
-    INIT_FREQUENCY = 3.0
-    INIT_AMPLITUDE = 0.3
 
     fig, ax = plt.subplots()
     ax.set_ylim([-0.02, 1.0])
@@ -102,18 +102,16 @@ def plot():
     t = np.linspace(0, TIME, SAMPLE_RATE * TIME)
     random = np.random.rand(SAMPLE_RATE * TIME) * 2.0 - 1.0
 
+    frequency_slider = add_slider(fig, "Freq", INIT_FREQUENCY, 0.1, 40.0)
+    amplitude_slider = add_slider(fig, "Amp", INIT_AMPLITUDE, 0.0, 1.0)
+    filter_slider = add_slider(fig, "Filter", INIT_FILTER, 0.0, SAMPLE_RATE * 0.2)
     amplitude_noise_slider = add_slider(fig, "ANoise", INIT_AMPLITUDE_NOISE, 0.0, 5.0)
     amplitude_spring_slider = add_slider(
         fig, "ASpring", INIT_AMPLITUDE_SPRING, 0.0, 300.0
     )
-    amplitude_filter_slider = add_slider(
-        fig, "AFilter", INIT_AMPLITUDE_FILTER, 0.0, SAMPLE_RATE * 0.2
-    )
     phase_noise_slider = add_slider(fig, "PNoise", INIT_PHASE_NOISE, 0.0, 5.0)
     phase_spring_slider = add_slider(fig, "PSpring", INIT_PHASE_SPRING, 0.0, 10.0)
     drift_slider = add_slider(fig, "Drift", INIT_DRIFT, 0.0, 1.0)
-    frequency_slider = add_slider(fig, "Freq", INIT_FREQUENCY, 0.1, 40.0)
-    amplitude_slider = add_slider(fig, "Amp", INIT_AMPLITUDE, 0.0, 1.0)
 
     (line,) = ax.plot(np.zeros(SAMPLE_RATE * TIME))
 
@@ -138,22 +136,20 @@ def plot():
             amplitude_spring_slider.val,
             SAMPLE_RATE,
         )
-        wow = low_pass_filter(
-            abs(amplitude_ou), amplitude_filter_slider.val, SAMPLE_RATE
-        )
+        wow = low_pass_filter(abs(amplitude_ou), filter_slider.val, SAMPLE_RATE)
         line.set_ydata(wow)
         fig.canvas.draw_idle()
 
     update(())
 
+    frequency_slider.on_changed(update)
+    amplitude_slider.on_changed(update)
+    filter_slider.on_changed(update)
     amplitude_noise_slider.on_changed(update)
     amplitude_spring_slider.on_changed(update)
-    amplitude_filter_slider.on_changed(update)
     phase_noise_slider.on_changed(update)
     phase_spring_slider.on_changed(update)
     drift_slider.on_changed(update)
-    frequency_slider.on_changed(update)
-    amplitude_slider.on_changed(update)
 
     plt.show()
 

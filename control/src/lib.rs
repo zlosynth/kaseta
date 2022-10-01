@@ -60,9 +60,9 @@ const WOW_FREQUENCY_RANGE: (f32, f32) = (0.01, 4.0);
 // goes backwards. For 0.02 minimal frequency, the maximum depth is defined by:
 // (1.0 / 0.01) * 0.31
 const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 16.0);
+const WOW_FILTER_RANGE: (f32, f32) = (0.0, 10.0);
 const WOW_AMPLITUDE_NOISE_RANGE: (f32, f32) = (0.0, 0.1);
 const WOW_AMPLITUDE_SPRING_RANGE: (f32, f32) = (0.0, 1000.0);
-const WOW_AMPLITUDE_FILTER_RANGE: (f32, f32) = (0.0, 10.0);
 
 const DELAY_LENGTH_RANGE: (f32, f32) = (0.02, 8.0);
 const DELAY_HEAD_POSITION_RANGE: (f32, f32) = (0.0, 1.0);
@@ -81,9 +81,9 @@ pub enum ControlAction {
     SetWowFrequencyCV(f32),
     SetWowDepthPot(f32),
     SetWowDepthCV(f32),
+    SetWowFilterPot(f32),
     SetWowAmplitudeNoisePot(f32),
     SetWowAmplitudeSpringPot(f32),
-    SetWowAmplitudeFilterPot(f32),
     SetDelayLengthPot(f32),
     SetDelayLengthCV(f32),
     SetDelayHeadPositionPot(usize, f32),
@@ -105,9 +105,9 @@ pub struct DSPReaction {
     pub bias: f32,
     pub wow_frequency: f32,
     pub wow_depth: f32,
+    pub wow_filter: f32,
     pub wow_amplitude_noise: f32,
     pub wow_amplitude_spring: f32,
-    pub wow_amplitude_filter: f32,
     pub delay_length: f32,
     pub delay_head_position: [f32; 4],
     pub delay_head_play: [bool; 4],
@@ -125,9 +125,9 @@ impl From<DSPReaction> for Attributes {
             width: 1.0 - other.bias,
             wow_frequency: other.wow_frequency,
             wow_depth: other.wow_depth,
+            wow_filter: other.wow_filter,
             wow_amplitude_noise: other.wow_amplitude_noise,
             wow_amplitude_spring: other.wow_amplitude_spring,
-            wow_amplitude_filter: other.wow_amplitude_filter,
             delay_length: other.delay_length,
             delay_head_1_position: other.delay_head_position[0],
             delay_head_2_position: other.delay_head_position[1],
@@ -167,9 +167,9 @@ pub struct Cache {
     pub wow_frequency_cv: f32,
     pub wow_depth_pot: f32,
     pub wow_depth_cv: f32,
+    pub wow_filter_pot: f32,
     pub wow_amplitude_noise_pot: f32,
     pub wow_amplitude_spring_pot: f32,
-    pub wow_amplitude_filter_pot: f32,
     pub delay_length_pot: f32,
     pub delay_length_cv: f32,
     pub delay_head_position_pot: [f32; 4],
@@ -198,7 +198,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let wow_depth = calculate_wow_depth(cache, wow_frequency);
     let wow_amplitude_noise = calculate_wow_amplitude_noise(cache);
     let wow_amplitude_spring = calculate_wow_amplitude_spring(cache);
-    let wow_amplitude_filter = calculate_wow_amplitude_filter(cache);
+    let wow_filter = calculate_wow_filter(cache);
     let delay_length = calculate_delay_length(cache);
     let delay_head_1_position = calculate_delay_head_position(cache, 0);
     let delay_head_2_position = calculate_delay_head_position(cache, 1);
@@ -213,7 +213,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
         wow_depth,
         wow_amplitude_noise,
         wow_amplitude_spring,
-        wow_amplitude_filter,
+        wow_filter,
         delay_length,
         delay_head_position: [
             delay_head_1_position,
@@ -263,10 +263,8 @@ fn calculate_bias(cache: &Cache) -> f32 {
 #[allow(clippy::let_and_return)]
 fn calculate_wow_frequency(cache: &Cache) -> f32 {
     let wow_frequency_sum = (cache.wow_frequency_pot + cache.wow_frequency_cv).clamp(0.0, 1.0);
-    let wow_frequency_curved = taper::reverse_log(wow_frequency_sum);
-    let wow_frequency_scaled = wow_frequency_curved
-        * (WOW_FREQUENCY_RANGE.1 - WOW_FREQUENCY_RANGE.0)
-        + WOW_FREQUENCY_RANGE.0;
+    let wow_frequency_scaled =
+        wow_frequency_sum * (WOW_FREQUENCY_RANGE.1 - WOW_FREQUENCY_RANGE.0) + WOW_FREQUENCY_RANGE.0;
     wow_frequency_scaled
 }
 
@@ -298,12 +296,11 @@ fn calculate_wow_amplitude_spring(cache: &Cache) -> f32 {
 }
 
 #[allow(clippy::let_and_return)]
-fn calculate_wow_amplitude_filter(cache: &Cache) -> f32 {
-    let wow_amplitude_filter_sum = cache.wow_amplitude_filter_pot.clamp(0.0, 1.0);
-    let wow_amplitude_filter_scaled = wow_amplitude_filter_sum
-        * (WOW_AMPLITUDE_FILTER_RANGE.1 - WOW_AMPLITUDE_FILTER_RANGE.0)
-        + WOW_AMPLITUDE_FILTER_RANGE.0;
-    wow_amplitude_filter_scaled
+fn calculate_wow_filter(cache: &Cache) -> f32 {
+    let wow_filter_sum = cache.wow_filter_pot.clamp(0.0, 1.0);
+    let wow_filter_scaled =
+        wow_filter_sum * (WOW_FILTER_RANGE.1 - WOW_FILTER_RANGE.0) + WOW_FILTER_RANGE.0;
+    wow_filter_scaled
 }
 
 #[allow(clippy::let_and_return)]
@@ -377,8 +374,8 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         SetWowAmplitudeSpringPot(x) => {
             cache.wow_amplitude_spring_pot = x;
         }
-        SetWowAmplitudeFilterPot(x) => {
-            cache.wow_amplitude_filter_pot = x;
+        SetWowFilterPot(x) => {
+            cache.wow_filter_pot = x;
         }
         SetDelayLengthPot(x) => {
             cache.delay_length_pot = x;

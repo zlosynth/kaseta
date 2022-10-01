@@ -12,9 +12,9 @@ use sirena::state_variable_filter::{Bandform, StateVariableFilter};
 pub struct Attributes {
     pub frequency: f32,
     pub depth: f32,
+    pub filter: f32,
     pub amplitude_noise: f32,
     pub amplitude_spring: f32,
-    pub amplitude_filter: f32,
 }
 
 #[derive(Debug)]
@@ -62,10 +62,8 @@ impl Wow {
         self.depth = attributes.depth;
         self.amplitude_ou.noise = attributes.amplitude_noise;
         self.amplitude_ou.spring = attributes.amplitude_spring;
-        self.filter.set_frequency(f32::min(
-            attributes.amplitude_filter,
-            0.2 * self.sample_rate,
-        ));
+        self.filter
+            .set_frequency(f32::min(attributes.filter, 0.2 * self.sample_rate));
     }
 }
 
@@ -89,9 +87,9 @@ mod tests {
         wow.set_attributes(Attributes {
             frequency: 1.0,
             depth: 1.0,
+            filter: SAMPLE_RATE as f32 * 0.1,
             amplitude_noise: 0.0,
             amplitude_spring: 1000.0,
-            amplitude_filter: SAMPLE_RATE as f32 * 0.1,
         });
 
         let x = wow.pop(&mut TestRandom);
@@ -118,9 +116,9 @@ mod tests {
         wow.set_attributes(Attributes {
             frequency: 1.0,
             depth: 1.0,
+            filter: SAMPLE_RATE as f32 * 0.1,
             amplitude_noise: 0.0,
             amplitude_spring: 1000.0,
-            amplitude_filter: SAMPLE_RATE as f32 * 0.1,
         });
 
         let x = wow.pop(&mut TestRandom);
@@ -135,9 +133,9 @@ mod tests {
         wow.set_attributes(Attributes {
             frequency: 1.0,
             depth: 1.0,
+            filter: SAMPLE_RATE as f32 * 0.1,
             amplitude_noise: 0.0,
             amplitude_spring: 1000.0,
-            amplitude_filter: SAMPLE_RATE as f32 * 0.1,
         });
 
         for _ in 0..SAMPLE_RATE / 2 {
@@ -163,9 +161,9 @@ mod tests {
             wow.set_attributes(Attributes {
                 frequency,
                 depth,
+                filter: SAMPLE_RATE as f32 * 0.1,
                 amplitude_noise,
                 amplitude_spring,
-                amplitude_filter: SAMPLE_RATE as f32 * 0.1,
             });
 
             for _ in 0..SAMPLE_RATE {
@@ -185,9 +183,9 @@ mod tests {
             wow.set_attributes(Attributes {
                 frequency,
                 depth,
+                filter: SAMPLE_RATE as f32 * 0.1,
                 amplitude_noise,
                 amplitude_spring,
-                amplitude_filter: SAMPLE_RATE as f32 * 0.1,
             });
 
             for _ in 0..SAMPLE_RATE {
