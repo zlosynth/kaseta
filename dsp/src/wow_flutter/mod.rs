@@ -33,18 +33,22 @@ pub struct Attributes {
 
 impl WowFlutter {
     pub fn new(sample_rate: u32, memory_manager: &mut MemoryManager) -> Self {
-        let slice = memory_manager
-            .allocate(math::upper_power_of_two(
-                sample_rate as usize * MAX_DEPTH_IN_SECONDS,
-            ))
-            .unwrap();
-        let buffer = RingBuffer::from(slice);
-        let wow = Wow::new(sample_rate);
         Self {
             sample_rate,
-            buffer,
-            wow,
+            buffer: Self::allocate_buffer(Self::buffer_size(sample_rate), memory_manager),
+            wow: Wow::new(sample_rate),
         }
+    }
+
+    fn buffer_size(sample_rate: u32) -> usize {
+        sample_rate as usize * MAX_DEPTH_IN_SECONDS
+    }
+
+    fn allocate_buffer(size: usize, memory_manager: &mut MemoryManager) -> RingBuffer {
+        let slice = memory_manager
+            .allocate(math::upper_power_of_two(size))
+            .unwrap();
+        RingBuffer::from(slice)
     }
 
     pub fn process(&mut self, buffer: &mut [f32], random: &mut impl Random) {
