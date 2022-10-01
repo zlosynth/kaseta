@@ -31,6 +31,7 @@ pub struct Attributes {
     pub wow_depth: f32,
     pub wow_amplitude_noise: f32,
     pub wow_amplitude_spring: f32,
+    pub wow_amplitude_filter: f32,
 }
 
 impl WowFlutter {
@@ -74,6 +75,7 @@ impl From<Attributes> for WowAttributes {
             depth: other.wow_depth,
             amplitude_noise: other.wow_amplitude_noise,
             amplitude_spring: other.wow_amplitude_spring,
+            amplitude_filter: other.wow_amplitude_filter,
         }
     }
 }

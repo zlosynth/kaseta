@@ -2,6 +2,7 @@ use core::f32::consts::PI;
 
 use super::ornstein_uhlenbeck::OrnsteinUhlenbeck;
 use crate::random::Random;
+use sirena::state_variable_filter::{Bandform, StateVariableFilter};
 
 // TODO: Test that with any attributes, the output does not go beyond depth
 // TODO: Test that with any attributes, the output does not go to negative numbers
@@ -13,6 +14,7 @@ pub struct Attributes {
     pub depth: f32,
     pub amplitude_noise: f32,
     pub amplitude_spring: f32,
+    pub amplitude_filter: f32,
 }
 
 #[derive(Debug)]
@@ -23,30 +25,36 @@ pub struct Wow {
     depth: f32,
     phase: f32,
     amplitude_ou: OrnsteinUhlenbeck,
+    filter: StateVariableFilter,
 }
 
 impl Wow {
     pub fn new(sample_rate: u32) -> Self {
-        debug_assert!(
+        assert!(
             sample_rate > 500,
             "Wow may be unstable for low sample rates"
         );
+        let mut filter = StateVariableFilter::new(sample_rate);
+        filter.set_bandform(Bandform::LowPass);
         Self {
             sample_rate: sample_rate as f32,
             frequency: 0.0,
             depth: 0.0,
             phase: 0.5, // Start the offset sine wave on 0.0
             amplitude_ou: OrnsteinUhlenbeck::new(sample_rate as f32),
+            filter,
         }
     }
 
     pub fn pop(&mut self, random: &mut impl Random) -> f32 {
-        let target = (libm::cosf(self.phase * 2.0 * PI) + 1.0) * self.depth / 2.0;
-        let x = self.amplitude_ou.pop(target, random);
-        self.phase += self.frequency / self.sample_rate;
-        // TODO: Try if using (while > 1.0: -= 1.0) is faster
-        self.phase %= 1.0;
-        x
+        let target = {
+            let x = (libm::cosf(self.phase * 2.0 * PI) + 1.0) * self.depth / 2.0;
+            self.phase += self.frequency / self.sample_rate;
+            // TODO: Try if using (while > 1.0: -= 1.0) is faster
+            self.phase %= 1.0;
+            x
+        };
+        self.filter.tick(self.amplitude_ou.pop(target, random))
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
@@ -54,6 +62,10 @@ impl Wow {
         self.depth = attributes.depth;
         self.amplitude_ou.noise = attributes.amplitude_noise;
         self.amplitude_ou.spring = attributes.amplitude_spring;
+        self.filter.set_frequency(f32::min(
+            attributes.amplitude_filter,
+            0.2 * self.sample_rate,
+        ));
     }
 }
 
@@ -79,6 +91,7 @@ mod tests {
             depth: 1.0,
             amplitude_noise: 0.0,
             amplitude_spring: 1000.0,
+            amplitude_filter: SAMPLE_RATE as f32 * 0.1,
         });
 
         let x = wow.pop(&mut TestRandom);
@@ -94,8 +107,8 @@ mod tests {
             }
         }
 
-        assert_relative_eq!(min, 0.0);
-        assert_relative_eq!(max, 1.0);
+        assert_relative_eq!(min, 0.0, epsilon = 0.001);
+        assert_relative_eq!(max, 1.0, epsilon = 0.001);
     }
 
     #[test]
@@ -107,6 +120,7 @@ mod tests {
             depth: 1.0,
             amplitude_noise: 0.0,
             amplitude_spring: 1000.0,
+            amplitude_filter: SAMPLE_RATE as f32 * 0.1,
         });
 
         let x = wow.pop(&mut TestRandom);
@@ -123,16 +137,17 @@ mod tests {
             depth: 1.0,
             amplitude_noise: 0.0,
             amplitude_spring: 1000.0,
+            amplitude_filter: SAMPLE_RATE as f32 * 0.1,
         });
 
         for _ in 0..SAMPLE_RATE / 2 {
-            assert!(wow.pop(&mut TestRandom) < 1.0,);
+            assert!(wow.pop(&mut TestRandom) < 1.0);
         }
-        assert_relative_eq!(wow.pop(&mut TestRandom), 1.0);
+        assert_relative_eq!(wow.pop(&mut TestRandom), 1.0, epsilon = 0.001);
         for _ in 0..SAMPLE_RATE / 2 - 1 {
             assert!(wow.pop(&mut TestRandom) < 1.0);
         }
-        assert_relative_eq!(wow.pop(&mut TestRandom), 0.0);
+        assert_relative_eq!(wow.pop(&mut TestRandom), 0.0, epsilon = 0.001);
     }
 
     proptest! {
@@ -150,6 +165,7 @@ mod tests {
                 depth,
                 amplitude_noise,
                 amplitude_spring,
+                amplitude_filter: SAMPLE_RATE as f32 * 0.1,
             });
 
             for _ in 0..SAMPLE_RATE {
@@ -171,6 +187,7 @@ mod tests {
                 depth,
                 amplitude_noise,
                 amplitude_spring,
+                amplitude_filter: SAMPLE_RATE as f32 * 0.1,
             });
 
             for _ in 0..SAMPLE_RATE {
