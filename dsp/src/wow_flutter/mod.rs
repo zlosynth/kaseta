@@ -4,6 +4,7 @@
 //! changes (below 4 Hz), whole flutter fast (above 4 Hz).
 
 mod ornstein_uhlenbeck;
+mod wavefolder;
 mod wow;
 
 use self::wow::{Attributes as WowAttributes, Wow};

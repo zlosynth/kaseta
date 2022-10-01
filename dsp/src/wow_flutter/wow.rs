@@ -4,6 +4,7 @@ use core::f32::consts::PI;
 use micromath::F32Ext as _;
 
 use super::ornstein_uhlenbeck::OrnsteinUhlenbeck;
+use super::wavefolder;
 use crate::random::Random;
 use sirena::state_variable_filter::{Bandform, StateVariableFilter};
 
@@ -59,16 +60,17 @@ impl Wow {
     pub fn pop(&mut self, random: &mut impl Random) -> f32 {
         let target = {
             let x = (libm::cosf(self.phase * 2.0 * PI) + 1.0) * self.depth / 2.0;
-
             let drift = self.phase_ou.pop(0.0, random) * self.phase_drift;
             self.phase += (self.frequency / self.sample_rate) * (1.0 + drift);
             // TODO: Try if using (while > 1.0: -= 1.0) is faster
             self.phase %= 1.0;
-
             x
         };
-        self.filter
-            .tick(f32::abs(self.amplitude_ou.pop(target, random)))
+        self.filter.tick(wavefolder::fold(
+            self.amplitude_ou.pop(target, random),
+            0.0,
+            self.depth,
+        ))
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {

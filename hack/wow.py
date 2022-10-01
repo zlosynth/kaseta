@@ -13,6 +13,20 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import Slider
 
 
+def wavefolder(data, minimum, maximum):
+    for i in range(len(data)):
+        x = data[i]
+        diff = maximum - minimum
+        if x < minimum:
+            folded = minimum + min(minimum - x, diff)
+        elif x <= maximum:
+            folded = x
+        else:
+            folded = maximum - min(x - maximum, diff)
+        data[i] = folded
+    return data
+
+
 def low_pass_filter(data, bandlimit, sample_rate):
     f = 2.0 * math.sin((math.pi * bandlimit) / sample_rate)
     q = 1.0 / 1.1
@@ -136,7 +150,11 @@ def plot():
             amplitude_spring_slider.val,
             SAMPLE_RATE,
         )
-        wow = low_pass_filter(abs(amplitude_ou), filter_slider.val, SAMPLE_RATE)
+        wow = low_pass_filter(
+            wavefolder(amplitude_ou, 0.0, amplitude_slider.val),
+            filter_slider.val,
+            SAMPLE_RATE,
+        )
         line.set_ydata(wow)
         fig.canvas.draw_idle()
 
