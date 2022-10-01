@@ -6,7 +6,7 @@
 mod ornstein_uhlenbeck;
 mod wow;
 
-use self::wow::Wow;
+use self::wow::{Wow, Attributes as WowAttributes};
 use crate::math;
 use crate::random::Random;
 use crate::ring_buffer::RingBuffer;
@@ -61,8 +61,17 @@ impl WowFlutter {
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
-        self.wow.frequency = attributes.wow_frequency;
-        self.wow.depth = attributes.wow_depth;
-        self.wow.amplitude_ornstein_uhlenbeck.noise = attributes.wow_amplitude_noise;
+        self.wow.set_attributes(attributes.into());
+    }
+}
+
+impl From<Attributes> for WowAttributes {
+    fn from(other: Attributes) -> Self {
+        Self {
+            frequency: other.wow_frequency,
+            depth: other.wow_depth,
+            amplitude_noise: other.wow_amplitude_noise,
+            ..Self::default()
+        }
     }
 }
