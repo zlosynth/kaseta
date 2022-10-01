@@ -23,12 +23,12 @@ impl OrnsteinUhlenbeck {
             sample_interval: 1.0 / sample_rate,
             sqrt_delta: 1.0 / sqrt(sample_rate),
             noise: 0.0,
-            spring: 1.0,
+            spring: 300.0,
         }
     }
 
-    pub fn pop(&mut self, random: &mut impl Random) -> f32 {
-        self.value += self.spring * (-self.value) * self.sample_interval;
+    pub fn pop(&mut self, mean: f32, random: &mut impl Random) -> f32 {
+        self.value += self.spring * (mean - self.value) * self.sample_interval;
         self.value += self.noise * random.normal() * self.sqrt_delta;
         self.value
     }

@@ -13,8 +13,10 @@ pub struct Wow {
     pub depth: f32,
 }
 
+// TODO: Define Attribute struct
 impl Wow {
     pub fn new(sample_rate: u32) -> Self {
+        debug_assert!(sample_rate > 500, "Wow is unstable for low sample rates");
         Self {
             sample_rate: sample_rate as f32,
             phase: 0.5,
@@ -25,8 +27,10 @@ impl Wow {
     }
 
     pub fn pop(&mut self, random: &mut impl Random) -> f32 {
-        let mut x = (libm::cosf(self.phase * 2.0 * PI) + 1.0) * self.depth / 2.0;
-        x += self.amplitude_ornstein_uhlenbeck.pop(random);
+        let carrier = (libm::cosf(self.phase * 2.0 * PI) + 1.0) * self.depth / 2.0;
+        // self.amplitude_ornstein_uhlenbeck.noise = 0.0;
+        // self.amplitude_ornstein_uhlenbeck.spring = 1000.0;
+        let x = self.amplitude_ornstein_uhlenbeck.pop(carrier, random);
         self.phase += self.frequency / self.sample_rate;
         self.phase %= 1.0;
         x
@@ -47,7 +51,7 @@ mod tests {
 
     #[test]
     fn it_spans_in_expected_range() {
-        const SAMPLE_RATE: u32 = 100;
+        const SAMPLE_RATE: u32 = 1000;
         let mut wow = Wow::new(SAMPLE_RATE);
         wow.frequency = 1.0;
         wow.depth = 1.0;
@@ -71,7 +75,7 @@ mod tests {
 
     #[test]
     fn it_starts_near_zero() {
-        const SAMPLE_RATE: u32 = 100;
+        const SAMPLE_RATE: u32 = 1000;
         let mut wow = Wow::new(SAMPLE_RATE);
         wow.frequency = 1.0;
         wow.depth = 1.0;
@@ -83,17 +87,19 @@ mod tests {
 
     #[test]
     fn it_cycles_in_expected_interval() {
-        const SAMPLE_RATE: u32 = 100;
+        const SAMPLE_RATE: u32 = 1000;
         let mut wow = Wow::new(SAMPLE_RATE);
         wow.frequency = 1.0;
         wow.depth = 1.0;
 
         for _ in 0..SAMPLE_RATE / 2 {
-            assert!(wow.pop(&mut TestRandom) < 0.9999);
+            assert!(
+                wow.pop(&mut TestRandom) < 1.0,
+            );
         }
         assert_relative_eq!(wow.pop(&mut TestRandom), 1.0);
         for _ in 0..SAMPLE_RATE / 2 - 1 {
-            assert!(wow.pop(&mut TestRandom) < 0.9999);
+            assert!(wow.pop(&mut TestRandom) < 1.0);
         }
         assert_relative_eq!(wow.pop(&mut TestRandom), 0.0);
     }
