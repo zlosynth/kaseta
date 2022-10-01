@@ -14,16 +14,22 @@ from matplotlib.widgets import Slider
 
 
 def low_pass_filter(data, bandlimit, sample_rate):
-    bandlimit_index = int(bandlimit * data.size / sample_rate)
+    f = 2.0 * math.sin((math.pi * bandlimit) / sample_rate)
+    q = 1.0 / 1.1
+    delay_1 = 0.0
+    delay_2 = 0.0
 
-    data_frequency_domain = np.fft.fft(data)
+    filtered = np.zeros(len(data))
 
-    for i in range(bandlimit_index + 1, len(data_frequency_domain) - bandlimit_index):
-        data_frequency_domain[i] = 0
+    for i in range(len(data)):
+        sum_3 = delay_1 * f + delay_2
+        sum_1 = data[i] - sum_3 - delay_1 * q
+        sum_2 = sum_1 * f + delay_1
+        delay_1 = sum_2
+        delay_2 = sum_3
+        filtered[i] = sum_3
 
-    data_filtered = np.fft.ifft(data_frequency_domain)
-
-    return np.real(data_filtered)
+    return filtered
 
 
 def process_ornstein_uhlenbeck(random, mean, noise, spring, sample_rate):
@@ -101,7 +107,7 @@ def plot():
         fig, "ASpring", INIT_AMPLITUDE_SPRING, 0.0, 300.0
     )
     amplitude_filter_slider = add_slider(
-        fig, "AFilter", INIT_AMPLITUDE_FILTER, 0.0, SAMPLE_RATE / 2
+        fig, "AFilter", INIT_AMPLITUDE_FILTER, 0.0, SAMPLE_RATE * 0.2
     )
     phase_noise_slider = add_slider(fig, "PNoise", INIT_PHASE_NOISE, 0.0, 5.0)
     phase_spring_slider = add_slider(fig, "PSpring", INIT_PHASE_SPRING, 0.0, 10.0)
