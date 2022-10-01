@@ -1,3 +1,8 @@
+//! Wow and flutter simulate variable velocity of tape.
+//!
+//! Changes in speed are caused by mechanical imperfections. Wow represents slow
+//! changes (below 4 Hz), whole flutter fast (above 4 Hz).
+
 mod ornstein_uhlenbeck;
 mod wow;
 
