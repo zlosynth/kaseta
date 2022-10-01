@@ -6,7 +6,7 @@
 mod ornstein_uhlenbeck;
 mod wow;
 
-use self::wow::{Wow, Attributes as WowAttributes};
+use self::wow::{Attributes as WowAttributes, Wow};
 use crate::math;
 use crate::random::Random;
 use crate::ring_buffer::RingBuffer;
@@ -23,12 +23,14 @@ pub struct WowFlutter {
     wow: Wow,
 }
 
+// TODO: Just nest wow attributes
 #[derive(Default, Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {
     pub wow_frequency: f32,
     pub wow_depth: f32,
     pub wow_amplitude_noise: f32,
+    pub wow_amplitude_spring: f32,
 }
 
 impl WowFlutter {
@@ -71,7 +73,7 @@ impl From<Attributes> for WowAttributes {
             frequency: other.wow_frequency,
             depth: other.wow_depth,
             amplitude_noise: other.wow_amplitude_noise,
-            ..Self::default()
+            amplitude_spring: other.wow_amplitude_spring,
         }
     }
 }

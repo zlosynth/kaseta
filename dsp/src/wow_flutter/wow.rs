@@ -6,7 +6,7 @@ use crate::random::Random;
 // TODO: Test that with any attributes, the output does not go beyond depth
 // TODO: Test that with any attributes, the output does not go to negative numbers
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {
     pub frequency: f32,
@@ -27,7 +27,10 @@ pub struct Wow {
 
 impl Wow {
     pub fn new(sample_rate: u32) -> Self {
-        debug_assert!(sample_rate > 500, "Wow may be unstable for low sample rates");
+        debug_assert!(
+            sample_rate > 500,
+            "Wow may be unstable for low sample rates"
+        );
         Self {
             sample_rate: sample_rate as f32,
             frequency: 0.0,
@@ -70,12 +73,11 @@ mod tests {
     fn it_spans_in_expected_range() {
         const SAMPLE_RATE: u32 = 1000;
         let mut wow = Wow::new(SAMPLE_RATE);
-        wow.set_attributes(Attributes{
+        wow.set_attributes(Attributes {
             frequency: 1.0,
             depth: 1.0,
             amplitude_noise: 1.0,
             amplitude_spring: 1000.0,
-            ..Attributes::default()
         });
 
         let x = wow.pop(&mut TestRandom);
@@ -99,12 +101,11 @@ mod tests {
     fn it_starts_near_zero() {
         const SAMPLE_RATE: u32 = 1000;
         let mut wow = Wow::new(SAMPLE_RATE);
-        wow.set_attributes(Attributes{
+        wow.set_attributes(Attributes {
             frequency: 1.0,
             depth: 1.0,
             amplitude_noise: 1.0,
             amplitude_spring: 1000.0,
-            ..Attributes::default()
         });
 
         let x = wow.pop(&mut TestRandom);
@@ -116,18 +117,15 @@ mod tests {
     fn it_cycles_in_expected_interval() {
         const SAMPLE_RATE: u32 = 1000;
         let mut wow = Wow::new(SAMPLE_RATE);
-        wow.set_attributes(Attributes{
+        wow.set_attributes(Attributes {
             frequency: 1.0,
             depth: 1.0,
             amplitude_noise: 1.0,
             amplitude_spring: 1000.0,
-            ..Attributes::default()
         });
 
         for _ in 0..SAMPLE_RATE / 2 {
-            assert!(
-                wow.pop(&mut TestRandom) < 1.0,
-            );
+            assert!(wow.pop(&mut TestRandom) < 1.0,);
         }
         assert_relative_eq!(wow.pop(&mut TestRandom), 1.0);
         for _ in 0..SAMPLE_RATE / 2 - 1 {
