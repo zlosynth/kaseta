@@ -268,44 +268,70 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
 }
 
 #[allow(clippy::let_and_return)]
+fn calculate(
+    pot: Option<f32>,
+    cv: Option<f32>,
+    range: (f32, f32),
+    taper_function: Option<fn(f32) -> f32>,
+) -> f32 {
+    let sum = (pot.unwrap_or(0.0) + cv.unwrap_or(0.0)).clamp(0.0, 1.0);
+    let curved = if let Some(taper_function) = taper_function {
+        taper_function(sum)
+    } else {
+        sum
+    };
+    let scaled = curved * (range.1 - range.0) + range.0;
+    scaled
+}
+
+#[allow(clippy::let_and_return)]
 fn calculate_pre_amp(cache: &Cache) -> f32 {
-    let pre_amp_curved = taper::log(cache.pre_amp_pot);
-    let pre_amp_scaled = pre_amp_curved * (PRE_AMP_RANGE.1 - PRE_AMP_RANGE.0) + PRE_AMP_RANGE.0;
-    pre_amp_scaled
+    calculate(
+        Some(cache.pre_amp_pot),
+        None,
+        PRE_AMP_RANGE,
+        Some(taper::log),
+    )
 }
 
 #[allow(clippy::let_and_return)]
 fn calculate_drive(cache: &Cache) -> f32 {
-    let drive_sum = (cache.hysteresis.drive_pot + cache.hysteresis.drive_cv).clamp(0.0, 1.0);
-    let drive_curved = taper::log(drive_sum);
-    let drive_scaled = drive_curved * (DRIVE_RANGE.1 - DRIVE_RANGE.0) + DRIVE_RANGE.0;
-    drive_scaled
+    calculate(
+        Some(cache.hysteresis.drive_pot),
+        Some(cache.hysteresis.drive_cv),
+        DRIVE_RANGE,
+        Some(taper::log),
+    )
 }
 
 #[allow(clippy::let_and_return)]
 fn calculate_saturation(cache: &Cache) -> f32 {
-    let saturation_sum =
-        (cache.hysteresis.saturation_pot + cache.hysteresis.saturation_cv).clamp(0.0, 1.0);
-    let saturation_curved = taper::reverse_log(saturation_sum);
-    let saturation_scaled =
-        saturation_curved * (SATURATION_RANGE.1 - SATURATION_RANGE.0) + SATURATION_RANGE.0;
-    saturation_scaled
+    calculate(
+        Some(cache.hysteresis.saturation_pot),
+        Some(cache.hysteresis.saturation_cv),
+        SATURATION_RANGE,
+        Some(taper::reverse_log),
+    )
 }
 
 #[allow(clippy::let_and_return)]
 fn calculate_bias(cache: &Cache) -> f32 {
-    let bias_sum = (cache.hysteresis.bias_pot + cache.hysteresis.bias_cv).clamp(0.0, 1.0);
-    let bias_curved = taper::log(bias_sum);
-    let bias_scaled = bias_curved * (BIAS_RANGE.1 - BIAS_RANGE.0) + BIAS_RANGE.0;
-    bias_scaled
+    calculate(
+        Some(cache.hysteresis.bias_pot),
+        Some(cache.hysteresis.bias_cv),
+        BIAS_RANGE,
+        Some(taper::log),
+    )
 }
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_frequency(cache: &Cache) -> f32 {
-    let wow_frequency_sum = (cache.wow.frequency_pot + cache.wow.frequency_cv).clamp(0.0, 1.0);
-    let wow_frequency_scaled =
-        wow_frequency_sum * (WOW_FREQUENCY_RANGE.1 - WOW_FREQUENCY_RANGE.0) + WOW_FREQUENCY_RANGE.0;
-    wow_frequency_scaled
+    calculate(
+        Some(cache.wow.frequency_pot),
+        Some(cache.wow.frequency_cv),
+        WOW_FREQUENCY_RANGE,
+        None,
+    )
 }
 
 #[allow(clippy::let_and_return)]
@@ -319,64 +345,67 @@ fn calculate_wow_depth(cache: &Cache, wow_frequency: f32) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_amplitude_noise(cache: &Cache) -> f32 {
-    let wow_amplitude_noise_sum = cache.wow.amplitude_noise_pot.clamp(0.0, 1.0);
-    let wow_amplitude_noise_scaled = wow_amplitude_noise_sum
-        * (WOW_AMPLITUDE_NOISE_RANGE.1 - WOW_AMPLITUDE_NOISE_RANGE.0)
-        + WOW_AMPLITUDE_NOISE_RANGE.0;
-    wow_amplitude_noise_scaled
+    calculate(
+        Some(cache.wow.amplitude_noise_pot),
+        None,
+        WOW_AMPLITUDE_NOISE_RANGE,
+        None,
+    )
 }
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_amplitude_spring(cache: &Cache) -> f32 {
-    let wow_amplitude_spring_sum = cache.wow.amplitude_spring_pot.clamp(0.0, 1.0);
-    let wow_amplitude_spring_scaled = wow_amplitude_spring_sum
-        * (WOW_AMPLITUDE_SPRING_RANGE.1 - WOW_AMPLITUDE_SPRING_RANGE.0)
-        + WOW_AMPLITUDE_SPRING_RANGE.0;
-    wow_amplitude_spring_scaled
+    calculate(
+        Some(cache.wow.amplitude_spring_pot),
+        None,
+        WOW_AMPLITUDE_SPRING_RANGE,
+        None,
+    )
 }
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_phase_noise(cache: &Cache) -> f32 {
-    let wow_phase_noise_sum = cache.wow.phase_noise_pot.clamp(0.0, 1.0);
-    let wow_phase_noise_scaled = wow_phase_noise_sum
-        * (WOW_PHASE_NOISE_RANGE.1 - WOW_PHASE_NOISE_RANGE.0)
-        + WOW_PHASE_NOISE_RANGE.0;
-    wow_phase_noise_scaled
+    calculate(
+        Some(cache.wow.phase_noise_pot),
+        None,
+        WOW_PHASE_NOISE_RANGE,
+        None,
+    )
 }
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_phase_spring(cache: &Cache) -> f32 {
-    let wow_phase_spring_sum = cache.wow.phase_spring_pot.clamp(0.0, 1.0);
-    let wow_phase_spring_scaled = wow_phase_spring_sum
-        * (WOW_PHASE_SPRING_RANGE.1 - WOW_PHASE_SPRING_RANGE.0)
-        + WOW_PHASE_SPRING_RANGE.0;
-    wow_phase_spring_scaled
+    calculate(
+        Some(cache.wow.phase_spring_pot),
+        None,
+        WOW_PHASE_SPRING_RANGE,
+        None,
+    )
 }
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_phase_drift(cache: &Cache) -> f32 {
-    let wow_phase_drift_sum = cache.wow.phase_drift_pot.clamp(0.0, 1.0);
-    let wow_phase_drift_scaled = wow_phase_drift_sum
-        * (WOW_PHASE_DRIFT_RANGE.1 - WOW_PHASE_DRIFT_RANGE.0)
-        + WOW_PHASE_DRIFT_RANGE.0;
-    wow_phase_drift_scaled
+    calculate(
+        Some(cache.wow.phase_drift_pot),
+        None,
+        WOW_PHASE_DRIFT_RANGE,
+        None,
+    )
 }
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_filter(cache: &Cache) -> f32 {
-    let wow_filter_sum = cache.wow.filter_pot.clamp(0.0, 1.0);
-    let wow_filter_scaled =
-        wow_filter_sum * (WOW_FILTER_RANGE.1 - WOW_FILTER_RANGE.0) + WOW_FILTER_RANGE.0;
-    wow_filter_scaled
+    calculate(Some(cache.wow.filter_pot), None, WOW_FILTER_RANGE, None)
 }
 
 #[allow(clippy::let_and_return)]
 fn calculate_delay_length(cache: &Cache) -> f32 {
-    let delay_length_sum = (cache.delay.length_pot + cache.delay.length_cv).clamp(0.0, 1.0);
-    let delay_length_curved = taper::reverse_log(delay_length_sum);
-    let delay_length_scaled =
-        delay_length_curved * (DELAY_LENGTH_RANGE.1 - DELAY_LENGTH_RANGE.0) + DELAY_LENGTH_RANGE.0;
-    delay_length_scaled
+    calculate(
+        Some(cache.delay.length_pot),
+        Some(cache.delay.length_cv),
+        DELAY_LENGTH_RANGE,
+        Some(taper::reverse_log),
+    )
 }
 
 #[allow(clippy::let_and_return)]
