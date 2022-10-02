@@ -169,32 +169,50 @@ impl From<DSPReaction> for Attributes {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
     pub pre_amp_pot: f32,
+    pub hysteresis: HysteresisCache,
+    pub wow: WowCache,
+    pub delay: DelayCache,
+}
+
+#[derive(Default, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct HysteresisCache {
     pub drive_pot: f32,
     pub drive_cv: f32,
     pub saturation_pot: f32,
     pub saturation_cv: f32,
     pub bias_pot: f32,
     pub bias_cv: f32,
-    pub wow_frequency_pot: f32,
-    pub wow_frequency_cv: f32,
-    pub wow_depth_pot: f32,
-    pub wow_depth_cv: f32,
-    pub wow_filter_pot: f32,
-    pub wow_amplitude_noise_pot: f32,
-    pub wow_amplitude_spring_pot: f32,
-    pub wow_phase_noise_pot: f32,
-    pub wow_phase_spring_pot: f32,
-    pub wow_phase_drift_pot: f32,
-    pub delay_length_pot: f32,
-    pub delay_length_cv: f32,
-    pub delay_head_position_pot: [f32; 4],
-    pub delay_head_position_cv: [f32; 4],
-    pub delay_quantization_6: bool,
-    pub delay_quantization_8: bool,
-    pub delay_head_play: [bool; 4],
-    pub delay_head_feedback: [bool; 4],
-    pub delay_head_feedback_amount: [f32; 4],
-    pub delay_head_volume: [f32; 4],
+}
+
+#[derive(Default, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct WowCache {
+    pub frequency_pot: f32,
+    pub frequency_cv: f32,
+    pub depth_pot: f32,
+    pub depth_cv: f32,
+    pub filter_pot: f32,
+    pub amplitude_noise_pot: f32,
+    pub amplitude_spring_pot: f32,
+    pub phase_noise_pot: f32,
+    pub phase_spring_pot: f32,
+    pub phase_drift_pot: f32,
+}
+
+#[derive(Default, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct DelayCache {
+    pub length_pot: f32,
+    pub length_cv: f32,
+    pub head_position_pot: [f32; 4],
+    pub head_position_cv: [f32; 4],
+    pub quantization_6: bool,
+    pub quantization_8: bool,
+    pub head_play: [bool; 4],
+    pub head_feedback: [bool; 4],
+    pub head_feedback_amount: [f32; 4],
+    pub head_volume: [f32; 4],
 }
 
 #[must_use]
@@ -242,10 +260,10 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
             delay_head_3_position,
             delay_head_4_position,
         ],
-        delay_head_play: cache.delay_head_play,
-        delay_head_feedback: cache.delay_head_feedback,
-        delay_head_feedback_amount: cache.delay_head_feedback_amount,
-        delay_head_volume: cache.delay_head_volume,
+        delay_head_play: cache.delay.head_play,
+        delay_head_feedback: cache.delay.head_feedback,
+        delay_head_feedback_amount: cache.delay.head_feedback_amount,
+        delay_head_volume: cache.delay.head_volume,
     }
 }
 
@@ -258,7 +276,7 @@ fn calculate_pre_amp(cache: &Cache) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_drive(cache: &Cache) -> f32 {
-    let drive_sum = (cache.drive_pot + cache.drive_cv).clamp(0.0, 1.0);
+    let drive_sum = (cache.hysteresis.drive_pot + cache.hysteresis.drive_cv).clamp(0.0, 1.0);
     let drive_curved = taper::log(drive_sum);
     let drive_scaled = drive_curved * (DRIVE_RANGE.1 - DRIVE_RANGE.0) + DRIVE_RANGE.0;
     drive_scaled
@@ -266,7 +284,8 @@ fn calculate_drive(cache: &Cache) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_saturation(cache: &Cache) -> f32 {
-    let saturation_sum = (cache.saturation_pot + cache.saturation_cv).clamp(0.0, 1.0);
+    let saturation_sum =
+        (cache.hysteresis.saturation_pot + cache.hysteresis.saturation_cv).clamp(0.0, 1.0);
     let saturation_curved = taper::reverse_log(saturation_sum);
     let saturation_scaled =
         saturation_curved * (SATURATION_RANGE.1 - SATURATION_RANGE.0) + SATURATION_RANGE.0;
@@ -275,7 +294,7 @@ fn calculate_saturation(cache: &Cache) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_bias(cache: &Cache) -> f32 {
-    let bias_sum = (cache.bias_pot + cache.bias_cv).clamp(0.0, 1.0);
+    let bias_sum = (cache.hysteresis.bias_pot + cache.hysteresis.bias_cv).clamp(0.0, 1.0);
     let bias_curved = taper::log(bias_sum);
     let bias_scaled = bias_curved * (BIAS_RANGE.1 - BIAS_RANGE.0) + BIAS_RANGE.0;
     bias_scaled
@@ -283,7 +302,7 @@ fn calculate_bias(cache: &Cache) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_frequency(cache: &Cache) -> f32 {
-    let wow_frequency_sum = (cache.wow_frequency_pot + cache.wow_frequency_cv).clamp(0.0, 1.0);
+    let wow_frequency_sum = (cache.wow.frequency_pot + cache.wow.frequency_cv).clamp(0.0, 1.0);
     let wow_frequency_scaled =
         wow_frequency_sum * (WOW_FREQUENCY_RANGE.1 - WOW_FREQUENCY_RANGE.0) + WOW_FREQUENCY_RANGE.0;
     wow_frequency_scaled
@@ -291,7 +310,7 @@ fn calculate_wow_frequency(cache: &Cache) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_depth(cache: &Cache, wow_frequency: f32) -> f32 {
-    let wow_depth_sum = (cache.wow_depth_pot + cache.wow_depth_cv).clamp(0.0, 1.0);
+    let wow_depth_sum = (cache.wow.depth_pot + cache.wow.depth_cv).clamp(0.0, 1.0);
     let wow_depth_curved = taper::log(wow_depth_sum);
     let max_depth = f32::min(WOW_DEPTH_RANGE.1, (1.0 / wow_frequency) * 0.31);
     let wow_depth_scaled = wow_depth_curved * (max_depth - WOW_DEPTH_RANGE.0) + WOW_DEPTH_RANGE.0;
@@ -300,7 +319,7 @@ fn calculate_wow_depth(cache: &Cache, wow_frequency: f32) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_amplitude_noise(cache: &Cache) -> f32 {
-    let wow_amplitude_noise_sum = cache.wow_amplitude_noise_pot.clamp(0.0, 1.0);
+    let wow_amplitude_noise_sum = cache.wow.amplitude_noise_pot.clamp(0.0, 1.0);
     let wow_amplitude_noise_scaled = wow_amplitude_noise_sum
         * (WOW_AMPLITUDE_NOISE_RANGE.1 - WOW_AMPLITUDE_NOISE_RANGE.0)
         + WOW_AMPLITUDE_NOISE_RANGE.0;
@@ -309,7 +328,7 @@ fn calculate_wow_amplitude_noise(cache: &Cache) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_amplitude_spring(cache: &Cache) -> f32 {
-    let wow_amplitude_spring_sum = cache.wow_amplitude_spring_pot.clamp(0.0, 1.0);
+    let wow_amplitude_spring_sum = cache.wow.amplitude_spring_pot.clamp(0.0, 1.0);
     let wow_amplitude_spring_scaled = wow_amplitude_spring_sum
         * (WOW_AMPLITUDE_SPRING_RANGE.1 - WOW_AMPLITUDE_SPRING_RANGE.0)
         + WOW_AMPLITUDE_SPRING_RANGE.0;
@@ -318,7 +337,7 @@ fn calculate_wow_amplitude_spring(cache: &Cache) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_phase_noise(cache: &Cache) -> f32 {
-    let wow_phase_noise_sum = cache.wow_phase_noise_pot.clamp(0.0, 1.0);
+    let wow_phase_noise_sum = cache.wow.phase_noise_pot.clamp(0.0, 1.0);
     let wow_phase_noise_scaled = wow_phase_noise_sum
         * (WOW_PHASE_NOISE_RANGE.1 - WOW_PHASE_NOISE_RANGE.0)
         + WOW_PHASE_NOISE_RANGE.0;
@@ -327,7 +346,7 @@ fn calculate_wow_phase_noise(cache: &Cache) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_phase_spring(cache: &Cache) -> f32 {
-    let wow_phase_spring_sum = cache.wow_phase_spring_pot.clamp(0.0, 1.0);
+    let wow_phase_spring_sum = cache.wow.phase_spring_pot.clamp(0.0, 1.0);
     let wow_phase_spring_scaled = wow_phase_spring_sum
         * (WOW_PHASE_SPRING_RANGE.1 - WOW_PHASE_SPRING_RANGE.0)
         + WOW_PHASE_SPRING_RANGE.0;
@@ -336,7 +355,7 @@ fn calculate_wow_phase_spring(cache: &Cache) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_phase_drift(cache: &Cache) -> f32 {
-    let wow_phase_drift_sum = cache.wow_phase_drift_pot.clamp(0.0, 1.0);
+    let wow_phase_drift_sum = cache.wow.phase_drift_pot.clamp(0.0, 1.0);
     let wow_phase_drift_scaled = wow_phase_drift_sum
         * (WOW_PHASE_DRIFT_RANGE.1 - WOW_PHASE_DRIFT_RANGE.0)
         + WOW_PHASE_DRIFT_RANGE.0;
@@ -345,7 +364,7 @@ fn calculate_wow_phase_drift(cache: &Cache) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_wow_filter(cache: &Cache) -> f32 {
-    let wow_filter_sum = cache.wow_filter_pot.clamp(0.0, 1.0);
+    let wow_filter_sum = cache.wow.filter_pot.clamp(0.0, 1.0);
     let wow_filter_scaled =
         wow_filter_sum * (WOW_FILTER_RANGE.1 - WOW_FILTER_RANGE.0) + WOW_FILTER_RANGE.0;
     wow_filter_scaled
@@ -353,7 +372,7 @@ fn calculate_wow_filter(cache: &Cache) -> f32 {
 
 #[allow(clippy::let_and_return)]
 fn calculate_delay_length(cache: &Cache) -> f32 {
-    let delay_length_sum = (cache.delay_length_pot + cache.delay_length_cv).clamp(0.0, 1.0);
+    let delay_length_sum = (cache.delay.length_pot + cache.delay.length_cv).clamp(0.0, 1.0);
     let delay_length_curved = taper::reverse_log(delay_length_sum);
     let delay_length_scaled =
         delay_length_curved * (DELAY_LENGTH_RANGE.1 - DELAY_LENGTH_RANGE.0) + DELAY_LENGTH_RANGE.0;
@@ -363,14 +382,14 @@ fn calculate_delay_length(cache: &Cache) -> f32 {
 #[allow(clippy::let_and_return)]
 fn calculate_delay_head_position(cache: &Cache, head: usize) -> f32 {
     let delay_head_position_sum =
-        (cache.delay_head_position_pot[head] + cache.delay_head_position_cv[head]).clamp(0.0, 1.0);
+        (cache.delay.head_position_pot[head] + cache.delay.head_position_cv[head]).clamp(0.0, 1.0);
     let delay_head_position_scaled = delay_head_position_sum
         * (DELAY_HEAD_POSITION_RANGE.1 - DELAY_HEAD_POSITION_RANGE.0)
         + DELAY_HEAD_POSITION_RANGE.0;
-    let delay_head_position_quantized = if cache.delay_quantization_6 || cache.delay_quantization_8
+    let delay_head_position_quantized = if cache.delay.quantization_6 || cache.delay.quantization_8
     {
         let quantization =
-            Quantization::from((cache.delay_quantization_6, cache.delay_quantization_8));
+            Quantization::from((cache.delay.quantization_6, cache.delay.quantization_8));
         quantize(delay_head_position_scaled, quantization)
     } else {
         delay_head_position_scaled
@@ -387,82 +406,82 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
             cache.pre_amp_pot = x;
         }
         SetDrivePot(x) => {
-            cache.drive_pot = x;
+            cache.hysteresis.drive_pot = x;
         }
         SetDriveCV(x) => {
-            cache.drive_cv = x;
+            cache.hysteresis.drive_cv = x;
         }
         SetSaturationPot(x) => {
-            cache.saturation_pot = x;
+            cache.hysteresis.saturation_pot = x;
         }
         SetSaturationCV(x) => {
-            cache.saturation_cv = x;
+            cache.hysteresis.saturation_cv = x;
         }
         SetBiasPot(x) => {
-            cache.bias_pot = x;
+            cache.hysteresis.bias_pot = x;
         }
         SetBiasCV(x) => {
-            cache.bias_cv = x;
+            cache.hysteresis.bias_cv = x;
         }
         SetWowFrequencyPot(x) => {
-            cache.wow_frequency_pot = x;
+            cache.wow.frequency_pot = x;
         }
         SetWowFrequencyCV(x) => {
-            cache.wow_frequency_cv = x;
+            cache.wow.frequency_cv = x;
         }
         SetWowDepthPot(x) => {
-            cache.wow_depth_pot = x;
+            cache.wow.depth_pot = x;
         }
         SetWowDepthCV(x) => {
-            cache.wow_depth_cv = x;
+            cache.wow.depth_cv = x;
         }
         SetWowAmplitudeNoisePot(x) => {
-            cache.wow_amplitude_noise_pot = x;
+            cache.wow.amplitude_noise_pot = x;
         }
         SetWowAmplitudeSpringPot(x) => {
-            cache.wow_amplitude_spring_pot = x;
+            cache.wow.amplitude_spring_pot = x;
         }
         SetWowPhaseNoisePot(x) => {
-            cache.wow_phase_noise_pot = x;
+            cache.wow.phase_noise_pot = x;
         }
         SetWowPhaseSpringPot(x) => {
-            cache.wow_phase_spring_pot = x;
+            cache.wow.phase_spring_pot = x;
         }
         SetWowPhaseDriftPot(x) => {
-            cache.wow_phase_drift_pot = x;
+            cache.wow.phase_drift_pot = x;
         }
         SetWowFilterPot(x) => {
-            cache.wow_filter_pot = x;
+            cache.wow.filter_pot = x;
         }
         SetDelayLengthPot(x) => {
-            cache.delay_length_pot = x;
+            cache.delay.length_pot = x;
         }
         SetDelayLengthCV(x) => {
-            cache.delay_length_cv = x;
+            cache.delay.length_cv = x;
         }
         SetDelayHeadPositionPot(i, x) => {
-            cache.delay_head_position_pot[i] = x;
+            cache.delay.head_position_pot[i] = x;
         }
         SetDelayHeadPositionCV(i, x) => {
-            cache.delay_head_position_cv[i] = x;
+            cache.delay.head_position_cv[i] = x;
         }
         SetDelayQuantizationEight(b) => {
-            cache.delay_quantization_8 = b;
+            cache.delay.quantization_8 = b;
         }
         SetDelayQuantizationSix(b) => {
-            cache.delay_quantization_6 = b;
+            cache.delay.quantization_6 = b;
         }
         SetDelayHeadPlay(i, b) => {
-            cache.delay_head_play[i] = b;
+            cache.delay.head_play[i] = b;
         }
         SetDelayHeadFeedback(i, b) => {
-            cache.delay_head_feedback[i] = b;
+            cache.delay.head_feedback[i] = b;
         }
         SetDelayHeadFeedbackAmount(i, x) => {
-            cache.delay_head_feedback_amount[i] = x;
+            cache.delay.head_feedback_amount[i] = x;
         }
         SetDelayHeadVolume(i, x) => {
-            cache.delay_head_volume[i] = x;
+            cache.delay.head_volume[i] = x;
         }
     }
 }
