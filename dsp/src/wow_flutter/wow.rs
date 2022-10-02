@@ -63,6 +63,8 @@ impl Wow {
             self.phase %= 1.0;
             x
         };
+        // TODO: Move wavefolder inside phase_ou itself, so its internal value
+        // cannot wander too far off
         f32::clamp(
             self.filter.tick(wavefolder::fold(
                 self.amplitude_ou.pop(target, random),
