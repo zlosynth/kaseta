@@ -38,10 +38,12 @@ extern crate approx;
 
 mod quantization;
 mod taper;
+mod wow;
 
 use kaseta_dsp::processor::Attributes;
 
 use crate::quantization::{quantize, Quantization};
+use crate::wow::Cache as WowCache;
 
 // Pre-amp scales between -20 to +28 dB.
 const PRE_AMP_RANGE: (f32, f32) = (0.1, 25.0);
@@ -54,18 +56,6 @@ const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
 
 // Width (1.0 - bias) must never reach 1.0, otherwise it panics due to division by zero
 const BIAS_RANGE: (f32, f32) = (0.0001, 1.0);
-
-const WOW_FREQUENCY_RANGE: (f32, f32) = (0.01, 4.0);
-// The max depth is limited by frequency, in a way that the playing signal never
-// goes backwards. For 0.02 minimal frequency, the maximum depth is defined by:
-// (1.0 / 0.01) * 0.31
-const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 16.0);
-const WOW_FILTER_RANGE: (f32, f32) = (0.0, 10.0);
-const WOW_AMPLITUDE_NOISE_RANGE: (f32, f32) = (0.0, 5.0);
-const WOW_AMPLITUDE_SPRING_RANGE: (f32, f32) = (0.0, 300.0);
-const WOW_PHASE_NOISE_RANGE: (f32, f32) = (0.0, 5.0);
-const WOW_PHASE_SPRING_RANGE: (f32, f32) = (0.0, 10.0);
-const WOW_PHASE_DRIFT_RANGE: (f32, f32) = (0.0, 1.0);
 
 const DELAY_LENGTH_RANGE: (f32, f32) = (0.02, 8.0);
 const DELAY_HEAD_POSITION_RANGE: (f32, f32) = (0.0, 1.0);
@@ -187,21 +177,6 @@ pub struct HysteresisCache {
 
 #[derive(Default, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct WowCache {
-    pub frequency_pot: f32,
-    pub frequency_cv: f32,
-    pub depth_pot: f32,
-    pub depth_cv: f32,
-    pub filter_pot: f32,
-    pub amplitude_noise_pot: f32,
-    pub amplitude_spring_pot: f32,
-    pub phase_noise_pot: f32,
-    pub phase_spring_pot: f32,
-    pub phase_drift_pot: f32,
-}
-
-#[derive(Default, Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct DelayCache {
     pub length_pot: f32,
     pub length_cv: f32,
@@ -227,14 +202,14 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let drive = calculate_drive(cache);
     let saturation = calculate_saturation(cache);
     let bias = calculate_bias(cache);
-    let wow_frequency = calculate_wow_frequency(cache);
-    let wow_depth = calculate_wow_depth(cache, wow_frequency);
-    let wow_amplitude_noise = calculate_wow_amplitude_noise(cache);
-    let wow_amplitude_spring = calculate_wow_amplitude_spring(cache);
-    let wow_phase_noise = calculate_wow_phase_noise(cache);
-    let wow_phase_spring = calculate_wow_phase_spring(cache);
-    let wow_phase_drift = calculate_wow_phase_drift(cache);
-    let wow_filter = calculate_wow_filter(cache);
+    let wow_frequency = wow::calculate_frequency(&cache.wow);
+    let wow_depth = wow::calculate_depth(&cache.wow, wow_frequency);
+    let wow_amplitude_noise = wow::calculate_amplitude_noise(&cache.wow);
+    let wow_amplitude_spring = wow::calculate_amplitude_spring(&cache.wow);
+    let wow_phase_noise = wow::calculate_phase_noise(&cache.wow);
+    let wow_phase_spring = wow::calculate_phase_spring(&cache.wow);
+    let wow_phase_drift = wow::calculate_phase_drift(&cache.wow);
+    let wow_filter = wow::calculate_filter(&cache.wow);
     let delay_length = calculate_delay_length(cache);
     let delay_head_1_position = calculate_delay_head_position(cache, 0);
     let delay_head_2_position = calculate_delay_head_position(cache, 1);
@@ -268,7 +243,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
 }
 
 #[allow(clippy::let_and_return)]
-fn calculate(
+pub(crate) fn calculate(
     pot: Option<f32>,
     cv: Option<f32>,
     range: (f32, f32),
@@ -322,80 +297,6 @@ fn calculate_bias(cache: &Cache) -> f32 {
         BIAS_RANGE,
         Some(taper::log),
     )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_wow_frequency(cache: &Cache) -> f32 {
-    calculate(
-        Some(cache.wow.frequency_pot),
-        Some(cache.wow.frequency_cv),
-        WOW_FREQUENCY_RANGE,
-        None,
-    )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_wow_depth(cache: &Cache, wow_frequency: f32) -> f32 {
-    let wow_depth_sum = (cache.wow.depth_pot + cache.wow.depth_cv).clamp(0.0, 1.0);
-    let wow_depth_curved = taper::log(wow_depth_sum);
-    let max_depth = f32::min(WOW_DEPTH_RANGE.1, (1.0 / wow_frequency) * 0.31);
-    let wow_depth_scaled = wow_depth_curved * (max_depth - WOW_DEPTH_RANGE.0) + WOW_DEPTH_RANGE.0;
-    wow_depth_scaled
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_wow_amplitude_noise(cache: &Cache) -> f32 {
-    calculate(
-        Some(cache.wow.amplitude_noise_pot),
-        None,
-        WOW_AMPLITUDE_NOISE_RANGE,
-        None,
-    )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_wow_amplitude_spring(cache: &Cache) -> f32 {
-    calculate(
-        Some(cache.wow.amplitude_spring_pot),
-        None,
-        WOW_AMPLITUDE_SPRING_RANGE,
-        None,
-    )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_wow_phase_noise(cache: &Cache) -> f32 {
-    calculate(
-        Some(cache.wow.phase_noise_pot),
-        None,
-        WOW_PHASE_NOISE_RANGE,
-        None,
-    )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_wow_phase_spring(cache: &Cache) -> f32 {
-    calculate(
-        Some(cache.wow.phase_spring_pot),
-        None,
-        WOW_PHASE_SPRING_RANGE,
-        None,
-    )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_wow_phase_drift(cache: &Cache) -> f32 {
-    calculate(
-        Some(cache.wow.phase_drift_pot),
-        None,
-        WOW_PHASE_DRIFT_RANGE,
-        None,
-    )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_wow_filter(cache: &Cache) -> f32 {
-    calculate(Some(cache.wow.filter_pot), None, WOW_FILTER_RANGE, None)
 }
 
 #[allow(clippy::let_and_return)]
