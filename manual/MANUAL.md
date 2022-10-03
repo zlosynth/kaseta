@@ -32,3 +32,5 @@
 * Short cybmals, low bias cuts weak signal.
 * Ping pong snare. Like Daughter's New Ways.
 * Warm soft saturation on piano is nice.
+* With non-warping delay, CV S&H input to delay value, selecting samples from
+  the past.
