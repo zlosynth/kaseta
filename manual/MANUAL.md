@@ -37,6 +37,7 @@
 * Wow cyclic vs. random
 * Flutter cyclic vs. random
 * Danger zone
+* First head just dry
 
 ## Patches
 
