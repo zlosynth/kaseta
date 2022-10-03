@@ -37,6 +37,7 @@
 extern crate approx;
 
 mod delay;
+mod hysteresis;
 mod quantization;
 mod taper;
 mod wow;
@@ -44,19 +45,11 @@ mod wow;
 use kaseta_dsp::processor::Attributes;
 
 use crate::delay::Cache as DelayCache;
+use crate::hysteresis::Cache as HysteresisCache;
 use crate::wow::Cache as WowCache;
 
 // Pre-amp scales between -20 to +28 dB.
 const PRE_AMP_RANGE: (f32, f32) = (0.1, 25.0);
-
-// 0.1 is almost clean, and with high pre-amp it still passes through signal.
-// 30 is well in the extreme, but still somehow stable.
-const DRIVE_RANGE: (f32, f32) = (0.05, 30.0);
-
-const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
-
-// Width (1.0 - bias) must never reach 1.0, otherwise it panics due to division by zero
-const BIAS_RANGE: (f32, f32) = (0.0001, 1.0);
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -162,17 +155,6 @@ pub struct Cache {
     pub delay: DelayCache,
 }
 
-#[derive(Default, Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct HysteresisCache {
-    pub drive_pot: f32,
-    pub drive_cv: f32,
-    pub saturation_pot: f32,
-    pub saturation_cv: f32,
-    pub bias_pot: f32,
-    pub bias_cv: f32,
-}
-
 #[must_use]
 pub fn reduce_control_action(action: ControlAction, cache: &mut Cache) -> DSPReaction {
     apply_control_action_in_cache(action, cache);
@@ -182,9 +164,9 @@ pub fn reduce_control_action(action: ControlAction, cache: &mut Cache) -> DSPRea
 #[must_use]
 pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let pre_amp = calculate_pre_amp(cache);
-    let drive = calculate_drive(cache);
-    let saturation = calculate_saturation(cache);
-    let bias = calculate_bias(cache);
+    let drive = hysteresis::calculate_drive(&cache.hysteresis);
+    let saturation = hysteresis::calculate_saturation(&cache.hysteresis);
+    let bias = hysteresis::calculate_bias(&cache.hysteresis);
     let wow_frequency = wow::calculate_frequency(&cache.wow);
     let wow_depth = wow::calculate_depth(&cache.wow, wow_frequency);
     let wow_amplitude_noise = wow::calculate_amplitude_noise(&cache.wow);
@@ -248,36 +230,6 @@ fn calculate_pre_amp(cache: &Cache) -> f32 {
         Some(cache.pre_amp_pot),
         None,
         PRE_AMP_RANGE,
-        Some(taper::log),
-    )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_drive(cache: &Cache) -> f32 {
-    calculate(
-        Some(cache.hysteresis.drive_pot),
-        Some(cache.hysteresis.drive_cv),
-        DRIVE_RANGE,
-        Some(taper::log),
-    )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_saturation(cache: &Cache) -> f32 {
-    calculate(
-        Some(cache.hysteresis.saturation_pot),
-        Some(cache.hysteresis.saturation_cv),
-        SATURATION_RANGE,
-        Some(taper::reverse_log),
-    )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_bias(cache: &Cache) -> f32 {
-    calculate(
-        Some(cache.hysteresis.bias_pot),
-        Some(cache.hysteresis.bias_cv),
-        BIAS_RANGE,
         Some(taper::log),
     )
 }
