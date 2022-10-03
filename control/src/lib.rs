@@ -36,13 +36,14 @@
 #[macro_use]
 extern crate approx;
 
+mod delay;
 mod quantization;
 mod taper;
 mod wow;
 
 use kaseta_dsp::processor::Attributes;
 
-use crate::quantization::{quantize, Quantization};
+use crate::delay::Cache as DelayCache;
 use crate::wow::Cache as WowCache;
 
 // Pre-amp scales between -20 to +28 dB.
@@ -56,9 +57,6 @@ const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
 
 // Width (1.0 - bias) must never reach 1.0, otherwise it panics due to division by zero
 const BIAS_RANGE: (f32, f32) = (0.0001, 1.0);
-
-const DELAY_LENGTH_RANGE: (f32, f32) = (0.02, 8.0);
-const DELAY_HEAD_POSITION_RANGE: (f32, f32) = (0.0, 1.0);
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -175,21 +173,6 @@ pub struct HysteresisCache {
     pub bias_cv: f32,
 }
 
-#[derive(Default, Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct DelayCache {
-    pub length_pot: f32,
-    pub length_cv: f32,
-    pub head_position_pot: [f32; 4],
-    pub head_position_cv: [f32; 4],
-    pub quantization_6: bool,
-    pub quantization_8: bool,
-    pub head_play: [bool; 4],
-    pub head_feedback: [bool; 4],
-    pub head_feedback_amount: [f32; 4],
-    pub head_volume: [f32; 4],
-}
-
 #[must_use]
 pub fn reduce_control_action(action: ControlAction, cache: &mut Cache) -> DSPReaction {
     apply_control_action_in_cache(action, cache);
@@ -210,11 +193,11 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let wow_phase_spring = wow::calculate_phase_spring(&cache.wow);
     let wow_phase_drift = wow::calculate_phase_drift(&cache.wow);
     let wow_filter = wow::calculate_filter(&cache.wow);
-    let delay_length = calculate_delay_length(cache);
-    let delay_head_1_position = calculate_delay_head_position(cache, 0);
-    let delay_head_2_position = calculate_delay_head_position(cache, 1);
-    let delay_head_3_position = calculate_delay_head_position(cache, 2);
-    let delay_head_4_position = calculate_delay_head_position(cache, 3);
+    let delay_length = delay::calculate_length(&cache.delay);
+    let delay_head_1_position = delay::calculate_head_position(&cache.delay, 0);
+    let delay_head_2_position = delay::calculate_head_position(&cache.delay, 1);
+    let delay_head_3_position = delay::calculate_head_position(&cache.delay, 2);
+    let delay_head_4_position = delay::calculate_head_position(&cache.delay, 3);
     DSPReaction {
         pre_amp,
         drive,
@@ -297,35 +280,6 @@ fn calculate_bias(cache: &Cache) -> f32 {
         BIAS_RANGE,
         Some(taper::log),
     )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_delay_length(cache: &Cache) -> f32 {
-    calculate(
-        Some(cache.delay.length_pot),
-        Some(cache.delay.length_cv),
-        DELAY_LENGTH_RANGE,
-        Some(taper::reverse_log),
-    )
-}
-
-#[allow(clippy::let_and_return)]
-fn calculate_delay_head_position(cache: &Cache, head: usize) -> f32 {
-    let delay_head_position_sum =
-        (cache.delay.head_position_pot[head] + cache.delay.head_position_cv[head]).clamp(0.0, 1.0);
-    let delay_head_position_scaled = delay_head_position_sum
-        * (DELAY_HEAD_POSITION_RANGE.1 - DELAY_HEAD_POSITION_RANGE.0)
-        + DELAY_HEAD_POSITION_RANGE.0;
-    let delay_head_position_quantized = if cache.delay.quantization_6 || cache.delay.quantization_8
-    {
-        let quantization =
-            Quantization::from((cache.delay.quantization_6, cache.delay.quantization_8));
-        quantize(delay_head_position_scaled, quantization)
-    } else {
-        delay_head_position_scaled
-    };
-
-    delay_head_position_quantized
 }
 
 fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
