@@ -361,70 +361,7 @@ def amplitude_fitting():
     )
 
     input_configs = [(func, d_data, s_data, w_data, a_data) for func in functions]
-
-    print("Testing fitting functions:")
-    configs = []
-    with concurrent.futures.ProcessPoolExecutor() as executor:
-        for i, config in enumerate(
-            executor.map(measure_fitting_accuracy, input_configs)
-        ):
-            configs.append(config)
-            print("Processed: {}/{}".format(i + 1, len(input_configs)))
-
-    configs = sorted(configs, key=lambda x: x["rmse"])
-
-    print("Approximations ordered by accuracy:")
-    for (i, config) in enumerate(configs):
-        print(
-            "{}. {}(rmse={}, rs={})".format(
-                i + 1, config["func"], config["rmse"], config["rs"]
-            )
-        )
-
-    while True:
-        selected = input("Show parameters (empty to exit): ")
-        if selected == "":
-            return
-        try:
-            parameters = configs[int(selected) - 1]["parameters"]
-        except:
-            print("Invalid index")
-            continue
-        print_parameters(parameters)
-
-
-def measure_fitting_accuracy(config):
-    f = config[0]
-    d_data = config[1]
-    s_data = config[2]
-    w_data = config[3]
-    a_data = config[4]
-
-    try:
-        fitted_parameters, _ = curve_fit(
-            f, [d_data, s_data, w_data], a_data, maxfev=60000
-        )
-    except RuntimeError:
-        print("Unable to fit")
-        return {
-            "func": f.__name__,
-            "rmse": 1.0,
-            "rs": 0.0,
-            "parameters": [],
-        }
-
-    model_predictions = f([d_data, s_data, w_data, a_data], *fitted_parameters)
-    abs_errors = model_predictions - a_data
-    squared_errors = np.square(abs_errors)
-    mean_squared_errors = np.mean(squared_errors)
-    root_mean_squared_errors = np.sqrt(mean_squared_errors)
-    r_squared = 1.0 - (np.var(abs_errors) / np.var(a_data))
-    return {
-        "func": f.__name__,
-        "rmse": root_mean_squared_errors,
-        "rs": r_squared,
-        "parameters": fitted_parameters,
-    }
+    test_fitting_functions(input_configs)
 
 
 def func_a_linear(data, a1, a2, a3, b):
@@ -589,10 +526,119 @@ def func_q_pow3(
     )
 
 
+def drive_fitting():
+    # This data represents the combination of bias and drive after which
+    # hysteresis started being unstable with input amplitude of 4.0pp
+    data_frame = pd.DataFrame(
+        np.array(
+            [
+                [1.0, 0.334],
+                [0.9, 0.992],
+                [0.8, 1.091],
+                [0.7, 1.240],
+                [0.6, 1.240],
+                [0.5, 1.388],
+                [0.4, 1.580],
+                [0.3, 1.580],
+                [0.2, 1.780],
+                [0.1, 2.680],
+            ]
+        ),
+        columns=["b", "d"],
+    )
+
+    d_data = data_frame["d"].values
+    b_data = data_frame["b"].values
+
+    functions = (
+        func_1_c_pow3,  # rmse=0.036
+        func_1_b_pow2,  # rmse=0.108
+        func_1_a_linear,  # rmse=0.115
+    )
+
+    input_configs = [(func, d_data, b_data) for func in functions]
+    test_fitting_functions(input_configs)
+
+
+def func_1_a_linear(data, a1, b):
+    bias = data[0]
+    return a1 * bias + b
+
+
+def func_1_b_pow2(data, a1, a2, b):
+    bias = data[0]
+    return a1 * bias + a2 * bias**2 + b
+
+
+def func_1_c_pow3(data, a1, a2, a3, b):
+    bias = data[0]
+    return a1 * bias + a2 * bias**2 + a3 * bias**3 + b
+
+
+def test_fitting_functions(input_configs):
+    print("Testing fitting functions:")
+    configs = []
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        for i, config in enumerate(
+            executor.map(measure_fitting_accuracy, input_configs)
+        ):
+            configs.append(config)
+            print("Processed: {}/{}".format(i + 1, len(input_configs)))
+
+    configs = sorted(configs, key=lambda x: x["rmse"])
+
+    print("Approximations ordered by accuracy:")
+    for (i, config) in enumerate(configs):
+        print(
+            "{}. {}(rmse={}, rs={})".format(
+                i + 1, config["func"], config["rmse"], config["rs"]
+            )
+        )
+
+    while True:
+        selected = input("Show parameters (empty to exit): ")
+        if selected == "":
+            return
+        try:
+            parameters = configs[int(selected) - 1]["parameters"]
+        except:
+            print("Invalid index")
+            continue
+        print_parameters(parameters)
+
+
 def print_parameters(parameters):
     for (i, a) in enumerate(parameters[: len(parameters) - 1]):
         print("a{} = {}".format(i + 1, a))
     print("b = {}".format(parameters[-1]))
+
+
+def measure_fitting_accuracy(config):
+    f = config[0]
+
+    try:
+        fitted_parameters, _ = curve_fit(f, config[1:-1], config[-1], maxfev=60000)
+    except RuntimeError:
+        print("Unable to fit")
+        return {
+            "func": f.__name__,
+            "rmse": 1.0,
+            "rs": 0.0,
+            "parameters": [],
+        }
+
+    model_predictions = f(config[1:], *fitted_parameters)
+    abs_errors = model_predictions - config[-1]
+    squared_errors = np.square(abs_errors)
+    mean_squared_errors = np.mean(squared_errors)
+    root_mean_squared_errors = np.sqrt(mean_squared_errors)
+    r_squared = 1.0 - (np.var(abs_errors) / np.var(config[-1]))
+    return {
+        "func": f.__name__,
+        "rmse": root_mean_squared_errors,
+        "rs": r_squared,
+        "parameters": fitted_parameters,
+    }
 
 
 if __name__ == "__main__":
@@ -611,6 +657,10 @@ if __name__ == "__main__":
     subparsers.add_parser(
         "amplitude_fitting", help="Find the best fitting approximation for amplitude"
     )
+    subparsers.add_parser(
+        "drive_fitting",
+        help="With low bias, high drive causes the algorithm with f32 to become unstable. Based on test results, fit a curve limitting the maximum value of drive per bias.",
+    )
     args = parser.parse_args()
 
     if args.subparser == "response":
@@ -619,3 +669,5 @@ if __name__ == "__main__":
         amplitude_generate()
     elif args.subparser == "amplitude_fitting":
         amplitude_fitting()
+    elif args.subparser == "drive_fitting":
+        drive_fitting()
