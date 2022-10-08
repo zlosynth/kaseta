@@ -49,7 +49,7 @@ use crate::hysteresis::Cache as HysteresisCache;
 use crate::wow::Cache as WowCache;
 
 // Pre-amp scales between -20 to +28 dB.
-const PRE_AMP_RANGE: (f32, f32) = (0.1, 25.0);
+const PRE_AMP_RANGE: (f32, f32) = (0.0, 25.0);
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -164,9 +164,9 @@ pub fn reduce_control_action(action: ControlAction, cache: &mut Cache) -> DSPRea
 #[must_use]
 pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let pre_amp = calculate_pre_amp(cache);
-    let drive = hysteresis::calculate_drive(&cache.hysteresis);
     let saturation = hysteresis::calculate_saturation(&cache.hysteresis);
     let bias = hysteresis::calculate_bias(&cache.hysteresis);
+    let drive = hysteresis::calculate_drive(&cache.hysteresis, bias);
     let wow_frequency = wow::calculate_frequency(&cache.wow);
     let wow_depth = wow::calculate_depth(&cache.wow, wow_frequency);
     let wow_amplitude_noise = wow::calculate_amplitude_noise(&cache.wow);

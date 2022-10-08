@@ -2,8 +2,9 @@ use super::calculate;
 use crate::taper;
 
 // 0.1 is almost clean, and with high pre-amp it still passes through signal.
-// 30 is well in the extreme, but still somehow stable.
-const DRIVE_RANGE: (f32, f32) = (0.05, 30.0);
+// 2.0 is absolute maximum drive that can be stable with 4pp amplitude. The
+// actual used maximum is always calculated based on the current bias.
+const DRIVE_RANGE: (f32, f32) = (0.1, 2.0);
 
 const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
 
@@ -22,13 +23,22 @@ pub struct Cache {
 }
 
 #[allow(clippy::let_and_return)]
-pub fn calculate_drive(cache: &Cache) -> f32 {
+pub fn calculate_drive(cache: &Cache, bias: f32) -> f32 {
+    let bias2 = bias * bias;
+    let bias3 = bias2 * bias;
+    // Using <https://mycurvefit.com/> cubic interpolation over data gathered
+    // while testing the instability peak. The lower bias end was flattened not
+    // to overdrive too much. Input data (maximum stable drive per bias):
+    // 0.1 0.992 1.091 1.240 1.240 1.388 1.580 1.580 1.780 1.780
+    // 1.0 0.9 0.8 0.7 0.6 0.5 0.4 0.3 0.2 0.1
+    let max_drive = 2.185_433 - 3.910_791 * bias + 7.821_096 * bias2 - 5.846_348 * bias3;
     calculate(
         Some(cache.drive_pot),
         Some(cache.drive_cv),
         DRIVE_RANGE,
         Some(taper::log),
     )
+    .min(max_drive)
 }
 
 #[allow(clippy::let_and_return)]
