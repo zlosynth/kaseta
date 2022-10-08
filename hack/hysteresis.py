@@ -263,7 +263,7 @@ def response():
         axs,
         0,
         lambda block, drive: processor(block, drive=drive),
-        [0.0, 0.1, 0.25, 0.5, 1.0, 5.0, 10.0, 20.0],
+        [0.1, 0.25, 0.5, 1.0, 2.0],
     )
 
     axs[0, 1].set_title("Saturation")
