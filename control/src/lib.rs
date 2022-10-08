@@ -57,8 +57,6 @@ pub enum ControlAction {
     SetPreAmpPot(f32),
     SetDrivePot(f32),
     SetDriveCV(f32),
-    SetSaturationPot(f32),
-    SetSaturationCV(f32),
     SetBiasPot(f32),
     SetBiasCV(f32),
     SetWowFrequencyPot(f32),
@@ -164,9 +162,8 @@ pub fn reduce_control_action(action: ControlAction, cache: &mut Cache) -> DSPRea
 #[must_use]
 pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let pre_amp = calculate_pre_amp(cache);
-    let saturation = hysteresis::calculate_saturation(&cache.hysteresis);
     let bias = hysteresis::calculate_bias(&cache.hysteresis);
-    let drive = hysteresis::calculate_drive(&cache.hysteresis, bias);
+    let (drive, saturation) = hysteresis::calculate_drive_and_saturation(&cache.hysteresis, bias);
     let wow_frequency = wow::calculate_frequency(&cache.wow);
     let wow_depth = wow::calculate_depth(&cache.wow, wow_frequency);
     let wow_amplitude_noise = wow::calculate_amplitude_noise(&cache.wow);
@@ -246,12 +243,6 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         }
         SetDriveCV(x) => {
             cache.hysteresis.drive_cv = x;
-        }
-        SetSaturationPot(x) => {
-            cache.hysteresis.saturation_pot = x;
-        }
-        SetSaturationCV(x) => {
-            cache.hysteresis.saturation_cv = x;
         }
         SetBiasPot(x) => {
             cache.hysteresis.bias_pot = x;

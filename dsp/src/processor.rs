@@ -99,7 +99,7 @@ impl Processor {
 
         let mut instrument = signal::from_iter(block_copy.into_iter())
             .mul_amp(self.pre_amp.by_ref())
-            .clip_amp(1.0);
+            .clip_amp(2.0);
 
         let mut buffer_1 = [0.0; 32];
         for x in &mut buffer_1 {
