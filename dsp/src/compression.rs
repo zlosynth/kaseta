@@ -95,14 +95,14 @@ mod tests {
     }
 
     #[test]
-    fn it_leaves_buffer_below_original_intact() {
+    fn it_increases_buffer_below_original() {
         static mut MEMORY: [MaybeUninit<u32>; 16] = unsafe { MaybeUninit::uninit().assume_init() };
         let mut memory_manager = MemoryManager::from(unsafe { &mut MEMORY[..] });
         let mut compressor = Compressor::new(100, &mut memory_manager);
         compressor.prepare(&sine_block(1.0));
         let mut buffer = sine_block(0.5);
         compressor.process(&mut buffer);
-        assert_relative_eq!(max(&buffer), 0.5);
+        assert_relative_eq!(max(&buffer), 1.0);
     }
 
     #[test]
@@ -114,10 +114,5 @@ mod tests {
         let mut buffer = sine_block(1.5);
         compressor.process(&mut buffer);
         assert_relative_eq!(max(&buffer), 1.0);
-    }
-
-    #[test]
-    fn it_measures_max_of_last_x_samples() {
-        todo!();
     }
 }

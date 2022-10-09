@@ -111,7 +111,7 @@ impl Processor {
             *x = instrument.next();
         }
 
-        // self.compressor.prepare(&buffer_1);
+        self.compressor.prepare(&buffer_1);
 
         let mut buffer_2 = [0.0; 32 * 4];
         self.upsampler.process(&buffer_1, &mut buffer_2);
@@ -120,7 +120,7 @@ impl Processor {
 
         self.downsampler.process(&buffer_2, &mut block[..]);
 
-        // self.compressor.process(&mut block[..]);
+        self.compressor.process(&mut block[..]);
 
         // TODO: May be better on oversampled, for audio-rate delay
         self.delay.process(&mut block[..]);
