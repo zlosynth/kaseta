@@ -48,6 +48,10 @@ impl RingBuffer {
         let index = self.write_index.wrapping_sub(relative_index) & self.mask;
         &mut self.buffer[index]
     }
+
+    pub fn buffer(&self) -> &[f32] {
+        self.buffer
+    }
 }
 
 fn is_power_of_2(n: usize) -> bool {

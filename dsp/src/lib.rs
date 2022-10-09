@@ -21,6 +21,7 @@ pub mod random;
 pub mod hysteresis;
 pub mod oversampling;
 
+mod compression;
 mod delay;
 mod math;
 mod ring_buffer;

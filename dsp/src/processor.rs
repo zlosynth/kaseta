@@ -3,6 +3,7 @@
 use sirena::memory_manager::MemoryManager;
 use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 
+use crate::compression::Compressor;
 use crate::delay::{Attributes as DelayAttributes, Delay};
 use crate::hysteresis::{Attributes as HysteresisAttributes, Hysteresis};
 use crate::oversampling::{Downsampler4, Upsampler4};
@@ -19,6 +20,7 @@ pub struct Processor {
     hysteresis: Hysteresis,
     wow_flutter: WowFlutter,
     delay: Delay,
+    compressor: Compressor,
 }
 
 // TODO: Just re-use and re-export component's attributes
@@ -77,6 +79,8 @@ impl Processor {
 
         let delay = Delay::new(fs, memory_manager);
 
+        let compressor = Compressor::new(fs as u32, memory_manager);
+
         let mut uninitialized_processor = Self {
             upsampler,
             downsampler,
@@ -84,6 +88,7 @@ impl Processor {
             hysteresis,
             wow_flutter,
             delay,
+            compressor,
         };
 
         uninitialized_processor.set_attributes(Attributes::default());
@@ -106,12 +111,16 @@ impl Processor {
             *x = instrument.next();
         }
 
+        // self.compressor.prepare(&buffer_1);
+
         let mut buffer_2 = [0.0; 32 * 4];
         self.upsampler.process(&buffer_1, &mut buffer_2);
 
         self.hysteresis.process(&mut buffer_2);
 
         self.downsampler.process(&buffer_2, &mut block[..]);
+
+        // self.compressor.process(&mut block[..]);
 
         // TODO: May be better on oversampled, for audio-rate delay
         self.delay.process(&mut block[..]);
