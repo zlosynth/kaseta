@@ -51,7 +51,7 @@ impl Compressor {
 
 // TODO: Try if basic iteration makes it faster
 fn find_max(buffer: &[f32]) -> f32 {
-    buffer.iter().fold(0.0, |a, b| a.max(*b))
+    buffer.iter().map(|x| x.abs()).fold(0.0, |a, b| a.max(b))
 }
 
 // TODO: Try if custom abs works faster
