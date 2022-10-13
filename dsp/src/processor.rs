@@ -120,7 +120,7 @@ impl Processor {
 
         self.downsampler.process(&buffer_2, &mut block[..]);
 
-        self.compressor.process(&mut block[..]);
+        // self.compressor.process(&mut block[..]);
 
         // TODO: May be better on oversampled, for audio-rate delay
         self.delay.process(&mut block[..]);

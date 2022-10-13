@@ -162,8 +162,8 @@ pub fn reduce_control_action(action: ControlAction, cache: &mut Cache) -> DSPRea
 #[must_use]
 pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let pre_amp = calculate_pre_amp(cache);
-    let bias = hysteresis::calculate_bias(&cache.hysteresis);
-    let (drive, saturation) = hysteresis::calculate_drive_and_saturation(&cache.hysteresis, bias);
+    let (drive, saturation) = hysteresis::calculate_drive_and_saturation(&cache.hysteresis);
+    let bias = hysteresis::calculate_bias(&cache.hysteresis, drive);
     let wow_frequency = wow::calculate_frequency(&cache.wow);
     let wow_depth = wow::calculate_depth(&cache.wow, wow_frequency);
     let wow_amplitude_noise = wow::calculate_amplitude_noise(&cache.wow);
