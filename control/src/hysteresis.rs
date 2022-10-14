@@ -5,14 +5,13 @@ use crate::taper;
 const D4B_B: f32 = 1.0;
 const D4B_A1: f32 = 0.0;
 const D4B_A2: f32 = -0.2;
-const MAX_BIAS: f32 = D4B_B;
 
 // Maximum limit of how much place on the slider is occupied by drive. This
 // gets scaled down based on bias.
 const DRIVE_PORTION: f32 = 1.0 / 2.0;
 const DRIVE_RANGE: (f32, f32) = (0.1, 1.1);
 const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
-const BIAS_RANGE: (f32, f32) = (0.01, MAX_BIAS);
+const BIAS_RANGE: (f32, f32) = (0.01, 1.0);
 
 #[derive(Default, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
