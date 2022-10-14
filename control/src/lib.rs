@@ -75,8 +75,6 @@ pub enum ControlAction {
     SetDelayHeadPositionCV(usize, f32),
     SetDelayQuantizationSix(bool),
     SetDelayQuantizationEight(bool),
-    SetDelayHeadPlay(usize, bool),
-    SetDelayHeadFeedback(usize, bool),
     SetDelayHeadFeedbackAmount(usize, f32),
     SetDelayHeadVolume(usize, f32),
 }
@@ -98,8 +96,6 @@ pub struct DSPReaction {
     pub wow_phase_drift: f32,
     pub delay_length: f32,
     pub delay_head_position: [f32; 4],
-    pub delay_head_play: [bool; 4],
-    pub delay_head_feedback: [bool; 4],
     pub delay_head_feedback_amount: [f32; 4],
     pub delay_head_volume: [f32; 4],
 }
@@ -124,14 +120,14 @@ impl From<DSPReaction> for Attributes {
             delay_head_2_position: other.delay_head_position[1],
             delay_head_3_position: other.delay_head_position[2],
             delay_head_4_position: other.delay_head_position[3],
-            delay_head_1_play: other.delay_head_play[0],
-            delay_head_2_play: other.delay_head_play[1],
-            delay_head_3_play: other.delay_head_play[2],
-            delay_head_4_play: other.delay_head_play[3],
-            delay_head_1_feedback: other.delay_head_feedback[0],
-            delay_head_2_feedback: other.delay_head_feedback[1],
-            delay_head_3_feedback: other.delay_head_feedback[2],
-            delay_head_4_feedback: other.delay_head_feedback[3],
+            delay_head_1_play: other.delay_head_volume[0] > 0.01,
+            delay_head_2_play: other.delay_head_volume[1] > 0.01,
+            delay_head_3_play: other.delay_head_volume[2] > 0.01,
+            delay_head_4_play: other.delay_head_volume[3] > 0.01,
+            delay_head_1_feedback: other.delay_head_feedback_amount[0] > 0.01,
+            delay_head_2_feedback: other.delay_head_feedback_amount[1] > 0.01,
+            delay_head_3_feedback: other.delay_head_feedback_amount[2] > 0.01,
+            delay_head_4_feedback: other.delay_head_feedback_amount[3] > 0.01,
             delay_head_1_feedback_amount: other.delay_head_feedback_amount[0],
             delay_head_2_feedback_amount: other.delay_head_feedback_amount[1],
             delay_head_3_feedback_amount: other.delay_head_feedback_amount[2],
@@ -197,8 +193,6 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
             delay_head_3_position,
             delay_head_4_position,
         ],
-        delay_head_play: cache.delay.head_play,
-        delay_head_feedback: cache.delay.head_feedback,
         delay_head_feedback_amount: cache.delay.head_feedback_amount,
         delay_head_volume: cache.delay.head_volume,
     }
@@ -297,12 +291,6 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         }
         SetDelayQuantizationSix(b) => {
             cache.delay.quantization_6 = b;
-        }
-        SetDelayHeadPlay(i, b) => {
-            cache.delay.head_play[i] = b;
-        }
-        SetDelayHeadFeedback(i, b) => {
-            cache.delay.head_feedback[i] = b;
         }
         SetDelayHeadFeedbackAmount(i, x) => {
             cache.delay.head_feedback_amount[i] = x;

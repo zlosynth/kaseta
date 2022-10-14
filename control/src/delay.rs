@@ -14,8 +14,6 @@ pub struct Cache {
     pub head_position_cv: [f32; 4],
     pub quantization_6: bool,
     pub quantization_8: bool,
-    pub head_play: [bool; 4],
-    pub head_feedback: [bool; 4],
     pub head_feedback_amount: [f32; 4],
     pub head_volume: [f32; 4],
 }
