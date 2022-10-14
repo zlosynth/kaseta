@@ -6,12 +6,11 @@ const D4B_B: f32 = 1.0;
 const D4B_A1: f32 = 0.0;
 const D4B_A2: f32 = -0.2;
 const MAX_BIAS: f32 = D4B_B;
-const MAX_DRIVE: f32 = 1.78;
 
 // Maximum limit of how much place on the slider is occupied by drive. This
 // gets scaled down based on bias.
-const DRIVE_PORTION: f32 = 3.0 / 4.0;
-const DRIVE_RANGE: (f32, f32) = (0.1, MAX_DRIVE);
+const DRIVE_PORTION: f32 = 1.0 / 2.0;
+const DRIVE_RANGE: (f32, f32) = (0.1, 1.1);
 const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
 const BIAS_RANGE: (f32, f32) = (0.01, MAX_BIAS);
 
@@ -32,7 +31,7 @@ pub fn calculate_drive_and_saturation(cache: &Cache) -> (f32, f32) {
         Some((control / DRIVE_PORTION).min(1.0)),
         None,
         DRIVE_RANGE,
-        Some(taper::log),
+        None,
     );
 
     let saturation = calculate(
