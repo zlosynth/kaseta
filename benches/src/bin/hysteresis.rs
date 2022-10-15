@@ -41,6 +41,7 @@ fn main() -> ! {
 
     let mut hysteresis = Hysteresis::new(48_000.0);
     hysteresis.set_attributes(Attributes {
+        dry_wet: 0.5,
         drive: 0.5,
         saturation: 0.5,
         width: 0.5,

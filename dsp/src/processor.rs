@@ -27,6 +27,7 @@ pub struct Processor {
 #[allow(clippy::struct_excessive_bools)]
 pub struct Attributes {
     pub pre_amp: f32,
+    pub dry_wet: f32,
     pub drive: f32,
     pub saturation: f32,
     pub width: f32,
@@ -128,6 +129,7 @@ impl Processor {
 impl From<Attributes> for HysteresisAttributes {
     fn from(other: Attributes) -> Self {
         Self {
+            dry_wet: other.dry_wet,
             drive: other.drive,
             saturation: other.saturation,
             width: other.width,

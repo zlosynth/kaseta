@@ -55,6 +55,7 @@ const PRE_AMP_RANGE: (f32, f32) = (0.0, 25.0);
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ControlAction {
     SetPreAmpPot(f32),
+    SetDryWetPot(f32),
     SetDrivePot(f32),
     SetDriveCV(f32),
     SetBiasPot(f32),
@@ -83,6 +84,7 @@ pub enum ControlAction {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct DSPReaction {
     pub pre_amp: f32,
+    pub dry_wet: f32,
     pub drive: f32,
     pub saturation: f32,
     pub bias: f32,
@@ -104,6 +106,7 @@ impl From<DSPReaction> for Attributes {
     fn from(other: DSPReaction) -> Self {
         Attributes {
             pre_amp: other.pre_amp,
+            dry_wet: other.dry_wet,
             drive: other.drive,
             saturation: other.saturation,
             width: 1.0 - other.bias,
@@ -158,6 +161,7 @@ pub fn reduce_control_action(action: ControlAction, cache: &mut Cache) -> DSPRea
 #[must_use]
 pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let pre_amp = calculate_pre_amp(cache);
+    let dry_wet = hysteresis::calculate_dry_wet(&cache.hysteresis);
     let (drive, saturation) = hysteresis::calculate_drive_and_saturation(&cache.hysteresis);
     let bias = hysteresis::calculate_bias(&cache.hysteresis, drive);
     let wow_frequency = wow::calculate_frequency(&cache.wow);
@@ -175,6 +179,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let delay_head_4_position = delay::calculate_head_position(&cache.delay, 3);
     DSPReaction {
         pre_amp,
+        dry_wet,
         drive,
         saturation,
         bias,
@@ -231,6 +236,9 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
     match action {
         SetPreAmpPot(x) => {
             cache.pre_amp_pot = x;
+        }
+        SetDryWetPot(x) => {
+            cache.hysteresis.dry_wet_pot = x;
         }
         SetDrivePot(x) => {
             cache.hysteresis.drive_pot = x;
