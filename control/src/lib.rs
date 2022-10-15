@@ -70,6 +70,7 @@ pub enum ControlAction {
     SetWowPhaseNoisePot(f32),
     SetWowPhaseSpringPot(f32),
     SetWowPhaseDriftPot(f32),
+    SetDelayRangeSwitch(bool),
     SetDelayLengthPot(f32),
     SetDelayLengthCV(f32),
     SetDelayHeadPositionPot(usize, f32),
@@ -288,6 +289,9 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         }
         SetWowFilterPot(x) => {
             cache.wow.filter_pot = x;
+        }
+        SetDelayRangeSwitch(b) => {
+            cache.delay.range_switch = b;
         }
         SetDelayLengthPot(x) => {
             cache.delay.length_pot = x;
