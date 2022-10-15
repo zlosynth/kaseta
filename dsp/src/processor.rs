@@ -65,24 +65,13 @@ impl Processor {
     #[allow(clippy::let_and_return)]
     #[must_use]
     pub fn new(fs: f32, memory_manager: &mut MemoryManager) -> Self {
-        let upsampler = Upsampler4::new_4(memory_manager);
-        let downsampler = Downsampler4::new_4(memory_manager);
-
-        let pre_amp = PreAmp::new();
-
-        let hysteresis = Hysteresis::new(fs);
-
-        let wow_flutter = WowFlutter::new(fs as u32, memory_manager);
-
-        let delay = Delay::new(fs, memory_manager);
-
         let mut uninitialized_processor = Self {
-            upsampler,
-            downsampler,
-            pre_amp,
-            hysteresis,
-            wow_flutter,
-            delay,
+            upsampler: Upsampler4::new_4(memory_manager),
+            downsampler: Downsampler4::new_4(memory_manager),
+            pre_amp: PreAmp::new(),
+            hysteresis: Hysteresis::new(fs),
+            wow_flutter: WowFlutter::new(fs as u32, memory_manager),
+            delay: Delay::new(fs, memory_manager),
         };
 
         uninitialized_processor.set_attributes(Attributes::default());
