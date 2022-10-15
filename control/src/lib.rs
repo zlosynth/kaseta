@@ -10,7 +10,7 @@
 //! ```text
 //!                    [ DSPLoop ]
 //!                       A   |
-//!           (DSPAction) |   | (DSPAction)
+//!           (DSPAction) |   | (DSPReaction)
 //!                       |   V
 //!                 [ Reducer {Cache} ] <--------> {Store}
 //!                     A        |
@@ -42,7 +42,7 @@ mod quantization;
 mod taper;
 mod wow;
 
-use kaseta_dsp::processor::Attributes;
+use kaseta_dsp::processor::{Attributes, Reaction as DSPReaction};
 
 use crate::delay::Cache as DelayCache;
 use crate::hysteresis::Cache as HysteresisCache;
@@ -82,7 +82,7 @@ pub enum ControlAction {
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct DSPReaction {
+pub struct DSPAction {
     pub pre_amp: f32,
     pub dry_wet: f32,
     pub drive: f32,
@@ -102,8 +102,8 @@ pub struct DSPReaction {
     pub delay_head_volume: [f32; 4],
 }
 
-impl From<DSPReaction> for Attributes {
-    fn from(other: DSPReaction) -> Self {
+impl From<DSPAction> for Attributes {
+    fn from(other: DSPAction) -> Self {
         Attributes {
             pre_amp: other.pre_amp,
             dry_wet: other.dry_wet,
@@ -153,13 +153,20 @@ pub struct Cache {
 }
 
 #[must_use]
-pub fn reduce_control_action(action: ControlAction, cache: &mut Cache) -> DSPReaction {
+pub fn reduce_dsp_reaction(reaction: DSPReaction, _cache: &mut Cache) -> [bool; 8] {
+    let mut leds = [false; 8];
+    leds[0] = reaction.hysteresis_clipping;
+    leds
+}
+
+#[must_use]
+pub fn reduce_control_action(action: ControlAction, cache: &mut Cache) -> DSPAction {
     apply_control_action_in_cache(action, cache);
     cook_dsp_reaction_from_cache(cache)
 }
 
 #[must_use]
-pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
+pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPAction {
     let pre_amp = calculate_pre_amp(cache);
     let dry_wet = hysteresis::calculate_dry_wet(&cache.hysteresis);
     let (drive, saturation) = hysteresis::calculate_drive_and_saturation(&cache.hysteresis);
@@ -177,7 +184,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPReaction {
     let delay_head_2_position = delay::calculate_head_position(&cache.delay, 1);
     let delay_head_3_position = delay::calculate_head_position(&cache.delay, 2);
     let delay_head_4_position = delay::calculate_head_position(&cache.delay, 3);
-    DSPReaction {
+    DSPAction {
         pre_amp,
         dry_wet,
         drive,

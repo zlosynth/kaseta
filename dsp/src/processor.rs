@@ -3,7 +3,9 @@
 use sirena::memory_manager::MemoryManager;
 
 use crate::delay::{Attributes as DelayAttributes, Delay};
-use crate::hysteresis::{Attributes as HysteresisAttributes, Hysteresis};
+use crate::hysteresis::{
+    Attributes as HysteresisAttributes, Hysteresis, Reaction as HysteresisReaction,
+};
 use crate::oversampling::{Downsampler4, Upsampler4};
 use crate::pre_amp::{Attributes as PreAmpAttributes, PreAmp};
 use crate::random::Random;
@@ -61,6 +63,13 @@ pub struct Attributes {
     pub delay_head_4_volume: f32,
 }
 
+// TODO: Just re-use and re-export component's attributes
+#[derive(Default, Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct Reaction {
+    pub hysteresis_clipping: bool,
+}
+
 impl Processor {
     #[allow(clippy::let_and_return)]
     #[must_use]
@@ -80,14 +89,20 @@ impl Processor {
         processor
     }
 
-    pub fn process(&mut self, block: &mut [f32; 32], random: &mut impl Random) {
+    pub fn process(&mut self, block: &mut [f32; 32], random: &mut impl Random) -> Reaction {
+        let mut reaction = Reaction::default();
+
         self.wow_flutter.process(block, random);
         self.pre_amp.process(block);
         let mut oversampled_block = [0.0; 32 * 4];
         self.upsampler.process(block, &mut oversampled_block);
-        self.hysteresis.process(&mut oversampled_block);
+        self.hysteresis
+            .process(&mut oversampled_block)
+            .notify(&mut reaction);
         self.downsampler.process(&oversampled_block, &mut block[..]);
         self.delay.process(&mut block[..]);
+
+        reaction
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
@@ -157,5 +172,11 @@ impl From<Attributes> for DelayAttributes {
             head_3_volume: other.delay_head_3_volume,
             head_4_volume: other.delay_head_4_volume,
         }
+    }
+}
+
+impl HysteresisReaction {
+    fn notify(&mut self, reaction: &mut Reaction) {
+        reaction.hysteresis_clipping = self.clipping;
     }
 }

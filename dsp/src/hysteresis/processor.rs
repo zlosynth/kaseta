@@ -1,6 +1,8 @@
 use super::makeup;
 use super::simulation::Simulation;
 
+const AMPLITUDE_LIMIT: f32 = 2.0;
+
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct State {
@@ -16,6 +18,12 @@ pub struct Attributes {
     pub drive: f32,
     pub saturation: f32,
     pub width: f32,
+}
+
+#[derive(Default, Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct Reaction {
+    pub clipping: bool,
 }
 
 impl State {
@@ -45,12 +53,26 @@ impl State {
         self.makeup = makeup::calculate(attributes.drive, attributes.saturation, attributes.width);
     }
 
-    pub fn process(&mut self, buffer: &mut [f32]) {
+    pub fn process(&mut self, buffer: &mut [f32]) -> Reaction {
+        let mut reaction = Reaction::default();
         for x in buffer.iter_mut() {
-            *x = x.clamp(-2.0, 2.0);
+            let (clamped, clipped) = clamp(*x);
+            reaction.clipping |= clipped;
+            *x = clamped;
             let dry = *x * (1.0 - self.dry_wet);
             let wet = self.simulation.process(*x) * self.makeup * self.dry_wet;
             *x = dry + wet;
         }
+        reaction
+    }
+}
+
+fn clamp(x: f32) -> (f32, bool) {
+    if x < -AMPLITUDE_LIMIT {
+        (-AMPLITUDE_LIMIT, true)
+    } else if x > AMPLITUDE_LIMIT {
+        (AMPLITUDE_LIMIT, true)
+    } else {
+        (x, false)
     }
 }
