@@ -47,6 +47,7 @@ impl State {
 
     pub fn process(&mut self, buffer: &mut [f32]) {
         for x in buffer.iter_mut() {
+            *x = x.clamp(-2.0, 2.0);
             let dry = *x * (1.0 - self.dry_wet);
             let wet = self.simulation.process(*x) * self.makeup * self.dry_wet;
             *x = dry + wet;

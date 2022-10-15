@@ -1,13 +1,12 @@
 //! Main interface for the DSP loop.
 
 use sirena::memory_manager::MemoryManager;
-use sirena::signal::{self, Signal, SignalClipAmp, SignalMulAmp};
 
 use crate::delay::{Attributes as DelayAttributes, Delay};
 use crate::hysteresis::{Attributes as HysteresisAttributes, Hysteresis};
 use crate::oversampling::{Downsampler4, Upsampler4};
+use crate::pre_amp::{Attributes as PreAmpAttributes, PreAmp};
 use crate::random::Random;
-use crate::smoothed_value::SmoothedValue;
 use crate::wow_flutter::{Attributes as WowFlutterAttributes, WowFlutter};
 
 #[derive(Debug)]
@@ -15,7 +14,7 @@ use crate::wow_flutter::{Attributes as WowFlutterAttributes, WowFlutter};
 pub struct Processor {
     upsampler: Upsampler4,
     downsampler: Downsampler4,
-    pre_amp: SmoothedValue,
+    pre_amp: PreAmp,
     hysteresis: Hysteresis,
     wow_flutter: WowFlutter,
     delay: Delay,
@@ -69,8 +68,7 @@ impl Processor {
         let upsampler = Upsampler4::new_4(memory_manager);
         let downsampler = Downsampler4::new_4(memory_manager);
 
-        const SMOOTHING_STEPS: u32 = 32;
-        let pre_amp = SmoothedValue::new(0.0, SMOOTHING_STEPS);
+        let pre_amp = PreAmp::new();
 
         let hysteresis = Hysteresis::new(fs);
 
@@ -95,34 +93,27 @@ impl Processor {
 
     pub fn process(&mut self, block: &mut [f32; 32], random: &mut impl Random) {
         self.wow_flutter.process(block, random);
-
-        let block_copy = *block;
-
-        let mut instrument = signal::from_iter(block_copy.into_iter())
-            .mul_amp(self.pre_amp.by_ref())
-            .clip_amp(2.0);
-
-        let mut buffer_1 = [0.0; 32];
-        for x in &mut buffer_1 {
-            *x = instrument.next();
-        }
-
-        let mut buffer_2 = [0.0; 32 * 4];
-        self.upsampler.process(&buffer_1, &mut buffer_2);
-
-        self.hysteresis.process(&mut buffer_2);
-
-        self.downsampler.process(&buffer_2, &mut block[..]);
-
-        // TODO: May be better on oversampled, for audio-rate delay
+        self.pre_amp.process(block);
+        let mut oversampled_block = [0.0; 32 * 4];
+        self.upsampler.process(block, &mut oversampled_block);
+        self.hysteresis.process(&mut oversampled_block);
+        self.downsampler.process(&oversampled_block, &mut block[..]);
         self.delay.process(&mut block[..]);
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
-        self.pre_amp.set(attributes.pre_amp);
+        self.pre_amp.set_attributes(attributes.into());
         self.hysteresis.set_attributes(attributes.into());
         self.wow_flutter.set_attributes(attributes.into());
         self.delay.set_attributes(attributes.into());
+    }
+}
+
+impl From<Attributes> for PreAmpAttributes {
+    fn from(other: Attributes) -> Self {
+        Self {
+            gain: other.pre_amp,
+        }
     }
 }
 

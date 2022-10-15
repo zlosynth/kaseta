@@ -21,10 +21,8 @@ pub mod random;
 pub mod hysteresis;
 pub mod oversampling;
 
-// XXX: Maybe it will become useful later
-// mod compression;
 mod delay;
 mod math;
+mod pre_amp;
 mod ring_buffer;
-mod smoothed_value;
 mod wow_flutter;
