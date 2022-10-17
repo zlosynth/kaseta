@@ -5,7 +5,7 @@ use crate::math;
 use crate::ring_buffer::RingBuffer;
 use sirena::memory_manager::MemoryManager;
 
-const MAX_LENGTH: f32 = 10.0;
+const MAX_LENGTH: f32 = 50.0;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -79,31 +79,20 @@ impl Delay {
             // NOTE: Must read from back, so heads can move from old to new
             let age = buffer_len - i;
 
-            // NOTE: These would just interpolate, xfade, return what the head is on
-            let x1 = self.heads[0].reader.read(&self.buffer, age);
-            let x2 = self.heads[1].reader.read(&self.buffer, age);
-            let x3 = self.heads[2].reader.read(&self.buffer, age);
-            let x4 = self.heads[3].reader.read(&self.buffer, age);
-
-            let mut feedback = 0.0;
-            feedback += x1 * self.heads[0].feedback;
-            feedback += x2 * self.heads[1].feedback;
-            feedback += x3 * self.heads[2].feedback;
-            feedback += x4 * self.heads[3].feedback;
+            let feedback: f32 = self
+                .heads
+                .iter_mut()
+                .map(|head| head.reader.read(&self.buffer, age) * head.feedback)
+                .sum();
             *self.buffer.peek_mut(age) += feedback;
 
             // NOTE: Must read again now when feedback was written back
-            let x1 = self.heads[0].reader.read(&self.buffer, age);
-            let x2 = self.heads[1].reader.read(&self.buffer, age);
-            let x3 = self.heads[2].reader.read(&self.buffer, age);
-            let x4 = self.heads[3].reader.read(&self.buffer, age);
-
-            let mut output = 0.0;
-            output += x1 * self.heads[0].volume;
-            output += x2 * self.heads[1].volume;
-            output += x3 * self.heads[2].volume;
-            output += x4 * self.heads[3].volume;
-            *x += output;
+            let output: f32 = self
+                .heads
+                .iter_mut()
+                .map(|head| head.reader.read(&self.buffer, age) * head.volume)
+                .sum();
+            *x = output;
         }
     }
 
@@ -111,7 +100,7 @@ impl Delay {
         self.length = attributes.length;
         for (i, head) in self.heads.iter_mut().enumerate() {
             head.reader
-                .set_position(attributes.heads[i].position * self.sample_rate);
+                .set_position(self.length * attributes.heads[i].position * self.sample_rate);
             head.feedback = attributes.heads[i].feedback;
             head.volume = attributes.heads[i].volume;
         }
@@ -123,21 +112,34 @@ impl Delay {
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FractionalDelay {
-    a: f32,
-    b: f32,
+    pointer: f32,
+    target: f32,
+    // b: f32,
 }
 
 // TODO: Moving slowly from one to another
 // TODO: Or fading between with variable speed
+// TODO: Implement rewind
 impl FractionalDelay {
-    pub fn read(&self, buffer: &RingBuffer, offset: usize) -> f32 {
-        let a = buffer.peek(self.a as usize + offset);
-        let b = buffer.peek(self.a as usize + 1 + offset);
-        a + (b - a) * self.a.fract()
+    pub fn read(&mut self, buffer: &RingBuffer, offset: usize) -> f32 {
+        let a = buffer.peek(self.pointer as usize + offset);
+        let b = buffer.peek(self.pointer as usize + 1 + offset);
+        let x = a + (b - a) * self.pointer.fract();
+
+        if (self.target - self.pointer).abs() > f32::EPSILON {
+            if self.pointer < self.target {
+                // self.pointer += (self.target - self.pointer).min(0.25);
+                self.pointer += (self.target - self.pointer).min(0.125);
+            } else {
+                self.pointer = self.target;
+            }
+        }
+
+        x
     }
 
     pub fn set_position(&mut self, position: f32) {
-        self.a = position;
-        self.b = position;
+        self.target = position;
+        // self.b = position;
     }
 }

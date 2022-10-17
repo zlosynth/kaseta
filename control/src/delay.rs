@@ -2,7 +2,7 @@ use super::calculate;
 use crate::quantization::{quantize, Quantization};
 use crate::taper;
 
-const DELAY_LENGTH_LONG_RANGE: (f32, f32) = (0.02, 8.0);
+const DELAY_LENGTH_LONG_RANGE: (f32, f32) = (0.02, 50.0);
 const DELAY_LENGTH_AUDIO_RANGE: (f32, f32) = (1.0 / 400.0, 1.0 / 5.0);
 const DELAY_HEAD_POSITION_RANGE: (f32, f32) = (0.0, 1.0);
 
