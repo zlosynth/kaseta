@@ -120,6 +120,8 @@ pub struct FractionalDelay {
 // TODO: Moving slowly from one to another
 // TODO: Or fading between with variable speed
 // TODO: Implement rewind
+// NOTE: Rewind is moving to the target in a steady pace.
+// Fading is going there instantly, fading between the current and the destination.
 impl FractionalDelay {
     pub fn read(&mut self, buffer: &RingBuffer, offset: usize) -> f32 {
         let a = buffer.peek(self.pointer as usize + offset);

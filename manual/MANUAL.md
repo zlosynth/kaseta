@@ -13,6 +13,7 @@
 * Tape delay
 * Four free moving heads
 * Tone contol
+* Rewind/speed simulation
 
 ## Pots
 
@@ -31,13 +32,12 @@
 ## Switches
 
 * Delay echo vs. audio rate
-* Hysteresis on/off
 * Quantization 1/8
 * Quantization 1/6
 * Wow cyclic vs. random
 * Flutter cyclic vs. random
 * Danger zone
-* First head just dry
+* Rewind/speed
 
 ## Patches
 
@@ -60,3 +60,4 @@
 * Warm soft saturation on piano is nice.
 * With non-warping delay, CV S&H input to delay value, selecting samples from
   the past.
+* Playing a mellow song, slow speed. Fading when approaching end, switch to another head.
