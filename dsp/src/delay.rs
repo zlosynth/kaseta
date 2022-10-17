@@ -24,23 +24,19 @@ struct Head {
     volume: f32,
 }
 
-// TODO: Introduce HeadAttributes
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {
     pub length: f32,
-    pub head_1_position: f32,
-    pub head_2_position: f32,
-    pub head_3_position: f32,
-    pub head_4_position: f32,
-    pub head_1_feedback: f32,
-    pub head_2_feedback: f32,
-    pub head_3_feedback: f32,
-    pub head_4_feedback: f32,
-    pub head_1_volume: f32,
-    pub head_2_volume: f32,
-    pub head_3_volume: f32,
-    pub head_4_volume: f32,
+    pub heads: [HeadAttributes; 4],
+}
+
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct HeadAttributes {
+    pub position: f32,
+    pub feedback: f32,
+    pub volume: f32,
 }
 
 impl Delay {
@@ -113,28 +109,12 @@ impl Delay {
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
         self.length = attributes.length;
-        // TODO: Set target in the reader instead
-        // TODO: Convert from time to samples
-        self.heads[0]
-            .reader
-            .set_position(attributes.head_1_position * self.sample_rate);
-        self.heads[1]
-            .reader
-            .set_position(attributes.head_2_position * self.sample_rate);
-        self.heads[2]
-            .reader
-            .set_position(attributes.head_3_position * self.sample_rate);
-        self.heads[3]
-            .reader
-            .set_position(attributes.head_4_position * self.sample_rate);
-        self.heads[0].feedback = attributes.head_1_feedback;
-        self.heads[1].feedback = attributes.head_2_feedback;
-        self.heads[2].feedback = attributes.head_3_feedback;
-        self.heads[3].feedback = attributes.head_4_feedback;
-        self.heads[0].volume = attributes.head_1_volume;
-        self.heads[1].volume = attributes.head_2_volume;
-        self.heads[2].volume = attributes.head_3_volume;
-        self.heads[3].volume = attributes.head_4_volume;
+        for (i, head) in self.heads.iter_mut().enumerate() {
+            head.reader
+                .set_position(attributes.heads[i].position * self.sample_rate);
+            head.feedback = attributes.heads[i].feedback;
+            head.volume = attributes.heads[i].volume;
+        }
     }
 }
 
@@ -152,7 +132,7 @@ pub struct FractionalDelay {
 impl FractionalDelay {
     pub fn read(&self, buffer: &RingBuffer, offset: usize) -> f32 {
         let a = buffer.peek(self.a as usize + offset);
-        let b = buffer.peek(self.b as usize + 1 + offset);
+        let b = buffer.peek(self.a as usize + 1 + offset);
         a + (b - a) * self.a.fract()
     }
 

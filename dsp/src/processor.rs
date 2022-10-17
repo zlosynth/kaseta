@@ -2,7 +2,7 @@
 
 use sirena::memory_manager::MemoryManager;
 
-use crate::delay::{Attributes as DelayAttributes, Delay};
+use crate::delay::{Attributes as DelayAttributes, Delay, HeadAttributes as DelayHeadAttributes};
 use crate::hysteresis::{
     Attributes as HysteresisAttributes, Hysteresis, Reaction as HysteresisReaction,
 };
@@ -143,18 +143,28 @@ impl From<Attributes> for DelayAttributes {
     fn from(other: Attributes) -> Self {
         Self {
             length: other.delay_length,
-            head_1_position: other.delay_head_1_position,
-            head_2_position: other.delay_head_2_position,
-            head_3_position: other.delay_head_3_position,
-            head_4_position: other.delay_head_4_position,
-            head_1_feedback: other.delay_head_1_feedback,
-            head_2_feedback: other.delay_head_2_feedback,
-            head_3_feedback: other.delay_head_3_feedback,
-            head_4_feedback: other.delay_head_4_feedback,
-            head_1_volume: other.delay_head_1_volume,
-            head_2_volume: other.delay_head_2_volume,
-            head_3_volume: other.delay_head_3_volume,
-            head_4_volume: other.delay_head_4_volume,
+            heads: [
+                DelayHeadAttributes {
+                    position: other.delay_head_1_position,
+                    volume: other.delay_head_1_volume,
+                    feedback: other.delay_head_1_feedback,
+                },
+                DelayHeadAttributes {
+                    position: other.delay_head_2_position,
+                    volume: other.delay_head_2_volume,
+                    feedback: other.delay_head_2_feedback,
+                },
+                DelayHeadAttributes {
+                    position: other.delay_head_3_position,
+                    volume: other.delay_head_3_volume,
+                    feedback: other.delay_head_3_feedback,
+                },
+                DelayHeadAttributes {
+                    position: other.delay_head_4_position,
+                    volume: other.delay_head_4_volume,
+                    feedback: other.delay_head_4_feedback,
+                },
+            ],
         }
     }
 }
