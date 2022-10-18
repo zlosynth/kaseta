@@ -22,6 +22,8 @@ struct Head {
     reader: FractionalDelay,
     feedback: f32,
     volume: f32,
+    rewind_forward: Option<f32>,
+    rewind_backward: Option<f32>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -37,6 +39,8 @@ pub struct HeadAttributes {
     pub position: f32,
     pub feedback: f32,
     pub volume: f32,
+    pub rewind_forward: Option<f32>,
+    pub rewind_backward: Option<f32>,
 }
 
 impl Delay {
@@ -82,7 +86,11 @@ impl Delay {
             let feedback: f32 = self
                 .heads
                 .iter_mut()
-                .map(|head| head.reader.read(&self.buffer, age) * head.feedback)
+                .map(|head| {
+                    head.reader
+                        .read(&self.buffer, age, head.rewind_forward, head.rewind_backward)
+                        * head.feedback
+                })
                 .sum();
             *self.buffer.peek_mut(age) += feedback;
 
@@ -90,7 +98,11 @@ impl Delay {
             let output: f32 = self
                 .heads
                 .iter_mut()
-                .map(|head| head.reader.read(&self.buffer, age) * head.volume)
+                .map(|head| {
+                    head.reader
+                        .read(&self.buffer, age, head.rewind_forward, head.rewind_backward)
+                        * head.volume
+                })
                 .sum();
             *x = output;
         }
@@ -103,6 +115,8 @@ impl Delay {
                 .set_position(self.length * attributes.heads[i].position * self.sample_rate);
             head.feedback = attributes.heads[i].feedback;
             head.volume = attributes.heads[i].volume;
+            head.rewind_forward = attributes.heads[i].rewind_forward;
+            head.rewind_backward = attributes.heads[i].rewind_backward;
         }
     }
 }
@@ -119,21 +133,36 @@ pub struct FractionalDelay {
 
 // TODO: Moving slowly from one to another
 // TODO: Or fading between with variable speed
-// TODO: Implement rewind
+// TODO: Implement rewind, can be enabled in either direction.
 // NOTE: Rewind is moving to the target in a steady pace.
 // Fading is going there instantly, fading between the current and the destination.
 impl FractionalDelay {
-    pub fn read(&mut self, buffer: &RingBuffer, offset: usize) -> f32 {
+    pub fn read(
+        &mut self,
+        buffer: &RingBuffer,
+        offset: usize,
+        rewind_forward: Option<f32>,
+        rewind_backward: Option<f32>,
+    ) -> f32 {
         let a = buffer.peek(self.pointer as usize + offset);
         let b = buffer.peek(self.pointer as usize + 1 + offset);
         let x = a + (b - a) * self.pointer.fract();
 
         if (self.target - self.pointer).abs() > f32::EPSILON {
+            // NOTE: It makes more sense to keep it symetrical.
+            #[allow(clippy::collapsible_else_if)]
             if self.pointer < self.target {
-                // self.pointer += (self.target - self.pointer).min(0.25);
-                self.pointer += (self.target - self.pointer).min(0.125);
+                if let Some(speed) = rewind_backward {
+                    self.pointer += (self.target - self.pointer).min(speed);
+                } else {
+                    self.pointer = self.target;
+                }
             } else {
-                self.pointer = self.target;
+                if let Some(speed) = rewind_forward {
+                    self.pointer -= (self.pointer - self.target).min(speed);
+                } else {
+                    self.pointer = self.target;
+                }
             }
         }
 

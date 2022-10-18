@@ -71,6 +71,8 @@ pub enum ControlAction {
     SetWowPhaseSpringPot(f32),
     SetWowPhaseDriftPot(f32),
     SetDelayRangeSwitch(bool),
+    SetDelayRewindForwardSwitch(bool),
+    SetDelayRewindBackwardSwitch(bool),
     SetDelayLengthPot(f32),
     SetDelayLengthCV(f32),
     SetDelayHeadPositionPot(usize, f32),
@@ -98,6 +100,8 @@ pub struct DSPAction {
     pub wow_phase_spring: f32,
     pub wow_phase_drift: f32,
     pub delay_length: f32,
+    pub delay_rewind_forward: bool,
+    pub delay_rewind_backward: bool,
     pub delay_head_position: [f32; 4],
     pub delay_head_feedback: [f32; 4],
     pub delay_head_volume: [f32; 4],
@@ -120,6 +124,8 @@ impl From<DSPAction> for Attributes {
             wow_phase_spring: other.wow_phase_spring,
             wow_phase_drift: other.wow_phase_drift,
             delay_length: other.delay_length,
+            delay_rewind_forward: other.delay_rewind_forward,
+            delay_rewind_backward: other.delay_rewind_backward,
             delay_head_1_position: other.delay_head_position[0],
             delay_head_2_position: other.delay_head_position[1],
             delay_head_3_position: other.delay_head_position[2],
@@ -192,6 +198,8 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPAction {
         wow_phase_drift,
         wow_filter,
         delay_length,
+        delay_rewind_forward: cache.delay.rewind_forward_switch,
+        delay_rewind_backward: cache.delay.rewind_backward_switch,
         delay_head_position: [
             delay_head_1_position,
             delay_head_2_position,
@@ -284,6 +292,12 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         }
         SetDelayRangeSwitch(b) => {
             cache.delay.range_switch = b;
+        }
+        SetDelayRewindForwardSwitch(b) => {
+            cache.delay.rewind_forward_switch = b;
+        }
+        SetDelayRewindBackwardSwitch(b) => {
+            cache.delay.rewind_backward_switch = b;
         }
         SetDelayLengthPot(x) => {
             cache.delay.length_pot = x;

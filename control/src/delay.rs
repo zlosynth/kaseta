@@ -6,10 +6,13 @@ const DELAY_LENGTH_LONG_RANGE: (f32, f32) = (0.02, 50.0);
 const DELAY_LENGTH_AUDIO_RANGE: (f32, f32) = (1.0 / 400.0, 1.0 / 5.0);
 const DELAY_HEAD_POSITION_RANGE: (f32, f32) = (0.0, 1.0);
 
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Default, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
     pub range_switch: bool,
+    pub rewind_forward_switch: bool,
+    pub rewind_backward_switch: bool,
     pub length_pot: f32,
     pub length_cv: f32,
     pub head_position_pot: [f32; 4],
