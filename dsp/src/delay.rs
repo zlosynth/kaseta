@@ -22,8 +22,6 @@ struct Head {
     reader: FractionalDelay,
     feedback: f32,
     volume: f32,
-    rewind_forward: Option<f32>,
-    rewind_backward: Option<f32>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -86,11 +84,7 @@ impl Delay {
             let feedback: f32 = self
                 .heads
                 .iter_mut()
-                .map(|head| {
-                    head.reader
-                        .read(&self.buffer, age, head.rewind_forward, head.rewind_backward)
-                        * head.feedback
-                })
+                .map(|head| head.reader.read(&self.buffer, age) * head.feedback)
                 .sum();
             *self.buffer.peek_mut(age) += feedback;
 
@@ -98,11 +92,7 @@ impl Delay {
             let output: f32 = self
                 .heads
                 .iter_mut()
-                .map(|head| {
-                    head.reader
-                        .read(&self.buffer, age, head.rewind_forward, head.rewind_backward)
-                        * head.volume
-                })
+                .map(|head| head.reader.read(&self.buffer, age) * head.volume)
                 .sum();
             *x = output;
         }
@@ -115,20 +105,35 @@ impl Delay {
                 .set_position(self.length * attributes.heads[i].position * self.sample_rate);
             head.feedback = attributes.heads[i].feedback;
             head.volume = attributes.heads[i].volume;
-            head.rewind_forward = attributes.heads[i].rewind_forward;
-            head.rewind_backward = attributes.heads[i].rewind_backward;
+            head.reader.rewind_forward = attributes.heads[i].rewind_forward;
+            head.reader.rewind_backward = attributes.heads[i].rewind_backward;
         }
     }
 }
 
 // TODO: Implement wrapper over Buffer that will interpolate samples and fade between them when jumps get too far
 // <https://www.kvraudio.com/forum/viewtopic.php?t=251962>
-#[derive(Debug, Default)]
+#[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FractionalDelay {
     pointer: f32,
     target: f32,
+    pub rewind_forward: Option<f32>,
+    pub rewind_backward: Option<f32>,
+    pub speed: f32,
     // b: f32,
+}
+
+impl Default for FractionalDelay {
+    fn default() -> Self {
+        Self {
+            pointer: 0.0,
+            target: 0.0,
+            rewind_forward: None,
+            rewind_backward: None,
+            speed: 1.0,
+        }
+    }
 }
 
 // TODO: Moving slowly from one to another
@@ -141,24 +146,28 @@ impl FractionalDelay {
         &mut self,
         buffer: &RingBuffer,
         offset: usize,
-        rewind_forward: Option<f32>,
-        rewind_backward: Option<f32>,
+        // TODO: Keep these two as part of the fractional delay
     ) -> f32 {
         let a = buffer.peek(self.pointer as usize + offset);
         let b = buffer.peek(self.pointer as usize + 1 + offset);
         let x = a + (b - a) * self.pointer.fract();
 
         if (self.target - self.pointer).abs() > f32::EPSILON {
-            // NOTE: It makes more sense to keep it symetrical.
+            // NOTE(allow): It makes more sense to keep it symetrical.
             #[allow(clippy::collapsible_else_if)]
             if self.pointer < self.target {
-                if let Some(speed) = rewind_backward {
+                if let Some(speed) = self.rewind_backward {
+                    // TODO: If speed is zero, start accelerating
+                    // TODO: If close enough, start slowing down
+                    // TODO: If higher than requested, just jump down
                     self.pointer += (self.target - self.pointer).min(speed);
                 } else {
                     self.pointer = self.target;
                 }
             } else {
-                if let Some(speed) = rewind_forward {
+                if let Some(speed) = self.rewind_forward {
+                    // TODO: If speed is zero, start accelerating
+                    // TODO: If close enough, start slowing down
                     self.pointer -= (self.pointer - self.target).min(speed);
                 } else {
                     self.pointer = self.target;
