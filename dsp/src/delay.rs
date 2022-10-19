@@ -151,27 +151,41 @@ impl FractionalDelay {
     }
 
     fn tick_pointer(&mut self) {
-        let distance_to_target = self.target - self.pointer;
+        let distance_to_target = (self.target - self.pointer).abs();
 
         if is_zero(distance_to_target) {
             return;
         }
 
+        let travelling_forward = self.target < self.pointer;
+
         // NOTE(allow): It makes more sense to keep it symetrical.
         #[allow(clippy::collapsible_else_if)]
-        if self.pointer < self.target {
-            if let Some(speed) = self.rewind_backward {
-                self.pointer += (self.target - self.pointer).min(speed);
+        if travelling_forward {
+            if let Some(rewind_speed) = self.rewind_forward {
+                // Rewind
+                self.pointer -= smaller(distance_to_target, rewind_speed);
             } else {
+                // Warp
                 self.pointer = self.target;
             }
         } else {
-            if let Some(speed) = self.rewind_forward {
-                self.pointer -= (self.pointer - self.target).min(speed);
+            if let Some(rewind_speed) = self.rewind_backward {
+                // Rewind
+                self.pointer += smaller(distance_to_target, rewind_speed);
             } else {
+                // Warp
                 self.pointer = self.target;
             }
         }
+    }
+}
+
+fn smaller(a: f32, b: f32) -> f32 {
+    if a.abs() < b.abs() {
+        a
+    } else {
+        b
     }
 }
 
