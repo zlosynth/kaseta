@@ -126,8 +126,10 @@ pub struct FractionalDelay {
 // TODO: Moving slowly from one to another
 // TODO: Or fading between with variable speed
 // TODO: Implement rewind, can be enabled in either direction.
+// TODO: Implement acceleration
 // NOTE: Rewind is moving to the target in a steady pace.
-// Fading is going there instantly, fading between the current and the destination.
+// Fading is going there instantly, fading between the current and the
+// destination.
 impl FractionalDelay {
     pub fn read(
         &mut self,
@@ -139,24 +141,7 @@ impl FractionalDelay {
         let b = buffer.peek(self.pointer as usize + 1 + offset);
         let x = a + (b - a) * self.pointer.fract();
 
-        if (self.target - self.pointer).abs() > f32::EPSILON {
-            // NOTE(allow): It makes more sense to keep it symetrical.
-            #[allow(clippy::collapsible_else_if)]
-            if self.pointer < self.target {
-                if let Some(speed) = self.rewind_backward {
-                    // TODO: Implement acceleration
-                    self.pointer += (self.target - self.pointer).min(speed);
-                } else {
-                    self.pointer = self.target;
-                }
-            } else {
-                if let Some(speed) = self.rewind_forward {
-                    self.pointer -= (self.pointer - self.target).min(speed);
-                } else {
-                    self.pointer = self.target;
-                }
-            }
-        }
+        self.tick_pointer();
 
         x
     }
@@ -164,4 +149,32 @@ impl FractionalDelay {
     pub fn set_position(&mut self, position: f32) {
         self.target = position;
     }
+
+    fn tick_pointer(&mut self) {
+        let distance_to_target = self.target - self.pointer;
+
+        if is_zero(distance_to_target) {
+            return;
+        }
+
+        // NOTE(allow): It makes more sense to keep it symetrical.
+        #[allow(clippy::collapsible_else_if)]
+        if self.pointer < self.target {
+            if let Some(speed) = self.rewind_backward {
+                self.pointer += (self.target - self.pointer).min(speed);
+            } else {
+                self.pointer = self.target;
+            }
+        } else {
+            if let Some(speed) = self.rewind_forward {
+                self.pointer -= (self.pointer - self.target).min(speed);
+            } else {
+                self.pointer = self.target;
+            }
+        }
+    }
+}
+
+fn is_zero(value: f32) -> bool {
+    value.abs() < f32::EPSILON
 }
