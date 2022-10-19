@@ -113,27 +113,14 @@ impl Delay {
 
 // TODO: Implement wrapper over Buffer that will interpolate samples and fade between them when jumps get too far
 // <https://www.kvraudio.com/forum/viewtopic.php?t=251962>
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FractionalDelay {
     pointer: f32,
     target: f32,
     pub rewind_forward: Option<f32>,
     pub rewind_backward: Option<f32>,
-    pub speed: f32,
-    // b: f32,
-}
-
-impl Default for FractionalDelay {
-    fn default() -> Self {
-        Self {
-            pointer: 0.0,
-            target: 0.0,
-            rewind_forward: None,
-            rewind_backward: None,
-            speed: 1.0,
-        }
-    }
+    // relative_speed: f32,
 }
 
 // TODO: Moving slowly from one to another
@@ -157,17 +144,13 @@ impl FractionalDelay {
             #[allow(clippy::collapsible_else_if)]
             if self.pointer < self.target {
                 if let Some(speed) = self.rewind_backward {
-                    // TODO: If speed is zero, start accelerating
-                    // TODO: If close enough, start slowing down
-                    // TODO: If higher than requested, just jump down
+                    // TODO: Implement acceleration
                     self.pointer += (self.target - self.pointer).min(speed);
                 } else {
                     self.pointer = self.target;
                 }
             } else {
                 if let Some(speed) = self.rewind_forward {
-                    // TODO: If speed is zero, start accelerating
-                    // TODO: If close enough, start slowing down
                     self.pointer -= (self.pointer - self.target).min(speed);
                 } else {
                     self.pointer = self.target;
@@ -180,6 +163,5 @@ impl FractionalDelay {
 
     pub fn set_position(&mut self, position: f32) {
         self.target = position;
-        // self.b = position;
     }
 }
