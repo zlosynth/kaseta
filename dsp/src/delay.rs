@@ -101,12 +101,13 @@ impl Delay {
     pub fn set_attributes(&mut self, attributes: Attributes) {
         self.length = attributes.length;
         for (i, head) in self.heads.iter_mut().enumerate() {
-            head.reader
-                .set_position(self.length * attributes.heads[i].position * self.sample_rate);
             head.feedback = attributes.heads[i].feedback;
             head.volume = attributes.heads[i].volume;
-            head.reader.rewind_forward = attributes.heads[i].rewind_forward;
-            head.reader.rewind_backward = attributes.heads[i].rewind_backward;
+            head.reader.set_attributes(FractionalDelayAttributes {
+                position: self.length * attributes.heads[i].position * self.sample_rate,
+                rewind_forward: attributes.heads[i].rewind_forward,
+                rewind_backward: attributes.heads[i].rewind_backward,
+            });
         }
     }
 }
@@ -117,75 +118,140 @@ impl Delay {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FractionalDelay {
     pointer: f32,
-    target: f32,
+    state: State,
+}
+
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum State {
+    Rewinding(StateRewinding),
+    Stable,
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self::Stable
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct StateRewinding {
+    pub relative_speed: f32,
+    pub target_position: f32,
+    pub rewind_speed: f32,
+}
+
+// #[derive(Debug)]
+// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+// pub struct StateBlending {
+//     pub target: f32,
+// }
+
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct FractionalDelayAttributes {
+    pub position: f32,
     pub rewind_forward: Option<f32>,
     pub rewind_backward: Option<f32>,
-    // relative_speed: f32,
 }
 
 // TODO: Moving slowly from one to another
 // TODO: Or fading between with variable speed
 // TODO: Implement rewind, can be enabled in either direction.
-// TODO: Implement acceleration
-// NOTE: Rewind is moving to the target in a steady pace.
-// Fading is going there instantly, fading between the current and the
-// destination.
+// NOTE: Rewind is moving to the target in a steady pace. Fading is going there
+// instantly, fading between the current and the destination.
 impl FractionalDelay {
-    pub fn read(
-        &mut self,
-        buffer: &RingBuffer,
-        offset: usize,
-        // TODO: Keep these two as part of the fractional delay
-    ) -> f32 {
+    pub fn read(&mut self, buffer: &RingBuffer, offset: usize) -> f32 {
         let a = buffer.peek(self.pointer as usize + offset);
         let b = buffer.peek(self.pointer as usize + 1 + offset);
         let x = a + (b - a) * self.pointer.fract();
 
-        self.tick_pointer();
+        match &mut self.state {
+            State::Stable => (),
+            State::Rewinding(StateRewinding {
+                ref mut relative_speed,
+                target_position,
+                rewind_speed,
+            }) => {
+                self.pointer += *relative_speed;
+
+                // TODO: Refactor this, hide the logic as inertia.
+                // Check whether the target was just crossed.
+                if rewind_speed.is_sign_positive() && self.pointer > *target_position
+                    || rewind_speed.is_sign_negative() && self.pointer < *target_position
+                {
+                    self.pointer = *target_position;
+                } else {
+                    // Check whether it is time to decelerate.
+                    let distance_to_target = (*target_position - self.pointer).abs();
+                    if distance_to_target < 0.2 * 48_000.0 {
+                        *relative_speed -= *relative_speed / (distance_to_target + 0.2 * 48_000.0);
+                    } else {
+                        // Check whether acceleration is needed.
+                        if rewind_speed.is_sign_positive() && relative_speed < rewind_speed {
+                            *relative_speed += 0.00001;
+                        } else if rewind_speed.is_sign_negative() && relative_speed > rewind_speed {
+                            *relative_speed -= 0.00001;
+                        }
+                    }
+                }
+            }
+        }
 
         x
     }
 
-    pub fn set_position(&mut self, position: f32) {
-        self.target = position;
-    }
-
-    fn tick_pointer(&mut self) {
-        let distance_to_target = (self.target - self.pointer).abs();
-
+    // NOTE: This must be called every 32 or so reads, to assure that the right
+    // state is entered. This is to keep state re-calculation outside reads.
+    pub fn set_attributes(&mut self, attributes: FractionalDelayAttributes) {
+        // TODO: Test that this is really used with rewinding
+        let distance_to_target = (attributes.position - self.pointer).abs();
         if is_zero(distance_to_target) {
+            self.state = State::Stable;
             return;
         }
 
-        let travelling_forward = self.target < self.pointer;
+        let travelling_forward = attributes.position < self.pointer;
 
-        // NOTE(allow): It makes more sense to keep it symetrical.
-        #[allow(clippy::collapsible_else_if)]
+        // TODO: Merge the two
         if travelling_forward {
-            if let Some(rewind_speed) = self.rewind_forward {
-                // Rewind
-                self.pointer -= smaller(distance_to_target, rewind_speed);
+            if let Some(rewind_speed) = attributes.rewind_forward {
+                self.state = if let State::Rewinding(mut state) = self.state {
+                    state.target_position = attributes.position;
+                    state.rewind_speed = -rewind_speed;
+                    State::Rewinding(state)
+                } else {
+                    State::Rewinding(StateRewinding {
+                        relative_speed: 0.0,
+                        target_position: attributes.position,
+                        rewind_speed: -rewind_speed,
+                    })
+                };
             } else {
-                // Warp
-                self.pointer = self.target;
+                // TODO: Blend
+                self.pointer = attributes.position;
+                self.state = State::Stable;
             }
         } else {
-            if let Some(rewind_speed) = self.rewind_backward {
-                // Rewind
-                self.pointer += smaller(distance_to_target, rewind_speed);
+            if let Some(rewind_speed) = attributes.rewind_backward {
+                self.state = if let State::Rewinding(mut state) = self.state {
+                    state.target_position = attributes.position;
+                    state.rewind_speed = rewind_speed;
+                    State::Rewinding(state)
+                } else {
+                    State::Rewinding(StateRewinding {
+                        relative_speed: 0.0,
+                        target_position: attributes.position,
+                        rewind_speed,
+                    })
+                };
             } else {
-                // Warp
-                self.pointer = self.target;
+                // TODO: Blend
+                self.pointer = attributes.position;
+                self.state = State::Stable;
             }
         }
-    }
-}
-
-fn smaller(a: f32, b: f32) -> f32 {
-    if a.abs() < b.abs() {
-        a
-    } else {
-        b
     }
 }
 
