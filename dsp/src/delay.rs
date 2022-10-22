@@ -185,8 +185,19 @@ impl FractionalDelay {
                 } else {
                     // Check whether it is time to decelerate.
                     let distance_to_target = (*target_position - self.pointer).abs();
-                    if distance_to_target < 0.2 * 48_000.0 {
-                        *relative_speed -= *relative_speed / (distance_to_target + 0.2 * 48_000.0);
+                    if distance_to_target < 0.1 * 48_000.0 {
+                        let step =
+                            (*relative_speed * *relative_speed) / (2.0 * distance_to_target + 1.0);
+                        if relative_speed.is_sign_positive() {
+                            *relative_speed -= step;
+                        } else {
+                            *relative_speed += step;
+                        }
+                        if relative_speed.is_sign_positive() {
+                            *relative_speed = relative_speed.max(f32::EPSILON);
+                        } else {
+                            *relative_speed = relative_speed.min(-f32::EPSILON);
+                        }
                     } else {
                         // Check whether acceleration is needed.
                         if rewind_speed.is_sign_positive() && relative_speed < rewind_speed {
