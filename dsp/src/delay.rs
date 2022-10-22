@@ -103,7 +103,7 @@ impl Delay {
         for (i, head) in self.heads.iter_mut().enumerate() {
             head.feedback = attributes.heads[i].feedback;
             head.volume = attributes.heads[i].volume;
-            head.reader.set_attributes(FractionalDelayAttributes {
+            head.reader.set_attributes(&FractionalDelayAttributes {
                 position: self.length * attributes.heads[i].position * self.sample_rate,
                 rewind_forward: attributes.heads[i].rewind_forward,
                 rewind_backward: attributes.heads[i].rewind_backward,
@@ -215,7 +215,7 @@ impl FractionalDelay {
 
     // NOTE: This must be called every 32 or so reads, to assure that the right
     // state is entered. This is to keep state re-calculation outside reads.
-    pub fn set_attributes(&mut self, attributes: FractionalDelayAttributes) {
+    pub fn set_attributes(&mut self, attributes: &FractionalDelayAttributes) {
         // TODO: Test that this is really used with rewinding
         let distance_to_target = (attributes.position - self.pointer).abs();
         if is_zero(distance_to_target) {
@@ -226,6 +226,7 @@ impl FractionalDelay {
         let travelling_forward = attributes.position < self.pointer;
 
         // TODO: Merge the two
+        #[allow(clippy::collapsible_else_if)]
         if travelling_forward {
             if let Some(rewind_speed) = attributes.rewind_forward {
                 self.state = if let State::Rewinding(mut state) = self.state {
