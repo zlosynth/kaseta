@@ -160,9 +160,6 @@ pub struct FractionalDelayAttributes {
     pub rewind_backward: Option<f32>,
 }
 
-// TODO: Moving slowly from one to another
-// TODO: Or fading between with variable speed
-// TODO: Implement rewind, can be enabled in either direction.
 // NOTE: Rewind is moving to the target in a steady pace. Fading is going there
 // instantly, fading between the current and the destination.
 impl FractionalDelay {
@@ -180,36 +177,15 @@ impl FractionalDelay {
             }) => {
                 self.pointer += *relative_speed;
 
-                // TODO: Refactor this, hide the logic as inertia.
-                // Check whether the target was just crossed.
-                if rewind_speed.is_sign_positive() && self.pointer > *target_position
-                    || rewind_speed.is_sign_negative() && self.pointer < *target_position
-                {
+                if has_crossed_target(self.pointer, *target_position, *rewind_speed) {
                     self.pointer = *target_position;
                 } else {
-                    // Check whether it is time to decelerate.
-                    let distance_to_target = (*target_position - self.pointer).abs();
-                    if distance_to_target < 0.1 * 48_000.0 {
-                        let step =
-                            (*relative_speed * *relative_speed) / (2.0 * distance_to_target + 1.0);
-                        if relative_speed.is_sign_positive() {
-                            *relative_speed -= step;
-                        } else {
-                            *relative_speed += step;
-                        }
-                        if relative_speed.is_sign_positive() {
-                            *relative_speed = relative_speed.max(f32::EPSILON);
-                        } else {
-                            *relative_speed = relative_speed.min(-f32::EPSILON);
-                        }
-                    } else {
-                        // Check whether acceleration is needed.
-                        if rewind_speed.is_sign_positive() && relative_speed < rewind_speed {
-                            *relative_speed += 0.00001;
-                        } else if rewind_speed.is_sign_negative() && relative_speed > rewind_speed {
-                            *relative_speed -= 0.00001;
-                        }
-                    }
+                    reflect_inertia_on_relative_speed(
+                        relative_speed,
+                        self.pointer,
+                        *target_position,
+                        *rewind_speed,
+                    );
                 }
             }
         }
@@ -220,9 +196,8 @@ impl FractionalDelay {
     // NOTE: This must be called every 32 or so reads, to assure that the right
     // state is entered. This is to keep state re-calculation outside reads.
     pub fn set_attributes(&mut self, attributes: &FractionalDelayAttributes) {
-        // TODO: Test that this is really used with rewinding
         let distance_to_target = (attributes.position - self.pointer).abs();
-        if is_zero(distance_to_target) {
+        if distance_to_target.is_zero() {
             self.state = State::Stable;
             return;
         }
@@ -255,6 +230,49 @@ impl FractionalDelay {
     }
 }
 
-fn is_zero(value: f32) -> bool {
-    value.abs() < f32::EPSILON
+fn has_crossed_target(current_position: f32, target_position: f32, rewind_speed: f32) -> bool {
+    rewind_speed.is_sign_positive() && current_position > target_position
+        || rewind_speed.is_sign_negative() && current_position < target_position
+}
+
+fn reflect_inertia_on_relative_speed(
+    relative_speed: &mut f32,
+    current_position: f32,
+    target_position: f32,
+    rewind_speed: f32,
+) {
+    let distance_to_target = (target_position - current_position).abs();
+    if distance_to_target < 0.1 * 48_000.0 {
+        let acceleration =
+            relative_speed.signum() * relative_speed.pow2() / (2.0 * distance_to_target + 1.0);
+        *relative_speed -= acceleration;
+    } else if rewind_speed.is_sign_positive() && *relative_speed < rewind_speed {
+        *relative_speed += 0.00001;
+    } else if rewind_speed.is_sign_negative() && *relative_speed > rewind_speed {
+        *relative_speed -= 0.00001;
+    }
+}
+
+trait F32Ext {
+    fn pow2(self) -> Self;
+    fn signum(self) -> Self;
+    fn is_zero(&self) -> bool;
+}
+
+impl F32Ext for f32 {
+    fn signum(self) -> f32 {
+        if self.is_sign_positive() {
+            1.0
+        } else {
+            -1.0
+        }
+    }
+
+    fn pow2(self) -> f32 {
+        self * self
+    }
+
+    fn is_zero(&self) -> bool {
+        self.abs() < f32::EPSILON
+    }
 }

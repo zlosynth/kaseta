@@ -4,6 +4,7 @@
 //! speed (two octaves lower) over a 10 seconds long random buffer.
 //!
 //! * Original implementation: 26879
+//! * Removing check making sure speed is always above `f32::EPSILON`: 22002
 
 #![no_main]
 #![no_std]
