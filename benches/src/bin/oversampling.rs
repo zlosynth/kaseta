@@ -47,7 +47,7 @@ fn main() -> ! {
     let mut memory_manager = {
         let ram_slice = unsafe {
             let ram_items = sdram.size() / core::mem::size_of::<MaybeUninit<u32>>();
-            let ram_ptr = sdram.base_address as *mut MaybeUninit<u32>;
+            let ram_ptr = sdram.base_address.cast();
             core::slice::from_raw_parts_mut(ram_ptr, ram_items)
         };
         MemoryManager::from(ram_slice)

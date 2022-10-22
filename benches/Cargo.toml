@@ -44,3 +44,7 @@ harness = false
 [[bin]]
 name = "hysteresis"
 harness = false
+
+[[bin]]
+name = "delay_rewind"
+harness = false

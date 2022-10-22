@@ -18,10 +18,10 @@ pub mod processor;
 pub mod random;
 
 // Public for the sake of benchmarks
+pub mod delay;
 pub mod hysteresis;
 pub mod oversampling;
 
-mod delay;
 mod math;
 mod pre_amp;
 mod ring_buffer;

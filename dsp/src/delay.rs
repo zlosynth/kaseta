@@ -42,6 +42,10 @@ pub struct HeadAttributes {
 }
 
 impl Delay {
+    /// # Panics
+    ///
+    /// Panics if there is not enough space in the memory manager to allocate a
+    /// buffer of `MAX_LENGTH`.
     pub fn new(sample_rate: f32, memory_manager: &mut MemoryManager) -> Self {
         Self {
             sample_rate,
