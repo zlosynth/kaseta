@@ -150,7 +150,7 @@ impl From<Attributes> for DelayAttributes {
                     position: other.delay_head_1_position,
                     volume: other.delay_head_1_volume,
                     feedback: other.delay_head_1_feedback,
-                    rewind_forward: other.delay_rewind_forward.then_some(0.25),
+                    rewind_forward: other.delay_rewind_forward.then_some(-0.25),
                     rewind_backward: other.delay_rewind_backward.then_some(0.25),
                 },
                 DelayHeadAttributes {
@@ -158,21 +158,21 @@ impl From<Attributes> for DelayAttributes {
                     volume: other.delay_head_2_volume,
                     feedback: other.delay_head_2_feedback,
                     // NOTE: Slightly detuned (not 0.125) to avoid ticking when crossing samples (?)
-                    rewind_forward: other.delay_rewind_forward.then_some(0.124),
+                    rewind_forward: other.delay_rewind_forward.then_some(-0.124),
                     rewind_backward: other.delay_rewind_backward.then_some(0.124),
                 },
                 DelayHeadAttributes {
                     position: other.delay_head_3_position,
                     volume: other.delay_head_3_volume,
                     feedback: other.delay_head_3_feedback,
-                    rewind_forward: other.delay_rewind_forward.then_some(1.0),
+                    rewind_forward: other.delay_rewind_forward.then_some(-1.0),
                     rewind_backward: other.delay_rewind_backward.then_some(2.0),
                 },
                 DelayHeadAttributes {
                     position: other.delay_head_4_position,
                     volume: other.delay_head_4_volume,
                     feedback: other.delay_head_4_feedback,
-                    rewind_forward: other.delay_rewind_forward.then_some(0.124),
+                    rewind_forward: other.delay_rewind_forward.then_some(-0.124),
                     rewind_backward: other.delay_rewind_backward.then_some(0.124),
                 },
             ],

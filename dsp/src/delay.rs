@@ -228,45 +228,29 @@ impl FractionalDelay {
         }
 
         let travelling_forward = attributes.position < self.pointer;
-
-        // TODO: Merge the two
-        #[allow(clippy::collapsible_else_if)]
-        if travelling_forward {
-            if let Some(rewind_speed) = attributes.rewind_forward {
-                self.state = if let State::Rewinding(mut state) = self.state {
-                    state.target_position = attributes.position;
-                    state.rewind_speed = -rewind_speed;
-                    State::Rewinding(state)
-                } else {
-                    State::Rewinding(StateRewinding {
-                        relative_speed: 0.0,
-                        target_position: attributes.position,
-                        rewind_speed: -rewind_speed,
-                    })
-                };
-            } else {
-                // TODO: Blend
-                self.pointer = attributes.position;
-                self.state = State::Stable;
-            }
+        let rewind_config = if travelling_forward {
+            attributes.rewind_forward
         } else {
-            if let Some(rewind_speed) = attributes.rewind_backward {
-                self.state = if let State::Rewinding(mut state) = self.state {
-                    state.target_position = attributes.position;
-                    state.rewind_speed = rewind_speed;
-                    State::Rewinding(state)
-                } else {
-                    State::Rewinding(StateRewinding {
-                        relative_speed: 0.0,
-                        target_position: attributes.position,
-                        rewind_speed,
-                    })
-                };
+            attributes.rewind_backward
+        };
+        if let Some(rewind_speed) = rewind_config {
+            self.state = if let State::Rewinding(state) = self.state {
+                State::Rewinding(StateRewinding {
+                    target_position: attributes.position,
+                    rewind_speed,
+                    ..state
+                })
             } else {
-                // TODO: Blend
-                self.pointer = attributes.position;
-                self.state = State::Stable;
-            }
+                State::Rewinding(StateRewinding {
+                    relative_speed: 0.0,
+                    target_position: attributes.position,
+                    rewind_speed,
+                })
+            };
+        } else {
+            // TODO: Blend
+            self.pointer = attributes.position;
+            self.state = State::Stable;
         }
     }
 }
