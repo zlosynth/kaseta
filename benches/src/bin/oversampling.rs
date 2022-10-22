@@ -12,9 +12,9 @@
 //! * Upsampling the whole buffer at once: 71730
 //! * Further tweaking of the buffer: 70714
 //! * Downsampling the whole buffer at once: 41241
+//! * Using SDRAM instead of stack: 44708
 //!
 //! TODO: Unroll loops
-//! TODO: Keep ring buffer on stack
 //! TODO: Check more in CMSIS
 
 #![no_main]
@@ -31,8 +31,6 @@ use sirena::memory_manager::MemoryManager;
 
 use kaseta_dsp::oversampling::{Downsampler4, Upsampler4};
 
-static mut MEMORY: [MaybeUninit<u32>; 512] = unsafe { MaybeUninit::uninit().assume_init() };
-
 #[cortex_m_rt::entry]
 fn main() -> ! {
     const BUFFER_SIZE: usize = 32;
@@ -43,8 +41,17 @@ fn main() -> ! {
     let dp = daisy::pac::Peripherals::take().unwrap();
     let board = daisy::Board::take().unwrap();
     let ccdr = daisy::board_freeze_clocks!(board, dp);
+    let pins = daisy::board_split_gpios!(board, ccdr, dp);
+    let sdram = daisy::board_split_sdram!(cp, dp, ccdr, pins);
 
-    let mut memory_manager = MemoryManager::from(unsafe { &mut MEMORY[..] });
+    let mut memory_manager = {
+        let ram_slice = unsafe {
+            let ram_items = sdram.size() / core::mem::size_of::<MaybeUninit<u32>>();
+            let ram_ptr = sdram.base_address as *mut MaybeUninit<u32>;
+            core::slice::from_raw_parts_mut(ram_ptr, ram_items)
+        };
+        MemoryManager::from(ram_slice)
+    };
 
     cp.SCB.enable_icache();
     cp.SCB.enable_dcache(&mut cp.CPUID);
