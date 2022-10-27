@@ -112,7 +112,7 @@ impl Delay {
                 position: self.length * attributes.heads[i].position * self.sample_rate,
                 rewind_forward: attributes.heads[i].rewind_forward,
                 rewind_backward: attributes.heads[i].rewind_backward,
-                blend_steps: 3200, // TODO: Make sure it is never higher than buffer size passed to process
+                blend_steps: 3200, // TODO: Make sure it is never higher than buffer size passed to process, it must be also dividable by buffer size
             });
         }
     }
@@ -170,18 +170,17 @@ pub struct FractionalDelayAttributes {
 // instantly, fading between the current and the destination.
 impl FractionalDelay {
     pub fn read(&mut self, buffer: &RingBuffer, offset: usize) -> f32 {
-        // TODO: Don't interpolate in stable or blending
-        let a = buffer.peek(self.pointer as usize + offset);
-        let b = buffer.peek(self.pointer as usize + 1 + offset);
-        let x = a + (b - a) * self.pointer.fract();
-
         match &mut self.state {
-            State::Stable => x,
+            State::Stable => buffer.peek(self.pointer as usize + offset),
             State::Rewinding(StateRewinding {
                 ref mut relative_speed,
                 target_position,
                 rewind_speed,
             }) => {
+                let a = buffer.peek(self.pointer as usize + offset);
+                let b = buffer.peek(self.pointer as usize + 1 + offset);
+                let x = a + (b - a) * self.pointer.fract();
+
                 self.pointer += *relative_speed;
 
                 if has_crossed_target(self.pointer, *target_position, *rewind_speed) {
@@ -204,21 +203,21 @@ impl FractionalDelay {
                 step,
                 done,
             }) => {
-                let a = buffer.peek(*target as usize + offset);
-                let b = buffer.peek(*target as usize + 1 + offset);
-                let y = a + (b - a) * target.fract();
+                let x = buffer.peek(self.pointer as usize + offset);
+                let y = buffer.peek(*target as usize + offset);
                 let out = x * *current_volume + y * *target_volume;
 
-                *current_volume -= *step;
-                *target_volume += *step;
-
-                if *target_volume > 1.0 {
+                if target_volume.relative_eq(1.0, 0.0001) {
                     self.pointer = *target;
                     *done = true;
+                } else {
+                    debug_assert!(
+                        *target_volume < 1.0,
+                        "Make sure that number of steps is divisible by buffer length",
+                    );
+                    *current_volume -= *step;
+                    *target_volume += *step;
                 }
-
-                *current_volume = current_volume.max(0.0);
-                *target_volume = target_volume.min(1.0);
 
                 out
             }
@@ -309,6 +308,7 @@ trait F32Ext {
     fn pow2(self) -> Self;
     fn signum(self) -> Self;
     fn is_zero(&self) -> bool;
+    fn relative_eq(self, other: f32, epsilon: f32) -> bool;
 }
 
 impl F32Ext for f32 {
@@ -326,5 +326,9 @@ impl F32Ext for f32 {
 
     fn is_zero(&self) -> bool {
         self.abs() < f32::EPSILON
+    }
+
+    fn relative_eq(self, other: f32, epsilon: f32) -> bool {
+        (self - other).abs() < epsilon
     }
 }

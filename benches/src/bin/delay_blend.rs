@@ -4,6 +4,8 @@
 //! delay positions.
 //!
 //! * Original implementation: 56075
+//! * After removing interpolation: 44285
+//! * Without amplitude clamping: 26030
 
 #![no_main]
 #![no_std]
