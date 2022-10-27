@@ -48,3 +48,7 @@ harness = false
 [[bin]]
 name = "delay_rewind"
 harness = false
+
+[[bin]]
+name = "delay_blend"
+harness = false

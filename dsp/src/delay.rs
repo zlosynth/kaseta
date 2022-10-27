@@ -1,3 +1,4 @@
+// TODO: Add a bench for blending too, adapt rewind one to also set_attributes every 32 ticks
 #[allow(unused_imports)]
 use micromath::F32Ext as _;
 
@@ -111,13 +112,12 @@ impl Delay {
                 position: self.length * attributes.heads[i].position * self.sample_rate,
                 rewind_forward: attributes.heads[i].rewind_forward,
                 rewind_backward: attributes.heads[i].rewind_backward,
+                blend_steps: 3200, // TODO: Make sure it is never higher than buffer size passed to process
             });
         }
     }
 }
 
-// TODO: Implement wrapper over Buffer that will interpolate samples and fade between them when jumps get too far
-// <https://www.kvraudio.com/forum/viewtopic.php?t=251962>
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct FractionalDelay {
@@ -129,6 +129,7 @@ pub struct FractionalDelay {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum State {
     Rewinding(StateRewinding),
+    Blending(StateBlending),
     Stable,
 }
 
@@ -146,11 +147,15 @@ pub struct StateRewinding {
     pub rewind_speed: f32,
 }
 
-// #[derive(Debug)]
-// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-// pub struct StateBlending {
-//     pub target: f32,
-// }
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct StateBlending {
+    pub target: f32,
+    pub current_volume: f32,
+    pub target_volume: f32,
+    pub step: f32,
+    pub done: bool,
+}
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -158,18 +163,20 @@ pub struct FractionalDelayAttributes {
     pub position: f32,
     pub rewind_forward: Option<f32>,
     pub rewind_backward: Option<f32>,
+    pub blend_steps: usize,
 }
 
 // NOTE: Rewind is moving to the target in a steady pace. Fading is going there
 // instantly, fading between the current and the destination.
 impl FractionalDelay {
     pub fn read(&mut self, buffer: &RingBuffer, offset: usize) -> f32 {
+        // TODO: Don't interpolate in stable or blending
         let a = buffer.peek(self.pointer as usize + offset);
         let b = buffer.peek(self.pointer as usize + 1 + offset);
         let x = a + (b - a) * self.pointer.fract();
 
         match &mut self.state {
-            State::Stable => (),
+            State::Stable => x,
             State::Rewinding(StateRewinding {
                 ref mut relative_speed,
                 target_position,
@@ -187,14 +194,40 @@ impl FractionalDelay {
                         *rewind_speed,
                     );
                 }
+
+                x
+            }
+            State::Blending(StateBlending {
+                target,
+                current_volume,
+                target_volume,
+                step,
+                done,
+            }) => {
+                let a = buffer.peek(*target as usize + offset);
+                let b = buffer.peek(*target as usize + 1 + offset);
+                let y = a + (b - a) * target.fract();
+                let out = x * *current_volume + y * *target_volume;
+
+                *current_volume -= *step;
+                *target_volume += *step;
+
+                if *target_volume > 1.0 {
+                    self.pointer = *target;
+                    *done = true;
+                }
+
+                *current_volume = current_volume.max(0.0);
+                *target_volume = target_volume.min(1.0);
+
+                out
             }
         }
-
-        x
     }
 
     // NOTE: This must be called every 32 or so reads, to assure that the right
     // state is entered. This is to keep state re-calculation outside reads.
+    // XXX: For this to work, `set_attributes` must be called every buffer.
     pub fn set_attributes(&mut self, attributes: &FractionalDelayAttributes) {
         let distance_to_target = (attributes.position - self.pointer).abs();
         if distance_to_target.is_zero() {
@@ -223,9 +256,27 @@ impl FractionalDelay {
                 })
             };
         } else {
-            // TODO: Blend
-            self.pointer = attributes.position;
-            self.state = State::Stable;
+            self.state = if let State::Blending(state) = self.state {
+                if state.done {
+                    State::Blending(StateBlending {
+                        target: attributes.position,
+                        current_volume: 1.0,
+                        target_volume: 0.0,
+                        step: 1.0 / attributes.blend_steps as f32,
+                        done: false,
+                    })
+                } else {
+                    State::Blending(state)
+                }
+            } else {
+                State::Blending(StateBlending {
+                    target: attributes.position,
+                    current_volume: 1.0,
+                    target_volume: 0.0,
+                    step: 1.0 / attributes.blend_steps as f32,
+                    done: false,
+                })
+            };
         }
     }
 }
@@ -235,6 +286,7 @@ fn has_crossed_target(current_position: f32, target_position: f32, rewind_speed:
         || rewind_speed.is_sign_negative() && current_position < target_position
 }
 
+// TODO: The acceleration speed should depend on total size of the delay
 fn reflect_inertia_on_relative_speed(
     relative_speed: &mut f32,
     current_position: f32,
