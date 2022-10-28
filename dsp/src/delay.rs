@@ -1,4 +1,3 @@
-// TODO: Add a bench for blending too, adapt rewind one to also set_attributes every 32 ticks
 #[allow(unused_imports)]
 use micromath::F32Ext as _;
 
