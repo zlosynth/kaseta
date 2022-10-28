@@ -39,3 +39,7 @@ script = "python3 -m black hack/"
 
 [tasks.check-black]
 script = "python3 -m black hack/"
+
+[tasks.manual]
+workspace = false
+script = "make -C manual/user"

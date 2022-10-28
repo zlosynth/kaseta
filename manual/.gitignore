@@ -1,0 +1,7 @@
+.auctex-auto/
+*.synctex.gz
+*.pdf
+*.pdf_tex
+*.log
+*.aux
+*.out
