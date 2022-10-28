@@ -53,7 +53,7 @@
 \noindent\colorbox{white}
 {
 \begin{minipage}{0.85\textwidth}\color{black}
-What it is. Achordion allows you to do many things, but in essence, it is just a bunch of oscillators that never go out of tune or out of scale! Apart from playing anything between lush pads and hellish walls of sound, it enables you to easily jam with other musicians and explore characters of different scales.
+What it is. Inspired by tape machines. Achordion allows you to do many things, but in essence, it is just a bunch of oscillators that never go out of tune or out of scale! Apart from playing anything between lush pads and hellish walls of sound, it enables you to easily jam with other musicians and explore characters of different scales.
 \end{minipage}
 }
 
@@ -136,23 +136,57 @@ Head playback
 Head feedback
 Head pan
 
+What is each pot doing.
+
+How is the display used.
+
+What is the button for.
+
+How are delay heads grouped.
+
+How to use CV input.
+
 \end{minipage}
 
 \newpage
 
 \section{Pre-amp}
 
+What is the range. What is it good for. What signalizes clipping.
+
 \section{Saturation}
+
+About the maths behind, what it does on real tape.
+
+Image of what happens to the sound.
+
+Explanation of bias.
+
+Explanation of the sweet spot with pre-amp.
+
+Danger zone.
 
 \section{Delay}
 
 Heads. Feedback vs blend. Ranges. Clock in. Gate out.
 
+Image illusatration of the signal flow.
+
+Image 
+
 \section{Tone}
+
+Images with low-pass, all-pass, high-pass positions.
+
+Explanation on how it is applied per head.
+
+Mention of the switch setting it for feedback/all.
 
 \section{Wow and flutter}
 
 \section{Compression}
+
+Explanation of what happens with output (saturation). Also can enable compression instead, using switch.
 
 \section{Options}
 
@@ -164,35 +198,131 @@ Flutter cyclic vs. random
 Danger zone
 Rewind/speed
 
-\section{Configuration}
+\newpage
 
 \section{Patch book}
 
+Some basic combinations to get you started. TODO: Custom wow/flutter using position modulation.
+
+\vspace{5mm}
+\noindent
+\begin{minipage}[t]{0.45\textwidth}
+
+\subsection{Warm saturation}
+
+\vspace{5mm}
+\begin{center}
+  \includegraphics[width=0.7\textwidth]{schema-inverted.pdf}
+\end{center}
+
 * Basic hysteresis.
+* Warm soft saturation on piano is nice.
+
+\lipsum[1][1-2]
+\end{minipage}%
+\begin{minipage}{0.05\textwidth}
+\phantom{ }
+\end{minipage}%
+% Right column
+\begin{minipage}[t]{0.45\textwidth}
+\subsection{Wow and flutter}
+
+\vspace{5mm}
+\begin{center}
+  \includegraphics[width=0.7\textwidth]{schema-inverted.pdf}
+\end{center}
+
+Find a better name.
+
 * Basic flutter with disabled hysteresis.
+\end{minipage}
+
+\newpage
+
+
+\subsection{Simple echo}
+
 * Basic evenly spread one time delay.
+
+\subsection{Feedback pads}
+
 * Basic feedback delay.
+
+\subsection{Comb filter}
+
 * Audio level delay. Just one slightly delayed head playing and feeding back.
   Perhaps on specific tones.
+
+\subsection{Thickiening of basic sine}
+
 * Plain sine. All four heads playing in a small distance from each other.
   Producing reverb. Add flutter to make it forever moving and changing.
+
+\subsection{Tremolo}
+
 * Basic tremolo, just cyclic flutter.
-* Custom wow/flutter using position modulation.
-* Percussion rhythm.
+
+\subsection{Rhytmical echo}
+
 * Delays comming back, with some heads close, some far to repeat way later.
+
+\subsection{Rhythm sequencer}
+
+* Percussion rhythm.
+
+\subsection{Almost sidechaining}
+
 * When bass drum and single oscillator tone play at the same time with high
   saturation and low bias, it works like sidechaining.
+
+\subsection{Cutting cymbals}
+
 * Short cybmals, low bias cuts weak signal.
+
+\subsection{Ping pong echo}
+
 * Ping pong snare. Like Daughter's New Ways.
-* Warm soft saturation on piano is nice.
+
+\subsection{Samples from the past}
+
 * With non-warping delay, CV S and H input to delay value, selecting samples from
   the past.
+
+\subsection{Rewind}
+
 * Playing a mellow song, slow speed. Fading when approaching end, switch to another head.
 
+\subsection{Distortion unchained}
+
+* Hardcore distortion
+
+\newpage
+
+
+
+
+
+\noindent
+\begin{minipage}[t]{0.3\textwidth}
+\section{Configuration}
+\end{minipage}%
+\begin{minipage}{0.05\textwidth}
+\phantom{ }
+\end{minipage}%
+% Center column
+\begin{minipage}[t]{0.3\textwidth}
+\section{Changelog}
+\end{minipage}
+\begin{minipage}{0.05\textwidth}
+\phantom{ }
+\end{minipage}%
+% Right column
+\begin{minipage}[t]{0.3\textwidth}
 \section{Questions?}
 
 \begin{center}
 petr@zlosynth.com
 \end{center}
+\end{minipage}
 
 \end{document}
