@@ -1782,6 +1782,21 @@
     (pin "9" (uuid c6c3a3ff-4787-4e5e-92ae-26df4d14770b))
   )
 
+  (symbol (lib_id "Device:LED_Small") (at 133.858 180.848 180) (unit 1)
+    (in_bom yes) (on_board yes) (fields_autoplaced)
+    (uuid c81abbee-51bd-42ba-ae01-ade2192f456e)
+    (property "Reference" "D9" (id 0) (at 133.7945 174.371 0))
+    (property "Value" "LED_Small" (id 1) (at 133.7945 176.911 0))
+    (property "Footprint" "LED_THT:LED_D3.0mm" (id 2) (at 133.858 180.848 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (property "Datasheet" "~" (id 3) (at 133.858 180.848 90)
+      (effects (font (size 1.27 1.27)) hide)
+    )
+    (pin "1" (uuid 0bd7d407-1fd4-4326-ba1a-f8cb9f78429d))
+    (pin "2" (uuid 2a23f387-6721-4672-9a75-dc015839157d))
+  )
+
   (symbol (lib_id "Connector:AudioJack2_SwitchT") (at 157.226 154.051 0) (unit 1)
     (in_bom yes) (on_board yes) (fields_autoplaced)
     (uuid c8b83d38-143e-4592-8095-f077571d8919)
@@ -2027,6 +2042,9 @@
     )
     (path "/662578fe-6757-4e11-aa57-2dd308a21e60"
       (reference "D8") (unit 1) (value "LED_Small") (footprint "LED_THT:LED_D3.0mm")
+    )
+    (path "/c81abbee-51bd-42ba-ae01-ade2192f456e"
+      (reference "D9") (unit 1) (value "LED_Small") (footprint "LED_THT:LED_D3.0mm")
     )
     (path "/fd650338-a3ce-467b-aa33-9a0091d7722f"
       (reference "J1") (unit 1) (value "AudioJack2_SwitchT") (footprint "Connector_Audio:Jack_3.5mm_QingPu_WQP-PJ398SM_Vertical_CircularHoles")
