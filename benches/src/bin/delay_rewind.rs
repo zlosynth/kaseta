@@ -7,6 +7,7 @@
 //! * Removing check making sure speed is always above `f32::EPSILON`: 22002
 //! * Calling `set_attribute` on every buffer: 25967
 //! * Rewinding on all heads: 36082
+//! * With introduced impulses (and probably something else too): 33008
 
 #![no_main]
 #![no_std]

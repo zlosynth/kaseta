@@ -6,6 +6,7 @@
 //! * Original implementation: 56075
 //! * After removing interpolation: 44285
 //! * Without amplitude clamping: 26030
+//! * With introduced impulses: 26141
 
 #![no_main]
 #![no_std]
