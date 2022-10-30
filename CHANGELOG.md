@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+## 0.1.0
+
 * Create a proof of concept, providing basic suppot of saturation, delay,
   wow and flutter.
 * Design basic outline of the PCB.

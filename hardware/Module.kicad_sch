@@ -7,7 +7,7 @@
   (title_block
     (title "Kaseta")
     (date "2022-10-29")
-    (rev "1")
+    (rev "v0.1.0")
     (company "Zlosynth Instruments")
     (comment 1 "CC BY-SA")
     (comment 2 "petr@zlosynth.com")
