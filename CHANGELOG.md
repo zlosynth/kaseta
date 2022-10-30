@@ -6,8 +6,10 @@ backwards compatibility.
 
 ## Unreleased
 
+## 0.2.0
+
 * Extend maximum delay size to 2 minutes.
-* Introduce impulse output turning Kaseta into a trigger sequencer too.
+* Introduce delay impulse output, turning Kaseta into a trigger sequencer.
 
 ## 0.1.0
 

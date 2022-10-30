@@ -1,6 +1,6 @@
 [package]
 name = "kaseta-control"
-version = "0.1.0"                                # hack/release.sh
+version = "0.2.0"                                # hack/release.sh
 edition = "2021"
 authors = ["Petr Horáček <hrck@protonmail.com>"]
 license = "GPL-3.0-or-later"
