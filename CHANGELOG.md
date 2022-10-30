@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* Extend maximum delay size to 2 minutes.
+
 ## 0.1.0
 
 * Create a proof of concept, providing basic support of saturation, delay,

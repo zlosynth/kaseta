@@ -5,7 +5,7 @@ use crate::math;
 use crate::ring_buffer::RingBuffer;
 use sirena::memory_manager::MemoryManager;
 
-const MAX_LENGTH: f32 = 50.0;
+const MAX_LENGTH: f32 = 2.0 * 60.0;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
