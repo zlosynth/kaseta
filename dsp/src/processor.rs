@@ -62,6 +62,7 @@ pub struct Attributes {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Reaction {
     pub hysteresis_clipping: bool,
+    pub delay_impulse: bool,
 }
 
 impl Processor {
@@ -94,7 +95,7 @@ impl Processor {
             .process(&mut oversampled_block)
             .notify(&mut reaction);
         self.downsampler.process(&oversampled_block, &mut block[..]);
-        self.delay.process(&mut block[..]);
+        reaction.delay_impulse = self.delay.process(&mut block[..]);
 
         reaction
     }

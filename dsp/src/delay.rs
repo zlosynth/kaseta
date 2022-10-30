@@ -14,6 +14,7 @@ pub struct Delay {
     buffer: RingBuffer,
     heads: [Head; 4],
     length: f32,
+    impulse_cursor: f32,
 }
 
 #[derive(Default, Debug)]
@@ -63,6 +64,7 @@ impl Delay {
                 Head::default(),
             ],
             length: 0.0,
+            impulse_cursor: 0.0,
         }
     }
 
@@ -75,7 +77,7 @@ impl Delay {
     // +---+-----+------+---+
     // |
     // OUT                    (4) mix all read samples together and play them back
-    pub fn process(&mut self, buffer: &mut [f32]) {
+    pub fn process(&mut self, buffer: &mut [f32]) -> bool {
         for x in buffer.iter() {
             self.buffer.write(*x);
         }
@@ -100,6 +102,28 @@ impl Delay {
                 .sum();
             *x = output;
         }
+
+        let initial_impulse_cursor = self.impulse_cursor;
+        self.impulse_cursor += buffer.len() as f32 / self.sample_rate as f32;
+        while self.impulse_cursor > self.length {
+            self.impulse_cursor -= self.length;
+        }
+
+        let mut impulse = false;
+        for head in &self.heads {
+            if head.volume < 0.01 {
+                continue;
+            }
+            let impulse_position = head.reader.impulse_position() / self.sample_rate;
+            if initial_impulse_cursor > self.impulse_cursor {
+                impulse |= impulse_position >= initial_impulse_cursor
+                    || impulse_position < self.impulse_cursor;
+            } else {
+                impulse |= initial_impulse_cursor <= impulse_position
+                    && impulse_position < self.impulse_cursor;
+            }
+        }
+        impulse
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
@@ -122,6 +146,14 @@ impl Delay {
 pub struct FractionalDelay {
     pointer: f32,
     state: State,
+}
+
+impl FractionalDelay {
+    #[must_use]
+    pub fn impulse_position(&self) -> f32 {
+        // TODO: Use the target immediatelly with blend
+        self.pointer
+    }
 }
 
 #[derive(Clone, Copy, Debug)]

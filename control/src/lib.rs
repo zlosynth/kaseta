@@ -142,20 +142,89 @@ impl From<DSPAction> for Attributes {
     }
 }
 
-#[derive(Default, Debug)]
+#[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
     pub pre_amp_pot: f32,
     pub hysteresis: HysteresisCache,
     pub wow: WowCache,
     pub delay: DelayCache,
+    pub leds: [ImpulseCache; 8],
+    pub impulse: ImpulseCache,
 }
 
+impl Default for Cache {
+    fn default() -> Self {
+        Self {
+            pre_amp_pot: 0.0,
+            hysteresis: HysteresisCache::default(),
+            wow: WowCache::default(),
+            delay: DelayCache::default(),
+            leds: [ImpulseCache::new(100); 8],
+            impulse: ImpulseCache::new(100),
+        }
+    }
+}
+
+#[derive(Default, Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct ImpulseCache {
+    timeout: u32,
+    pub on: Option<u32>,
+}
+
+impl ImpulseCache {
+    #[must_use]
+    pub fn new(timeout: u32) -> Self {
+        Self { timeout, on: None }
+    }
+
+    #[must_use]
+    pub fn is_on(&self) -> bool {
+        self.on.is_some()
+    }
+
+    pub fn trigger(&mut self) {
+        self.on = Some(self.timeout);
+    }
+
+    pub fn tick(&mut self) {
+        if let Some(countdown) = self.on {
+            if countdown == 1 {
+                self.on = None;
+            } else {
+                self.on = Some(countdown - 1);
+            }
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct Reaction {
+    pub leds: [bool; 8],
+    pub impulse: bool,
+}
+
+// TODO: Reaction is not needed when DSP passed. DSP should just update cache. Another function
+// will be used to gather the current state.
+// TODO: Impulse should be kept 20 ms. It could be part of cache, and reset after X ticks.
 #[must_use]
-pub fn reduce_dsp_reaction(reaction: DSPReaction, _cache: &mut Cache) -> [bool; 8] {
+pub fn reduce_dsp_reaction(reaction: DSPReaction, cache: &mut Cache) -> Reaction {
+    cache.impulse.tick();
+    cache.leds[0].tick();
+    if reaction.hysteresis_clipping {
+        cache.leds[0].trigger();
+    }
+    if reaction.delay_impulse {
+        cache.impulse.trigger();
+    }
     let mut leds = [false; 8];
-    leds[0] = reaction.hysteresis_clipping;
-    leds
+    leds[0] = cache.leds[0].is_on();
+    Reaction {
+        leds,
+        impulse: cache.impulse.is_on(),
+    }
 }
 
 #[must_use]
