@@ -4,3 +4,4 @@ dsp/Cargo.lock
 callgrind.out.*
 amplitude_dataset.csv
 proptest-regressions
+release/
