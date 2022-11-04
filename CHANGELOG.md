@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* Introduce tone control.
+
 ## 0.2.0
 
 * Extend maximum delay size to 2 minutes.

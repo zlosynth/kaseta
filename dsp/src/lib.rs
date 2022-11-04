@@ -25,4 +25,6 @@ pub mod oversampling;
 mod math;
 mod pre_amp;
 mod ring_buffer;
+mod state_variable_filter;
+mod tone;
 mod wow_flutter;

@@ -9,6 +9,7 @@ use crate::hysteresis::{
 use crate::oversampling::{Downsampler4, Upsampler4};
 use crate::pre_amp::{Attributes as PreAmpAttributes, PreAmp};
 use crate::random::Random;
+use crate::tone::{Attributes as ToneAttributes, Tone};
 use crate::wow_flutter::{Attributes as WowFlutterAttributes, WowFlutter};
 
 #[derive(Debug)]
@@ -20,6 +21,7 @@ pub struct Processor {
     hysteresis: Hysteresis,
     wow_flutter: WowFlutter,
     delay: Delay,
+    tone: Tone,
 }
 
 // TODO: Just re-use and re-export component's attributes
@@ -55,6 +57,7 @@ pub struct Attributes {
     pub delay_head_2_volume: f32,
     pub delay_head_3_volume: f32,
     pub delay_head_4_volume: f32,
+    pub tone: f32,
 }
 
 // TODO: Just re-use and re-export component's attributes
@@ -76,6 +79,7 @@ impl Processor {
             hysteresis: Hysteresis::new(fs),
             wow_flutter: WowFlutter::new(fs as u32, memory_manager),
             delay: Delay::new(fs, memory_manager),
+            tone: Tone::new(fs as u32),
         };
 
         uninitialized_processor.set_attributes(Attributes::default());
@@ -96,6 +100,7 @@ impl Processor {
             .notify(&mut reaction);
         self.downsampler.process(&oversampled_block, &mut block[..]);
         reaction.delay_impulse = self.delay.process(&mut block[..]);
+        self.tone.process(&mut block[..]);
 
         reaction
     }
@@ -105,6 +110,7 @@ impl Processor {
         self.hysteresis.set_attributes(attributes.into());
         self.wow_flutter.set_attributes(attributes.into());
         self.delay.set_attributes(attributes.into());
+        self.tone.set_attributes(attributes.into());
     }
 }
 
@@ -113,6 +119,12 @@ impl From<Attributes> for PreAmpAttributes {
         Self {
             gain: other.pre_amp,
         }
+    }
+}
+
+impl From<Attributes> for ToneAttributes {
+    fn from(other: Attributes) -> Self {
+        Self { tone: other.tone }
     }
 }
 
