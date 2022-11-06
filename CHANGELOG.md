@@ -7,6 +7,7 @@ backwards compatibility.
 ## Unreleased
 
 * Introduce tone control.
+* Tweak wow response and control it using a single attribute.
 
 ## 0.2.0
 
