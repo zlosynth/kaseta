@@ -34,14 +34,7 @@ pub struct Attributes {
     pub drive: f32,
     pub saturation: f32,
     pub width: f32,
-    pub wow_frequency: f32,
     pub wow_depth: f32,
-    pub wow_filter: f32,
-    pub wow_amplitude_noise: f32,
-    pub wow_amplitude_spring: f32,
-    pub wow_phase_noise: f32,
-    pub wow_phase_spring: f32,
-    pub wow_phase_drift: f32,
     pub delay_length: f32,
     pub delay_rewind_forward: bool,
     pub delay_rewind_backward: bool,
@@ -142,14 +135,7 @@ impl From<Attributes> for HysteresisAttributes {
 impl From<Attributes> for WowFlutterAttributes {
     fn from(other: Attributes) -> Self {
         Self {
-            wow_frequency: other.wow_frequency,
             wow_depth: other.wow_depth,
-            wow_filter: other.wow_filter,
-            wow_amplitude_noise: other.wow_amplitude_noise,
-            wow_amplitude_spring: other.wow_amplitude_spring,
-            wow_phase_noise: other.wow_phase_noise,
-            wow_phase_spring: other.wow_phase_spring,
-            wow_phase_drift: other.wow_phase_drift,
         }
     }
 }

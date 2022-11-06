@@ -14,7 +14,7 @@ use crate::ring_buffer::RingBuffer;
 
 use sirena::memory_manager::MemoryManager;
 
-const MAX_DEPTH_IN_SECONDS: usize = 20;
+const MAX_DEPTH_IN_SECONDS: usize = 1;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -28,14 +28,7 @@ pub struct WowFlutter {
 #[derive(Default, Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {
-    pub wow_frequency: f32,
     pub wow_depth: f32,
-    pub wow_filter: f32,
-    pub wow_amplitude_noise: f32,
-    pub wow_amplitude_spring: f32,
-    pub wow_phase_noise: f32,
-    pub wow_phase_spring: f32,
-    pub wow_phase_drift: f32,
 }
 
 impl WowFlutter {
@@ -68,21 +61,14 @@ impl WowFlutter {
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
-        self.wow.set_attributes(attributes.into());
+        self.wow.set_attributes(&attributes.into());
     }
 }
 
 impl From<Attributes> for WowAttributes {
     fn from(other: Attributes) -> Self {
         Self {
-            frequency: other.wow_frequency,
             depth: other.wow_depth,
-            filter: other.wow_filter,
-            amplitude_noise: other.wow_amplitude_noise,
-            amplitude_spring: other.wow_amplitude_spring,
-            phase_noise: other.wow_phase_noise,
-            phase_spring: other.wow_phase_spring,
-            phase_drift: other.wow_phase_drift,
         }
     }
 }
