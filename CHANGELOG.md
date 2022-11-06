@@ -8,6 +8,7 @@ backwards compatibility.
 
 * Introduce tone control.
 * Tweak wow response and control it using a single attribute.
+* Implement basic flutter as an alternative to wow.
 * Employ linear interpolation for wow and flutter.
 
 ## 0.2.0

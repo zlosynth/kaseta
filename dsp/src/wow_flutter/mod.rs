@@ -6,10 +6,12 @@
 #[allow(unused_imports)]
 use micromath::F32Ext as _;
 
+mod flutter;
 mod ornstein_uhlenbeck;
 mod wavefolder;
 mod wow;
 
+use self::flutter::{Attributes as FlutterAttributes, Flutter};
 use self::wow::{Attributes as WowAttributes, Wow};
 use crate::math;
 use crate::random::Random;
@@ -25,6 +27,7 @@ pub struct WowFlutter {
     sample_rate: u32,
     buffer: RingBuffer,
     wow: Wow,
+    flutter: Flutter,
 }
 
 // TODO: Just nest wow attributes
@@ -32,6 +35,7 @@ pub struct WowFlutter {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {
     pub wow_depth: f32,
+    pub flutter_depth: f32,
 }
 
 impl WowFlutter {
@@ -40,6 +44,7 @@ impl WowFlutter {
             sample_rate,
             buffer: Self::allocate_buffer(Self::buffer_size(sample_rate), memory_manager),
             wow: Wow::new(sample_rate),
+            flutter: Flutter::new(sample_rate),
         }
     }
 
@@ -56,7 +61,9 @@ impl WowFlutter {
 
     pub fn process(&mut self, buffer: &mut [f32], random: &mut impl Random) {
         for x in buffer.iter_mut() {
-            let delay = self.wow.pop(random) * self.sample_rate as f32;
+            let wow_delay = self.wow.pop(random) * self.sample_rate as f32;
+            let flutter_delay = self.flutter.pop() * self.sample_rate as f32;
+            let delay = wow_delay + flutter_delay;
 
             let a = self.buffer.peek(delay as usize);
             let b = self.buffer.peek(delay as usize + 1);
@@ -70,6 +77,7 @@ impl WowFlutter {
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
         self.wow.set_attributes(&attributes.into());
+        self.flutter.set_attributes(&attributes.into());
     }
 }
 
@@ -77,6 +85,14 @@ impl From<Attributes> for WowAttributes {
     fn from(other: Attributes) -> Self {
         Self {
             depth: other.wow_depth,
+        }
+    }
+}
+
+impl From<Attributes> for FlutterAttributes {
+    fn from(other: Attributes) -> Self {
+        Self {
+            depth: other.flutter_depth,
         }
     }
 }

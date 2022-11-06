@@ -112,8 +112,8 @@ mod tests {
             }
         }
 
-        assert_relative_eq!(min, 0.0, epsilon = 0.001);
-        assert_relative_eq!(max, 1.0, epsilon = 0.001);
+        assert_relative_eq!(min, 0.0, epsilon = 0.01);
+        assert_relative_eq!(max, 1.0, epsilon = 0.01);
     }
 
     #[test]

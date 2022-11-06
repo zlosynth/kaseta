@@ -35,6 +35,7 @@ pub struct Attributes {
     pub saturation: f32,
     pub width: f32,
     pub wow_depth: f32,
+    pub flutter_depth: f32,
     pub delay_length: f32,
     pub delay_rewind_forward: bool,
     pub delay_rewind_backward: bool,
@@ -136,6 +137,7 @@ impl From<Attributes> for WowFlutterAttributes {
     fn from(other: Attributes) -> Self {
         Self {
             wow_depth: other.wow_depth,
+            flutter_depth: other.flutter_depth,
         }
     }
 }

@@ -40,13 +40,13 @@ mod delay;
 mod hysteresis;
 mod quantization;
 mod taper;
-mod wow;
+mod wow_flutter;
 
 use kaseta_dsp::processor::{Attributes, Reaction as DSPReaction};
 
 use crate::delay::Cache as DelayCache;
 use crate::hysteresis::Cache as HysteresisCache;
-use crate::wow::Cache as WowCache;
+use crate::wow_flutter::Cache as WowFlutterCache;
 
 // Pre-amp scales between -20 to +28 dB.
 const PRE_AMP_RANGE: (f32, f32) = (0.0, 25.0);
@@ -60,8 +60,8 @@ pub enum ControlAction {
     SetDriveCV(f32),
     SetBiasPot(f32),
     SetBiasCV(f32),
-    SetWowDepthPot(f32),
-    SetWowDepthCV(f32),
+    SetWowFlutterDepthPot(f32),
+    SetWowFlutterDepthCV(f32),
     SetDelayRangeSwitch(bool),
     SetDelayRewindForwardSwitch(bool),
     SetDelayRewindBackwardSwitch(bool),
@@ -85,6 +85,7 @@ pub struct DSPAction {
     pub saturation: f32,
     pub bias: f32,
     pub wow_depth: f32,
+    pub flutter_depth: f32,
     pub delay_length: f32,
     pub delay_rewind_forward: bool,
     pub delay_rewind_backward: bool,
@@ -103,6 +104,7 @@ impl From<DSPAction> for Attributes {
             saturation: other.saturation,
             width: 1.0 - other.bias,
             wow_depth: other.wow_depth,
+            flutter_depth: other.flutter_depth,
             delay_length: other.delay_length,
             delay_rewind_forward: other.delay_rewind_forward,
             delay_rewind_backward: other.delay_rewind_backward,
@@ -128,7 +130,7 @@ impl From<DSPAction> for Attributes {
 pub struct Cache {
     pub pre_amp_pot: f32,
     pub hysteresis: HysteresisCache,
-    pub wow: WowCache,
+    pub wow_flutter: WowFlutterCache,
     pub delay: DelayCache,
     pub tone: f32,
     pub leds: [ImpulseCache; 8],
@@ -140,7 +142,7 @@ impl Default for Cache {
         Self {
             pre_amp_pot: 0.0,
             hysteresis: HysteresisCache::default(),
-            wow: WowCache::default(),
+            wow_flutter: WowFlutterCache::default(),
             delay: DelayCache::default(),
             tone: 0.0,
             leds: [ImpulseCache::new(100); 8],
@@ -222,7 +224,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPAction {
     let dry_wet = hysteresis::calculate_dry_wet(&cache.hysteresis);
     let (drive, saturation) = hysteresis::calculate_drive_and_saturation(&cache.hysteresis);
     let bias = hysteresis::calculate_bias(&cache.hysteresis, drive);
-    let wow_depth = wow::calculate_depth(&cache.wow);
+    let (wow_depth, flutter_depth) = wow_flutter::calculate_wow_flutter_depth(&cache.wow_flutter);
     let delay_length = delay::calculate_length(&cache.delay);
     let delay_head_1_position = delay::calculate_head_position(&cache.delay, 0);
     let delay_head_2_position = delay::calculate_head_position(&cache.delay, 1);
@@ -235,6 +237,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPAction {
         saturation,
         bias,
         wow_depth,
+        flutter_depth,
         delay_length,
         delay_rewind_forward: cache.delay.rewind_forward_switch,
         delay_rewind_backward: cache.delay.rewind_backward_switch,
@@ -299,11 +302,11 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         SetBiasCV(x) => {
             cache.hysteresis.bias_cv = x;
         }
-        SetWowDepthPot(x) => {
-            cache.wow.depth_pot = x;
+        SetWowFlutterDepthPot(x) => {
+            cache.wow_flutter.depth_pot = x;
         }
-        SetWowDepthCV(x) => {
-            cache.wow.depth_cv = x;
+        SetWowFlutterDepthCV(x) => {
+            cache.wow_flutter.depth_cv = x;
         }
         SetDelayRangeSwitch(b) => {
             cache.delay.range_switch = b;
