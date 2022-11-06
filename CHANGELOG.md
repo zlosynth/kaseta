@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+## 0.3.0
+
 * Introduce tone control.
 * Tweak wow response and control it using a single attribute.
 * Implement basic flutter as an alternative to wow.

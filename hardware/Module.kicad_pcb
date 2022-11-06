@@ -8,7 +8,7 @@
   (title_block
     (title "Kaseta")
     (date "2022-10-28")
-    (rev "v0.2.0")
+    (rev "v0.3.0")
     (company "Zlosynth Instruments")
     (comment 1 "CC BY-SA")
     (comment 2 "petr@zlosyth.com")
@@ -3863,7 +3863,7 @@
   (gr_text "Green\npot" (at 139.89 109.15) (layer "B.SilkS") (tstamp f41f36c6-deec-430a-9949-0655711dae13)
     (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
   )
-  (gr_text "board v0.2.0" (at 140.86 140.44) (layer "F.SilkS") (tstamp 9309129b-3558-4565-bc76-77229a2c13f8)
+  (gr_text "board v0.3.0" (at 140.86 140.44) (layer "F.SilkS") (tstamp 9309129b-3558-4565-bc76-77229a2c13f8)
     (effects (font (size 1 1) (thickness 0.15)))
   )
   (gr_text "RED -12V" (at 88.46 36.91) (layer "F.SilkS") (tstamp b71801ec-6898-407c-b0b7-2fe3c08e33d2)
