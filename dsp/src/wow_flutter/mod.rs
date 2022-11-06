@@ -3,6 +3,9 @@
 //! Changes in speed are caused by mechanical imperfections. Wow represents slow
 //! changes (below 4 Hz), whole flutter fast (above 4 Hz).
 
+#[allow(unused_imports)]
+use micromath::F32Ext as _;
+
 mod ornstein_uhlenbeck;
 mod wavefolder;
 mod wow;
@@ -54,8 +57,13 @@ impl WowFlutter {
     pub fn process(&mut self, buffer: &mut [f32], random: &mut impl Random) {
         for x in buffer.iter_mut() {
             let delay = self.wow.pop(random) * self.sample_rate as f32;
-            let delayed = self.buffer.peek(delay as usize);
+
+            let a = self.buffer.peek(delay as usize);
+            let b = self.buffer.peek(delay as usize + 1);
+            let delayed = a + (b - a) * delay.fract();
+
             self.buffer.write(*x);
+
             *x = delayed;
         }
     }
