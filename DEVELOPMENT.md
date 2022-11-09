@@ -49,3 +49,8 @@ Run benchmarks on hardware:
 cd benches
 cargo run --bin hello
 ```
+
+## Gerbers, BOM and CPL
+
+I extensivelly use https://github.com/Bouni/kicad-jlcpcb-tools to deal with the
+matters listed in the title, and to prepare project for manufacture.
