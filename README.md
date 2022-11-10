@@ -12,7 +12,10 @@ with the project.
 Software of Kaseta is distributed under the terms of the General Public License
 version 3. See [LICENSE-SOFTWARE](LICENSE-SOFTWARE) for details.
 
-The manual is distributed under the terms of Creative Commons BY-SA. See
+Schematics and PCB layout are distributed under the terms of Creative Commons
+BY-SA. See [LICENSE-HARDWARE](LICENSE-HARDWARE) for details.
+
+The manual is also distributed under the terms of Creative Commons BY-SA. See
 [LICENSE-MANUAL](LICENSE-MANUAL) for details.
 
 # Changelog
