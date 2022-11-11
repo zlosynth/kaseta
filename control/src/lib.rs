@@ -73,6 +73,7 @@ pub enum ControlAction {
     SetDelayQuantizationEight(bool),
     SetDelayHeadFeedbackAmount(usize, f32),
     SetDelayHeadVolume(usize, f32),
+    SetDelayHeadPan(usize, f32),
     SetTone(f32),
 }
 
@@ -92,6 +93,7 @@ pub struct DSPAction {
     pub delay_head_position: [f32; 4],
     pub delay_head_feedback: [f32; 4],
     pub delay_head_volume: [f32; 4],
+    pub delay_head_pan: [f32; 4],
     pub tone: f32,
 }
 
@@ -120,6 +122,10 @@ impl From<DSPAction> for Attributes {
             delay_head_2_volume: other.delay_head_volume[1],
             delay_head_3_volume: other.delay_head_volume[2],
             delay_head_4_volume: other.delay_head_volume[3],
+            delay_head_1_pan: other.delay_head_pan[0],
+            delay_head_2_pan: other.delay_head_pan[1],
+            delay_head_3_pan: other.delay_head_pan[2],
+            delay_head_4_pan: other.delay_head_pan[3],
             tone: other.tone,
         }
     }
@@ -249,6 +255,7 @@ pub fn cook_dsp_reaction_from_cache(cache: &Cache) -> DSPAction {
         ],
         delay_head_feedback: cache.delay.head_feedback,
         delay_head_volume: cache.delay.head_volume,
+        delay_head_pan: cache.delay.head_pan,
         tone: cache.tone,
     }
 }
@@ -340,6 +347,9 @@ fn apply_control_action_in_cache(action: ControlAction, cache: &mut Cache) {
         }
         SetDelayHeadVolume(i, x) => {
             cache.delay.head_volume[i] = x;
+        }
+        SetDelayHeadPan(i, x) => {
+            cache.delay.head_pan[i] = x;
         }
         SetTone(x) => {
             cache.tone = x;

@@ -51,6 +51,10 @@ pub struct Attributes {
     pub delay_head_2_volume: f32,
     pub delay_head_3_volume: f32,
     pub delay_head_4_volume: f32,
+    pub delay_head_1_pan: f32,
+    pub delay_head_2_pan: f32,
+    pub delay_head_3_pan: f32,
+    pub delay_head_4_pan: f32,
     pub tone: f32,
 }
 
@@ -82,19 +86,25 @@ impl Processor {
         processor
     }
 
-    pub fn process(&mut self, block: &mut [f32; 32], random: &mut impl Random) -> Reaction {
+    pub fn process(&mut self, block: &mut [(f32, f32); 32], random: &mut impl Random) -> Reaction {
         let mut reaction = Reaction::default();
 
-        self.wow_flutter.process(block, random);
-        self.pre_amp.process(block);
+        let mut buffer = [0.0; 32];
+        for (i, x) in block.iter_mut().enumerate() {
+            buffer[i] = x.0;
+        }
+
+        self.wow_flutter.process(&mut buffer, random);
+        self.pre_amp.process(&mut buffer);
         let mut oversampled_block = [0.0; 32 * 4];
-        self.upsampler.process(block, &mut oversampled_block);
+        self.upsampler.process(&buffer, &mut oversampled_block);
         self.hysteresis
             .process(&mut oversampled_block)
             .notify(&mut reaction);
-        self.downsampler.process(&oversampled_block, &mut block[..]);
-        reaction.delay_impulse = self.delay.process(&mut block[..]);
-        self.tone.process(&mut block[..]);
+        self.downsampler
+            .process(&oversampled_block, &mut buffer[..]);
+        self.tone.process(&mut buffer[..]);
+        reaction.delay_impulse = self.delay.process(&buffer[..], &mut block[..]);
 
         reaction
     }

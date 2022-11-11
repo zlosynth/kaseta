@@ -56,7 +56,6 @@ fn main() -> ! {
 
     let cycles = op_cyccnt_diff!(cp, {
         for i in 0..STEPS {
-            let mut input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
             delay.set_attributes(Attributes {
                 length: 30.0,
                 heads: [
@@ -90,7 +89,9 @@ fn main() -> ! {
                     },
                 ],
             });
-            delay.process(&mut input);
+            let input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
+            let mut output: [(f32, f32); BUFFER_SIZE] = [(0.0, 0.0); BUFFER_SIZE];
+            delay.process(&input, &mut output);
         }
     });
 

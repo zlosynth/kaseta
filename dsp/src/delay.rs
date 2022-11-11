@@ -77,13 +77,13 @@ impl Delay {
     // +---+-----+------+---+
     // |
     // OUT                    (4) mix all read samples together and play them back
-    pub fn process(&mut self, buffer: &mut [f32]) -> bool {
-        for x in buffer.iter() {
+    pub fn process(&mut self, input_buffer: &[f32], output_buffer: &mut [(f32, f32)]) -> bool {
+        for x in input_buffer.iter() {
             self.buffer.write(*x);
         }
 
-        let buffer_len = buffer.len();
-        for (i, x) in buffer.iter_mut().enumerate() {
+        let buffer_len = output_buffer.len();
+        for (i, x) in output_buffer.iter_mut().enumerate() {
             // NOTE: Must read from back, so heads can move from old to new
             let age = buffer_len - i;
 
@@ -100,11 +100,12 @@ impl Delay {
                 .iter_mut()
                 .map(|head| head.reader.read(&self.buffer, age) * head.volume)
                 .sum();
-            *x = output;
+
+            *x = (output, output);
         }
 
         let initial_impulse_cursor = self.impulse_cursor;
-        self.impulse_cursor += buffer.len() as f32 / self.sample_rate as f32;
+        self.impulse_cursor += input_buffer.len() as f32 / self.sample_rate as f32;
         while self.impulse_cursor > self.length {
             self.impulse_cursor -= self.length;
         }

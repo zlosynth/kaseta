@@ -96,8 +96,9 @@ fn main() -> ! {
                     },
                 ],
             });
-            let mut input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
-            delay.process(&mut input);
+            let input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
+            let mut output: [(f32, f32); BUFFER_SIZE] = [(0.0, 0.0); BUFFER_SIZE];
+            delay.process(&input, &mut output);
         }
     });
 

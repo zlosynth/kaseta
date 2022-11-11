@@ -21,6 +21,7 @@ pub struct Cache {
     pub quantization_8: bool,
     pub head_feedback: [f32; 4],
     pub head_volume: [f32; 4],
+    pub head_pan: [f32; 4],
 }
 
 #[allow(clippy::let_and_return)]
