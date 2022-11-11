@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* Implement stereo output and panning.
+
 ## 0.3.0
 
 * Introduce tone control.

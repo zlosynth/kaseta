@@ -23,6 +23,7 @@ struct Head {
     reader: FractionalDelay,
     feedback: f32,
     volume: f32,
+    pan: f32,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -38,6 +39,7 @@ pub struct HeadAttributes {
     pub position: f32,
     pub feedback: f32,
     pub volume: f32,
+    pub pan: f32,
     pub rewind_forward: Option<f32>,
     pub rewind_backward: Option<f32>,
 }
@@ -95,13 +97,16 @@ impl Delay {
             *self.buffer.peek_mut(age) += feedback;
 
             // NOTE: Must read again now when feedback was written back
-            let output: f32 = self
-                .heads
-                .iter_mut()
-                .map(|head| head.reader.read(&self.buffer, age) * head.volume)
-                .sum();
+            let mut left = 0.0;
+            let mut right = 0.0;
+            for head in &mut self.heads {
+                let value = head.reader.read(&self.buffer, age);
+                let amplified = value * head.volume;
+                left += amplified * (1.0 - head.pan);
+                right += amplified * head.pan;
+            }
 
-            *x = (output, output);
+            *x = (left, right);
         }
 
         let initial_impulse_cursor = self.impulse_cursor;
@@ -132,6 +137,7 @@ impl Delay {
         for (i, head) in self.heads.iter_mut().enumerate() {
             head.feedback = attributes.heads[i].feedback;
             head.volume = attributes.heads[i].volume;
+            head.pan = attributes.heads[i].pan;
             head.reader.set_attributes(&FractionalDelayAttributes {
                 position: self.length * attributes.heads[i].position * self.sample_rate,
                 rewind_forward: attributes.heads[i].rewind_forward,
