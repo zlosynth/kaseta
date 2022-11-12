@@ -9,6 +9,7 @@ backwards compatibility.
 * Design the PCB.
 * Initialize basic skeleton of firmware.
 * Implement stereo output and panning.
+* Blink status LED.
 
 ## 0.3.0
 

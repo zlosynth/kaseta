@@ -47,7 +47,7 @@ script = "make -C manual/user"
 [tasks.flash]
 workspace = false
 script = '''
-cd firmwarer
+cd firmware
 cargo run --release --bin firmware
 '''
 
