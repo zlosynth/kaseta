@@ -10,6 +10,7 @@ mod button;
 mod cvs;
 mod debounced;
 mod multiplexer;
+mod pots;
 mod switches;
 
 use crate::system::hal::adc::{Adc, Enabled};
@@ -20,12 +21,14 @@ use self::cvs::CVs;
 pub use self::cvs::Pins as CVsPins;
 use self::multiplexer::Multiplexer;
 pub use self::multiplexer::Pins as MultiplexerPins;
+pub use self::pots::Pins as PotsPins;
+use self::pots::Pots;
 pub use self::switches::Pins as SwitchesPins;
 use self::switches::Switches;
 
 pub struct Inputs {
-    // pot: [(); 23],
     cvs: CVs,
+    pots: Pots,
     button: Button,
     switches: Switches,
     multiplexer: Multiplexer,
@@ -35,6 +38,7 @@ pub struct Inputs {
 
 pub struct Config {
     pub cvs: CVsPins,
+    pub pots: PotsPins,
     pub button: ButtonPin,
     pub switches: SwitchesPins,
     pub multiplexer: MultiplexerPins,
@@ -46,6 +50,7 @@ impl Inputs {
     pub fn new(config: Config) -> Self {
         Self {
             cvs: CVs::new(config.cvs),
+            pots: Pots::new(config.pots),
             button: Button::new(config.button),
             switches: Switches::new(config.switches),
             multiplexer: Multiplexer::new(config.multiplexer),
@@ -56,12 +61,9 @@ impl Inputs {
 
     pub fn sample(&mut self) {
         self.multiplexer.select(0);
-        self.cvs.sample(&mut self.adc_1, &mut self.adc_2);
         self.switches.sample(0);
+        self.pots.sample(0, &mut self.adc_1, &mut self.adc_2);
+        self.cvs.sample(&mut self.adc_1, &mut self.adc_2);
         self.button.sample();
-        // TODO: Update all CVs
-        // TODO: Update button
-        // TODO: Based on cycle, update subset of pots, and switches
-        // TODO: Update the two most recently active pots even if it's not their turn
     }
 }

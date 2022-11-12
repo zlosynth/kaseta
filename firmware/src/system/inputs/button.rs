@@ -7,7 +7,7 @@ pub struct Button {
     pin: Pin,
     debounced: Debounced<4>,
     active: bool,
-    clicked: bool,
+    // clicked: bool,
 }
 
 pub type Pin = gpio::gpiog::PG13<gpio::Input>;
@@ -18,18 +18,18 @@ impl Button {
             pin,
             debounced: Debounced::new(),
             active: false,
-            clicked: false,
+            // clicked: false,
         }
     }
 
     pub fn sample(&mut self) {
-        let was_active = self.active;
+        // let was_active = self.active;
         self.debounced.update(self.pin.is_low());
         self.active = self.debounced.active();
-        self.clicked = !was_active && self.active;
+        // self.clicked = !was_active && self.active;
     }
 
-    pub fn clicked(&self) -> bool {
-        self.clicked
-    }
+    // pub fn clicked(&self) -> bool {
+    // self.clicked
+    // }
 }
