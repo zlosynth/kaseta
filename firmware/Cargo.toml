@@ -23,6 +23,7 @@ stm32h7xx-hal = { version = "0.12", features = [
 ] }
 daisy = { version = "0.7", features = ["patch_sm"] }
 fugit = "0.3"
+nb = "1"
 
 [profile.dev]
 codegen-units = 1 # better optimizations

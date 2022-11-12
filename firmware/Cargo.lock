@@ -296,6 +296,7 @@ dependencies = [
  "defmt",
  "defmt-rtt",
  "fugit",
+ "nb 1.0.0",
  "panic-probe",
  "stm32h7xx-hal",
  "systick-monotonic",

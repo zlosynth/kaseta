@@ -3,11 +3,14 @@ mod inputs;
 pub use daisy::hal;
 
 use daisy::led::LedUser;
+use hal::adc::{AdcSampleTime, Resolution};
+use hal::delay::DelayFromCountDownTimer;
 use hal::pac::CorePeripherals;
 use hal::pac::Peripherals as DevicePeripherals;
+use hal::prelude::*;
 use systick_monotonic::Systick;
 
-use inputs::{Config as InputsConfig, Inputs, MultiplexerConfig, SwitchesConfig};
+use inputs::{CVsPins, Config as InputsConfig, Inputs, MultiplexerConfig, SwitchesConfig};
 
 pub struct System {
     pub mono: Systick<1000>,
@@ -29,9 +32,36 @@ impl System {
         let ccdr = daisy::board_freeze_clocks!(board, dp);
         let pins = daisy::board_split_gpios!(board, ccdr, dp);
 
+        let mut delay = DelayFromCountDownTimer::new(dp.TIM2.timer(
+            100.Hz(),
+            ccdr.peripheral.TIM2,
+            &ccdr.clocks,
+        ));
+
+        let (adc_1, adc_2) = {
+            let (mut adc_1, mut adc_2) = hal::adc::adc12(
+                dp.ADC1,
+                dp.ADC2,
+                &mut delay,
+                ccdr.peripheral.ADC12,
+                &ccdr.clocks,
+            );
+            adc_1.set_resolution(Resolution::SIXTEENBIT);
+            adc_1.set_sample_time(AdcSampleTime::T_16);
+            adc_2.set_resolution(Resolution::SIXTEENBIT);
+            adc_2.set_sample_time(AdcSampleTime::T_16);
+            (adc_1.enable(), adc_2.enable())
+        };
+
         let mono = Systick::new(cp.SYST, 480_000_000);
         let led_user = daisy::board_split_leds!(pins).USER;
         let inputs = Inputs::new(InputsConfig {
+            cvs: CVsPins {
+                cv_1: pins.GPIO.PIN_C7.into_analog(),
+                cv_2: pins.GPIO.PIN_C6.into_analog(),
+                cv_3: pins.GPIO.PIN_C9.into_analog(),
+                cv_4: pins.GPIO.PIN_C8.into_analog(),
+            },
             button: pins.GPIO.PIN_B10.into_floating_input(),
             switches: SwitchesConfig {
                 switch_1: pins.GPIO.PIN_B9.into_floating_input(),
@@ -43,6 +73,8 @@ impl System {
                 address_b: pins.GPIO.PIN_A3.into_push_pull_output(),
                 address_c: pins.GPIO.PIN_A2.into_push_pull_output(),
             },
+            adc_1,
+            adc_2,
         });
 
         Self {

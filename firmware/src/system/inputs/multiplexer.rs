@@ -10,6 +10,7 @@ pub struct Multiplexer {
     address_c: AddressCPin,
 }
 
+// TODO: Use Pins instead of Config
 pub struct Config {
     pub address_a: AddressAPin,
     pub address_b: AddressBPin,

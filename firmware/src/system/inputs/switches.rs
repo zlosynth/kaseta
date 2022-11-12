@@ -7,21 +7,22 @@ pub struct Switches {
     pins: Pins,
 }
 
+// TODO: Use Pins instead of Config
 struct Pins {
-    switch_1: Switch1,
-    multiplexed_witches_2_to_9: MultiplexedSwitches2To9,
-    switch_10: Switch10,
+    switch_1: Switch1Pin,
+    multiplexed_witches_2_to_9: MultiplexedSwitches2To9Pin,
+    switch_10: Switch10Pin,
 }
 
 pub struct Config {
-    pub switch_1: Switch1,
-    pub multiplexed_switches_2_to_9: MultiplexedSwitches2To9,
-    pub switch_10: Switch10,
+    pub switch_1: Switch1Pin,
+    pub multiplexed_switches_2_to_9: MultiplexedSwitches2To9Pin,
+    pub switch_10: Switch10Pin,
 }
 
-pub type Switch1 = gpio::gpiog::PG14<gpio::Input>;
-pub type MultiplexedSwitches2To9 = gpio::gpiob::PB15<gpio::Input>;
-pub type Switch10 = gpio::gpioc::PC3<gpio::Input>;
+pub type Switch1Pin = gpio::gpiog::PG14<gpio::Input>;
+pub type MultiplexedSwitches2To9Pin = gpio::gpiob::PB15<gpio::Input>;
+pub type Switch10Pin = gpio::gpioc::PC3<gpio::Input>;
 
 impl Switches {
     pub fn new(config: Config) -> Self {
