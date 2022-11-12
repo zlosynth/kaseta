@@ -9,7 +9,7 @@ publish = false
 [dependencies]
 libm = "0.2"
 defmt = { version = "0.3", optional = true }
-sirena = { path = "../../sirena" }
+sirena = { git = "https://github.com/zlosynth/sirena", rev = "0ba4c32" }
 micromath = "2.0"
 
 [dev-dependencies]
