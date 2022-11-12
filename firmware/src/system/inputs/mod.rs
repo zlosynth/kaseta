@@ -34,6 +34,7 @@ pub struct Inputs {
     multiplexer: Multiplexer,
     adc_1: Adc<ADC1, Enabled>,
     adc_2: Adc<ADC2, Enabled>,
+    cycle: u8,
 }
 
 pub struct Config {
@@ -56,14 +57,17 @@ impl Inputs {
             multiplexer: Multiplexer::new(config.multiplexer),
             adc_1: config.adc_1,
             adc_2: config.adc_2,
+            cycle: 0,
         }
     }
 
     pub fn sample(&mut self) {
-        self.multiplexer.select(0);
-        self.switches.sample(0);
-        self.pots.sample(0, &mut self.adc_1, &mut self.adc_2);
+        self.multiplexer.select(self.cycle);
+        self.switches.sample(self.cycle);
+        self.pots
+            .sample(self.cycle, &mut self.adc_1, &mut self.adc_2);
         self.cvs.sample(&mut self.adc_1, &mut self.adc_2);
         self.button.sample();
+        self.cycle = if self.cycle == 8 { 0 } else { self.cycle + 1 };
     }
 }
