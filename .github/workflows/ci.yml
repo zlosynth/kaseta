@@ -35,6 +35,11 @@ jobs:
       with:
         command: install
         args: --debug cargo-make
+    - name: Install flip-link
+      uses: actions-rs/cargo@v1
+      with:
+        command: install
+        args: --debug flip-link
     - name: Install up Python 3.x toolchain
       uses: actions/setup-python@v2
       with:
