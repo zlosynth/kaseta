@@ -18,9 +18,9 @@ use crate::system::hal::pac::{ADC1, ADC2};
 use self::button::{Button, Pin as ButtonPin};
 use self::cvs::CVs;
 pub use self::cvs::Pins as CVsPins;
-pub use self::multiplexer::Config as MultiplexerConfig;
 use self::multiplexer::Multiplexer;
-pub use self::switches::Config as SwitchesConfig;
+pub use self::multiplexer::Pins as MultiplexerPins;
+pub use self::switches::Pins as SwitchesPins;
 use self::switches::Switches;
 
 pub struct Inputs {
@@ -36,8 +36,8 @@ pub struct Inputs {
 pub struct Config {
     pub cvs: CVsPins,
     pub button: ButtonPin,
-    pub switches: SwitchesConfig,
-    pub multiplexer: MultiplexerConfig,
+    pub switches: SwitchesPins,
+    pub multiplexer: MultiplexerPins,
     pub adc_1: Adc<ADC1, Enabled>,
     pub adc_2: Adc<ADC2, Enabled>,
 }

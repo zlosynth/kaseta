@@ -1,34 +1,32 @@
 use crate::system::hal::gpio;
 
-type AddressAPin = gpio::gpiob::PB14<gpio::Output>;
-type AddressBPin = gpio::gpioa::PA0<gpio::Output>;
-type AddressCPin = gpio::gpioa::PA1<gpio::Output>;
-
 pub struct Multiplexer {
-    address_a: AddressAPin,
-    address_b: AddressBPin,
-    address_c: AddressCPin,
+    pins: Pins,
 }
 
-// TODO: Use Pins instead of Config
-pub struct Config {
+pub struct Pins {
     pub address_a: AddressAPin,
     pub address_b: AddressBPin,
     pub address_c: AddressCPin,
 }
 
+type AddressAPin = gpio::gpiob::PB14<gpio::Output>;
+type AddressBPin = gpio::gpioa::PA0<gpio::Output>;
+type AddressCPin = gpio::gpioa::PA1<gpio::Output>;
+
 impl Multiplexer {
-    pub fn new(config: Config) -> Self {
-        Self {
-            address_a: config.address_a,
-            address_b: config.address_b,
-            address_c: config.address_c,
-        }
+    pub fn new(pins: Pins) -> Self {
+        Self { pins }
     }
 
     pub fn select(&mut self, position: u8) {
-        self.address_a.set_state((position & 0b1 != 0).into());
-        self.address_b.set_state((position & 0b10 != 0).into());
-        self.address_c.set_state((position & 0b100 != 0).into());
+        let first_bit = (position & 0b1 != 0).into();
+        self.pins.address_a.set_state(first_bit);
+
+        let second_bit = (position & 0b10 != 0).into();
+        self.pins.address_b.set_state(second_bit);
+
+        let third_bit = (position & 0b100 != 0).into();
+        self.pins.address_c.set_state(third_bit);
     }
 }

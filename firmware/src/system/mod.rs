@@ -10,7 +10,7 @@ use hal::pac::Peripherals as DevicePeripherals;
 use hal::prelude::*;
 use systick_monotonic::Systick;
 
-use inputs::{CVsPins, Config as InputsConfig, Inputs, MultiplexerConfig, SwitchesConfig};
+use inputs::{CVsPins, Config as InputsConfig, Inputs, MultiplexerPins, SwitchesPins};
 
 pub struct System {
     pub mono: Systick<1000>,
@@ -63,12 +63,12 @@ impl System {
                 cv_4: pins.GPIO.PIN_C8.into_analog(),
             },
             button: pins.GPIO.PIN_B10.into_floating_input(),
-            switches: SwitchesConfig {
+            switches: SwitchesPins {
                 switch_1: pins.GPIO.PIN_B9.into_floating_input(),
                 multiplexed_switches_2_to_9: pins.GPIO.PIN_A9.into_floating_input(),
                 switch_10: pins.GPIO.PIN_D9.into_floating_input(),
             },
-            multiplexer: MultiplexerConfig {
+            multiplexer: MultiplexerPins {
                 address_a: pins.GPIO.PIN_A8.into_push_pull_output(),
                 address_b: pins.GPIO.PIN_A3.into_push_pull_output(),
                 address_c: pins.GPIO.PIN_A2.into_push_pull_output(),
