@@ -133,6 +133,8 @@ dependencies = [
 [[package]]
 name = "daisy"
 version = "0.7.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b16ddc15c27566f3ee05a6b9d6dd1437b0c92ff4edd28a22b884b6e7d26b0f5d"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
