@@ -9,6 +9,10 @@ publish = false
 [lib]
 harness = false
 
+[[test]]
+name = "inputs"
+harness = false # defined through defmt_test
+
 [dependencies]
 cortex-m = "0.7"
 cortex-m-rtic = "1"
@@ -24,6 +28,9 @@ stm32h7xx-hal = { version = "0.12", features = [
 daisy = { version = "0.7", features = ["patch_sm"] }
 fugit = "0.3"
 nb = "1"
+
+[dev-dependencies]
+defmt-test = "0.3"
 
 [profile.dev]
 codegen-units = 1 # better optimizations

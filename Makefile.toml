@@ -67,6 +67,14 @@ cd benches
 cargo run --release --bin ${1}
 '''
 
+[tasks.test-embedded]
+clear = true
+workspace = false
+script = '''
+cd benches
+DEFMT_LOG=info cargo test --test ${1}
+'''
+
 [tasks.bloat]
 workspace = false
 script = '''

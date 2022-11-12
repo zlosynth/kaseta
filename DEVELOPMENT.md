@@ -87,6 +87,19 @@ enter the bootloader. Then call this make target:
 makers flash-dfu
 ```
 
+## Embedded tests
+
+Firmware integration tests are executed directly on the module.
+
+Before running a benchmark, first make sure to go through the guidance given in
+[Flash via ST-Link](#flash-via-st-link).
+
+To run one of the integration tests kept under `firmware/tests`:
+
+```sh
+makers test-embedded inputs
+```
+
 ## Benchmark
 
 For the most accurate results, benchmarks of control and dsp modules are executed
