@@ -21,7 +21,7 @@ stm32h7xx-hal = { version = "0.12", features = [
   "rt",
   "revision_v",
 ] }
-daisy = { version = "0.7", features = ["seed"] }
+daisy = { version = "0.7", features = ["patch_sm"] }
 fugit = "0.3"
 
 [profile.dev]
