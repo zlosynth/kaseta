@@ -1,7 +1,7 @@
 [env]
 CARGO_MAKE_EXTEND_WORKSPACE_MAKEFILE = true
 CARGO_MAKE_WORKSPACE_EMULATION = true
-CARGO_MAKE_CRATE_WORKSPACE_MEMBERS = ["dsp", "control", "benches"]
+CARGO_MAKE_CRATE_WORKSPACE_MEMBERS = ["dsp", "control", "benches", "firmware"]
 
 [tasks.default]
 alias = "dev"
@@ -23,7 +23,7 @@ run_task = { name = "ci-workspace", fork = true }
 dependencies = ["check-format", "clippy", "build", "test"]
 
 [tasks.test]
-condition = { files_not_exist = [".cargo"] }
+condition = { files_not_exist = [".cargo/"] }
 
 [tasks.check-toml]
 env = { CARGO_MAKE_FORMAT_TOML_ARGS = "--check" }
@@ -43,3 +43,34 @@ script = "python3 -m black hack/"
 [tasks.manual]
 workspace = false
 script = "make -C manual/user"
+
+[tasks.flash]
+workspace = false
+script = '''
+cd firmwarer
+cargo run --release --bin firmware
+'''
+
+[tasks.flash-dfu]
+workspace = false
+script = '''
+cd firmware
+cargo objcopy --release -- -O binary target/kaseta.bin
+dfu-util -a 0 -s 0x08000000:leave -D target/kaseta.bin -d ,0483:df11
+'''
+
+[tasks.bench]
+clear = true
+workspace = false
+script = '''
+cd benches
+cargo run --release --bin ${1}
+'''
+
+[tasks.bloat]
+workspace = false
+script = '''
+cd firmware
+cargo size --bin firmware --release -- -m
+cargo bloat --release
+'''
