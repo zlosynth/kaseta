@@ -15,21 +15,32 @@ jobs:
     steps:
     - name: Checkout the repository
       uses: actions/checkout@v2
-    - name: Install Rust toolchain
+    - name: Install x86 Rust toolchain
       uses: actions-rs/toolchain@v1
       with:
+        target: x86_64-unknown-linux-gnu
         toolchain: stable
+        default: true
+        override: true
+        components: rustfmt, clippy
+    - name: Install ARM Rust toolchain
+      uses: actions-rs/toolchain@v1
+      with:
+        target: thumbv7em-none-eabihf
+        toolchain: stable
+        override: true
+        components: rustfmt, clippy
+    - name: Install cargo-make
+      uses: actions-rs/cargo@v1
+      with:
+        command: install
+        args: --debug cargo-make
     - name: Install up Python 3.x toolchain
       uses: actions/setup-python@v2
       with:
         python-version: '3.x'
     - name: Install Python black
       run: pip install black
-    - name: Install cargo-make
-      uses: actions-rs/cargo@v1
-      with:
-        command: install
-        args: --debug cargo-make
     - name: Run CI
       uses: actions-rs/cargo@v1
       with:
