@@ -5,23 +5,23 @@ use crate::system::hal::gpio;
 use crate::system::hal::pac::{ADC1, ADC2};
 
 pub struct Pots {
-    pre_amp: f32,
-    drive: f32,
-    bias: f32,
-    dry_wet: f32,
-    wow_flut: f32,
-    speed: f32,
-    tone: f32,
-    head: [Head; 4],
-    pins: Pins,
+    pub pre_amp: f32,
+    pub drive: f32,
+    pub bias: f32,
+    pub dry_wet: f32,
+    pub wow_flut: f32,
+    pub speed: f32,
+    pub tone: f32,
+    pub head: [Head; 4],
+    pub pins: Pins,
 }
 
 #[derive(Default)]
-struct Head {
-    position: f32,
-    volume: f32,
-    feedback: f32,
-    pan: f32,
+pub struct Head {
+    pub position: f32,
+    pub volume: f32,
+    pub feedback: f32,
+    pub pan: f32,
 }
 
 pub struct Pins {
@@ -35,7 +35,7 @@ pub type Multiplexer2Pin = gpio::gpioa::PA7<gpio::Analog>;
 pub type Multiplexer3Pin = gpio::gpioa::PA2<gpio::Analog>;
 
 impl Pots {
-    pub fn new(pins: Pins) -> Self {
+    pub(crate) fn new(pins: Pins) -> Self {
         Self {
             pre_amp: 0.0,
             drive: 0.0,

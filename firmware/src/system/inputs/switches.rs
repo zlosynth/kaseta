@@ -3,8 +3,13 @@ use crate::system::hal::gpio;
 use super::debounced::Debounced;
 
 pub struct Switches {
-    switch: [Debounced<4>; 10],
+    pub switch: [Switch; 10],
     pins: Pins,
+}
+
+pub struct Switch {
+    debouncer: Debounced<4>,
+    pub value: bool,
 }
 
 pub struct Pins {
@@ -18,25 +23,25 @@ pub type MultiplexedSwitches2To9Pin = gpio::gpiob::PB15<gpio::Input>;
 pub type Switch10Pin = gpio::gpioc::PC3<gpio::Input>;
 
 impl Switches {
-    pub fn new(pins: Pins) -> Self {
+    pub(crate) fn new(pins: Pins) -> Self {
         Self {
             switch: [
-                Debounced::new(),
-                Debounced::new(),
-                Debounced::new(),
-                Debounced::new(),
-                Debounced::new(),
-                Debounced::new(),
-                Debounced::new(),
-                Debounced::new(),
-                Debounced::new(),
-                Debounced::new(),
+                Switch::new(),
+                Switch::new(),
+                Switch::new(),
+                Switch::new(),
+                Switch::new(),
+                Switch::new(),
+                Switch::new(),
+                Switch::new(),
+                Switch::new(),
+                Switch::new(),
             ],
             pins,
         }
     }
 
-    pub fn sample(&mut self, cycle: u8) {
+    pub(crate) fn sample(&mut self, cycle: u8) {
         match cycle {
             0 => {
                 self.switch[0].update(self.pins.switch_1.is_high());
@@ -54,5 +59,18 @@ impl Switches {
             7 => self.switch[8].update(self.pins.multiplexed_switches_2_to_9.is_high()),
             _ => unreachable!(),
         }
+    }
+}
+
+impl Switch {
+    pub(crate) fn new() -> Self {
+        Self {
+            debouncer: Debounced::new(),
+            value: false,
+        }
+    }
+
+    pub(crate) fn update(&mut self, value: bool) {
+        self.value = self.debouncer.update(value);
     }
 }

@@ -1,4 +1,4 @@
-mod inputs;
+pub mod inputs;
 
 pub use daisy::hal;
 

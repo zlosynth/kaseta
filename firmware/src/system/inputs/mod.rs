@@ -10,7 +10,7 @@ mod button;
 mod cvs;
 mod debounced;
 mod multiplexer;
-mod pots;
+pub mod pots;
 mod probe;
 mod switches;
 
@@ -29,10 +29,10 @@ pub use self::switches::Pins as SwitchesPins;
 use self::switches::Switches;
 
 pub struct Inputs {
-    cvs: CVs,
-    pots: Pots,
-    button: Button,
-    switches: Switches,
+    pub cvs: CVs,
+    pub pots: Pots,
+    pub button: Button,
+    pub switches: Switches,
     multiplexer: Multiplexer,
     probe: ProbeBroadcaster,
     adc_1: Adc<ADC1, Enabled>,
@@ -52,7 +52,7 @@ pub struct Config {
 }
 
 impl Inputs {
-    pub fn new(config: Config) -> Self {
+    pub(crate) fn new(config: Config) -> Self {
         Self {
             cvs: CVs::new(config.cvs),
             pots: Pots::new(config.pots),

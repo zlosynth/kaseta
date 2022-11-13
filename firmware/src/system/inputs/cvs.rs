@@ -1,3 +1,4 @@
+// TODO: Try to mark as many as possible to pub(crate)
 use nb::block;
 
 use crate::system::hal::adc::{Adc, Enabled};
@@ -7,13 +8,13 @@ use crate::system::hal::pac::{ADC1, ADC2};
 use super::probe::Detector as ProbeDetector;
 
 pub struct CVs {
-    cv: [CV; 4],
+    pub cv: [CV; 4],
     pins: Pins,
 }
 
 #[derive(Default)]
-struct CV {
-    value: f32,
+pub struct CV {
+    pub value: Option<f32>,
     probe: ProbeDetector,
 }
 
@@ -59,7 +60,11 @@ impl CV {
     fn set(&mut self, sample: u32, slope: u32) {
         let value = transpose_adc(sample, slope);
         self.probe.write(value > 0.75);
-        self.value = if self.probe.detected() { 0.0 } else { value };
+        self.value = if self.probe.detected() {
+            None
+        } else {
+            Some(value)
+        };
     }
 }
 

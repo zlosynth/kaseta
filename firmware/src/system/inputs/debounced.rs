@@ -13,13 +13,10 @@ impl<const N: usize> Debounced<N> {
         }
     }
 
-    pub fn update(&mut self, value: bool) {
+    pub fn update(&mut self, value: bool) -> bool {
         self.debounce_filter.write(value);
         self.active = self.debounce_filter.read();
-    }
-
-    pub fn active(&self) -> bool {
-        self.debounce_filter.read()
+        self.active
     }
 }
 
