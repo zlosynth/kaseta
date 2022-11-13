@@ -11,6 +11,7 @@ mod cvs;
 mod debounced;
 mod multiplexer;
 mod pots;
+mod probe;
 mod switches;
 
 use crate::system::hal::adc::{Adc, Enabled};
@@ -23,6 +24,7 @@ use self::multiplexer::Multiplexer;
 pub use self::multiplexer::Pins as MultiplexerPins;
 pub use self::pots::Pins as PotsPins;
 use self::pots::Pots;
+use self::probe::{Broadcaster as ProbeBroadcaster, BroadcasterPin as ProbeBroadcasterPin};
 pub use self::switches::Pins as SwitchesPins;
 use self::switches::Switches;
 
@@ -32,6 +34,7 @@ pub struct Inputs {
     button: Button,
     switches: Switches,
     multiplexer: Multiplexer,
+    probe: ProbeBroadcaster,
     adc_1: Adc<ADC1, Enabled>,
     adc_2: Adc<ADC2, Enabled>,
     cycle: u8,
@@ -43,6 +46,7 @@ pub struct Config {
     pub button: ButtonPin,
     pub switches: SwitchesPins,
     pub multiplexer: MultiplexerPins,
+    pub probe: ProbeBroadcasterPin,
     pub adc_1: Adc<ADC1, Enabled>,
     pub adc_2: Adc<ADC2, Enabled>,
 }
@@ -55,6 +59,7 @@ impl Inputs {
             button: Button::new(config.button),
             switches: Switches::new(config.switches),
             multiplexer: Multiplexer::new(config.multiplexer),
+            probe: ProbeBroadcaster::new(config.probe),
             adc_1: config.adc_1,
             adc_2: config.adc_2,
             cycle: 0,
@@ -69,5 +74,6 @@ impl Inputs {
         self.cvs.sample(&mut self.adc_1, &mut self.adc_2);
         self.button.sample();
         self.cycle = if self.cycle == 8 { 0 } else { self.cycle + 1 };
+        self.probe.tick();
     }
 }

@@ -78,6 +78,7 @@ impl System {
                 address_b: pins.GPIO.PIN_A3.into_push_pull_output(),
                 address_c: pins.GPIO.PIN_A2.into_push_pull_output(),
             },
+            probe: pins.GPIO.PIN_B6.into_push_pull_output(),
             adc_1,
             adc_2,
         });

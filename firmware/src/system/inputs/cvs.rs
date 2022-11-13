@@ -4,9 +4,17 @@ use crate::system::hal::adc::{Adc, Enabled};
 use crate::system::hal::gpio;
 use crate::system::hal::pac::{ADC1, ADC2};
 
+use super::probe::Detector as ProbeDetector;
+
 pub struct CVs {
-    cv: [f32; 4],
+    cv: [CV; 4],
     pins: Pins,
+}
+
+#[derive(Default)]
+struct CV {
+    value: f32,
+    probe: ProbeDetector,
 }
 
 pub struct Pins {
@@ -23,7 +31,10 @@ pub type CV4Pin = gpio::gpiob::PB1<gpio::Analog>;
 
 impl CVs {
     pub fn new(pins: Pins) -> Self {
-        Self { cv: [0.0; 4], pins }
+        Self {
+            cv: [CV::default(), CV::default(), CV::default(), CV::default()],
+            pins,
+        }
     }
 
     pub fn sample(&mut self, adc_1: &mut Adc<ADC1, Enabled>, adc_2: &mut Adc<ADC2, Enabled>) {
@@ -37,10 +48,18 @@ impl CVs {
         let sample_3: u32 = block!(adc_1.read_sample()).unwrap();
         let sample_4: u32 = block!(adc_2.read_sample()).unwrap();
 
-        self.cv[0] = transpose_adc(sample_1, adc_1.slope());
-        self.cv[1] = transpose_adc(sample_2, adc_2.slope());
-        self.cv[2] = transpose_adc(sample_3, adc_1.slope());
-        self.cv[3] = transpose_adc(sample_4, adc_2.slope());
+        self.cv[0].set(sample_1, adc_1.slope());
+        self.cv[1].set(sample_2, adc_2.slope());
+        self.cv[2].set(sample_3, adc_1.slope());
+        self.cv[3].set(sample_4, adc_2.slope());
+    }
+}
+
+impl CV {
+    fn set(&mut self, sample: u32, slope: u32) {
+        let value = transpose_adc(sample, slope);
+        self.probe.write(value > 0.75);
+        self.value = if self.probe.detected() { 0.0 } else { value };
     }
 }
 
