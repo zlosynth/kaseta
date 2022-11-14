@@ -30,7 +30,7 @@ mod app {
 
         let system = System::init(cx.core, cx.device);
         let mono = system.mono;
-        let status_led = system.led_user;
+        let status_led = system.status_led;
 
         blink::spawn(true, BLINKS).unwrap();
 

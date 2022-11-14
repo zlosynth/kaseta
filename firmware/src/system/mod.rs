@@ -1,4 +1,5 @@
 pub mod inputs;
+pub mod leds;
 
 pub use daisy::hal;
 
@@ -10,12 +11,16 @@ use hal::pac::Peripherals as DevicePeripherals;
 use hal::prelude::*;
 use systick_monotonic::Systick;
 
-use inputs::{CVsPins, Config as InputsConfig, Inputs, MultiplexerPins, PotsPins, SwitchesPins};
+use self::inputs::{
+    CVsPins, Config as InputsConfig, Inputs, MultiplexerPins, PotsPins, SwitchesPins,
+};
+use self::leds::{LEDs, Pins as LEDsPins};
 
 pub struct System {
     pub mono: Systick<1000>,
-    pub led_user: LedUser,
+    pub status_led: LedUser,
     pub inputs: Inputs,
+    pub leds: LEDs,
 }
 
 impl System {
@@ -54,39 +59,53 @@ impl System {
         };
 
         let mono = Systick::new(cp.SYST, 480_000_000);
-        let led_user = daisy::board_split_leds!(pins).USER;
+        let status_led = daisy::board_split_leds!(pins).USER;
         let inputs = Inputs::new(InputsConfig {
             cvs: CVsPins {
-                cv_1: pins.GPIO.PIN_C7.into_analog(),
-                cv_2: pins.GPIO.PIN_C6.into_analog(),
-                cv_3: pins.GPIO.PIN_C9.into_analog(),
-                cv_4: pins.GPIO.PIN_C8.into_analog(),
+                cv_1: pins.GPIO.PIN_C6.into_analog(),
+                cv_2: pins.GPIO.PIN_C8.into_analog(),
+                cv_3: pins.GPIO.PIN_C7.into_analog(),
+                cv_4: pins.GPIO.PIN_C9.into_analog(),
             },
             pots: PotsPins {
-                multiplexer_1: pins.GPIO.PIN_C4.into_analog(),
-                multiplexer_2: pins.GPIO.PIN_C2.into_analog(),
+                multiplexer_1: pins.GPIO.PIN_C2.into_analog(),
+                multiplexer_2: pins.GPIO.PIN_C4.into_analog(),
                 multiplexer_3: pins.GPIO.PIN_C3.into_analog(),
             },
-            button: pins.GPIO.PIN_B10.into_floating_input(),
+            button: pins.GPIO.PIN_B9.into_floating_input(),
             switches: SwitchesPins {
-                switch_1: pins.GPIO.PIN_B9.into_floating_input(),
-                multiplexed_switches_2_to_9: pins.GPIO.PIN_A9.into_floating_input(),
-                switch_10: pins.GPIO.PIN_D9.into_floating_input(),
+                switch_1: pins.GPIO.PIN_B10.into_floating_input(),
+                multiplexed_switches_2_to_9: pins.GPIO.PIN_A2.into_floating_input(),
+                switch_10: pins.GPIO.PIN_D5.into_floating_input(),
             },
             multiplexer: MultiplexerPins {
-                address_a: pins.GPIO.PIN_A8.into_push_pull_output(),
-                address_b: pins.GPIO.PIN_A3.into_push_pull_output(),
-                address_c: pins.GPIO.PIN_A2.into_push_pull_output(),
+                address_a: pins.GPIO.PIN_A3.into_push_pull_output(),
+                address_b: pins.GPIO.PIN_A8.into_push_pull_output(),
+                address_c: pins.GPIO.PIN_A9.into_push_pull_output(),
             },
             probe: pins.GPIO.PIN_B6.into_push_pull_output(),
             adc_1,
             adc_2,
         });
+        let leds = LEDs::new(LEDsPins {
+            display: (
+                pins.GPIO.PIN_D9.into_push_pull_output(),
+                pins.GPIO.PIN_D7.into_push_pull_output(),
+                pins.GPIO.PIN_D4.into_push_pull_output(),
+                pins.GPIO.PIN_D2.into_push_pull_output(),
+                pins.GPIO.PIN_D10.into_push_pull_output(),
+                pins.GPIO.PIN_D8.into_push_pull_output(),
+                pins.GPIO.PIN_D3.into_push_pull_output(),
+                pins.GPIO.PIN_D1.into_push_pull_output(),
+            ),
+            impulse: pins.GPIO.PIN_D6.into_push_pull_output(),
+        });
 
         Self {
             mono,
-            led_user,
+            status_led,
             inputs,
+            leds,
         }
     }
 }
