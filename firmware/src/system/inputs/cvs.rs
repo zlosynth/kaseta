@@ -25,10 +25,10 @@ pub struct Pins {
     pub cv_4: CV4Pin,
 }
 
-pub type CV1Pin = gpio::gpioc::PC0<gpio::Analog>;
-pub type CV2Pin = gpio::gpioc::PC1<gpio::Analog>;
-pub type CV3Pin = gpio::gpioc::PC4<gpio::Analog>;
-pub type CV4Pin = gpio::gpiob::PB1<gpio::Analog>;
+pub type CV1Pin = gpio::gpioc::PC1<gpio::Analog>;
+pub type CV2Pin = gpio::gpiob::PB1<gpio::Analog>;
+pub type CV3Pin = gpio::gpioc::PC0<gpio::Analog>;
+pub type CV4Pin = gpio::gpioc::PC4<gpio::Analog>;
 
 impl CVs {
     pub fn new(pins: Pins) -> Self {

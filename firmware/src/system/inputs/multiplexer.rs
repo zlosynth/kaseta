@@ -10,9 +10,9 @@ pub struct Pins {
     pub address_c: AddressCPin,
 }
 
-type AddressAPin = gpio::gpiob::PB14<gpio::Output>;
-type AddressBPin = gpio::gpioa::PA0<gpio::Output>;
-type AddressCPin = gpio::gpioa::PA1<gpio::Output>;
+type AddressAPin = gpio::gpioa::PA0<gpio::Output>;
+type AddressBPin = gpio::gpiob::PB14<gpio::Output>;
+type AddressCPin = gpio::gpiob::PB15<gpio::Output>;
 
 impl Multiplexer {
     pub fn new(pins: Pins) -> Self {

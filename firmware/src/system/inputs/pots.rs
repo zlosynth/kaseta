@@ -30,8 +30,8 @@ pub struct Pins {
     pub multiplexer_3: Multiplexer3Pin,
 }
 
-pub type Multiplexer1Pin = gpio::gpioa::PA6<gpio::Analog>;
-pub type Multiplexer2Pin = gpio::gpioa::PA7<gpio::Analog>;
+pub type Multiplexer1Pin = gpio::gpioa::PA7<gpio::Analog>;
+pub type Multiplexer2Pin = gpio::gpioa::PA6<gpio::Analog>;
 pub type Multiplexer3Pin = gpio::gpioa::PA2<gpio::Analog>;
 
 impl Pots {

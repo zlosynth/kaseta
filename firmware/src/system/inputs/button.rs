@@ -10,7 +10,7 @@ pub struct Button {
     clicked: bool,
 }
 
-pub type Pin = gpio::gpiog::PG13<gpio::Input>;
+pub type Pin = gpio::gpiog::PG14<gpio::Input>;
 
 impl Button {
     pub fn new(pin: Pin) -> Self {

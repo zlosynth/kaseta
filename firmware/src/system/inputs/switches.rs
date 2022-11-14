@@ -18,9 +18,9 @@ pub struct Pins {
     pub switch_10: Switch10Pin,
 }
 
-pub type Switch1Pin = gpio::gpiog::PG14<gpio::Input>;
-pub type MultiplexedSwitches2To9Pin = gpio::gpiob::PB15<gpio::Input>;
-pub type Switch10Pin = gpio::gpioc::PC3<gpio::Input>;
+pub type Switch1Pin = gpio::gpiog::PG13<gpio::Input>;
+pub type MultiplexedSwitches2To9Pin = gpio::gpioa::PA1<gpio::Input>;
+pub type Switch10Pin = gpio::gpioc::PC8<gpio::Input>;
 
 impl Switches {
     pub(crate) fn new(pins: Pins) -> Self {
