@@ -1,7 +1,7 @@
 // TODO: This is a temporary draft of the new control architecture.
 //
-// - [ ] Define stubs of all needed structs
-// - [ ] Write documentation of these structs
+// - [X] Define stubs of all needed structs
+// - [X] Write documentation of these structs
 // - [ ] Implement tests stub
 // - [ ] Write initializer of cache
 // - [ ] Implement raw input passing
@@ -125,8 +125,30 @@ struct AttributesHead {
     pan: f32,
 }
 
-/// TODO: State machine
-struct Display {}
+/// State machine representing 8 display LEDs of the module.
+///
+/// This structure handles the prioritization of display modes, their
+/// changing from one to another, or animations.
+struct Display {
+    forced: Option<Screen>,
+    prioritized: Option<(Screen, u32)>,
+    backup: Screen,
+}
+
+enum Screen {
+    Calibration,
+    ControlSelect,
+}
+
+/// Desired state of output peripherals with the exception of audio.
+///
+/// This structure transfers request to the module, asking to lit LEDs or
+/// set CV output.
+struct DesiredOutput {
+    display: [bool; 8],
+    implulse_led: bool,
+    impulse_trigger: bool,
+}
 
 /// The current state of all peripherals.
 ///
@@ -175,10 +197,10 @@ impl Cache {
         todo!();
     }
 
-    pub fn tick(&mut self) {
+    pub fn tick(&mut self) -> DesiredOutput {
         // TODO: Mark that time has passed
         // TODO: This will update timers of display and impulse output
         // self.display.tick();
-        todo!();
+        todo!()
     }
 }
