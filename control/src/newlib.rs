@@ -2,7 +2,8 @@
 //
 // - [X] Define stubs of all needed structs
 // - [X] Write documentation of these structs
-// - [ ] Implement tests stub
+// - [X] Implement defmt display for all
+// - [X] Implement tests stub
 // - [ ] Write initializer of cache
 // - [ ] Implement raw input passing
 // - [ ] Implement pot processing with smoothening
@@ -22,6 +23,8 @@
 /// `InputSnapshot` on its inputs, passes it to peripheral abstractions,
 /// interprets the current input into module configuration and manages
 /// the whole state machine of that.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
     inputs: Inputs,
     state: State,
@@ -35,6 +38,8 @@ pub struct Cache {
 ///
 /// This struct turns the raw snapshot into a set of abstracted peripherals.
 /// These peripherals provide features such as smoothening or click detection.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Inputs {
     pre_amp: Pot,
     drive: Pot,
@@ -49,6 +54,8 @@ struct Inputs {
     button: Button,
 }
 
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct InputsHead {
     position: Pot,
     volume: Pot,
@@ -56,10 +63,14 @@ struct InputsHead {
     pan: Pot,
 }
 
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Pot {
     // TODO: Read from it, providing variable smoothening (depending on mode and attribute)
 }
 
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct CV {
     // TODO: Indicate plug-in
     // TODO: Read from it, providing variable smoothening (depending on mode and attribute)
@@ -67,6 +78,8 @@ struct CV {
 
 type Switch = bool;
 
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Button {
     // TODO: Indicate whether it was just clicked
 }
@@ -75,6 +88,8 @@ struct Button {
 ///
 /// The module can be in one of multiple states. The behavior of input and
 /// output peripherals will differ based on the current state.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 enum State {
     Calibrating,
     SelectingControl,
@@ -86,6 +101,8 @@ enum State {
 /// Options are configured using the DIP switch on the front of the module.
 /// They are meant to provide a quick access to some common extended features
 /// such as quantization, rewind, etc.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Options {
     quantize_8: bool,
     quantize_6: bool,
@@ -99,6 +116,8 @@ struct Options {
 /// module. Unlike with `Options`, the parameters here may be continuous
 /// (float) or offer enumeration of variants. An examle of a configuration
 /// may be tweaking of head's rewind speed.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Configuration {
     rewind_speed: (),
 }
@@ -107,6 +126,8 @@ struct Configuration {
 ///
 /// This structure can be directly translated to DSP configuration, used
 /// to build the audio processor model.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Attributes {
     pre_amp: f32,
     drive: f32,
@@ -118,6 +139,8 @@ struct Attributes {
     head: [AttributesHead; 4],
 }
 
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct AttributesHead {
     position: f32,
     volume: f32,
@@ -129,12 +152,16 @@ struct AttributesHead {
 ///
 /// This structure handles the prioritization of display modes, their
 /// changing from one to another, or animations.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Display {
     forced: Option<Screen>,
     prioritized: Option<(Screen, u32)>,
     backup: Screen,
 }
 
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 enum Screen {
     Calibration,
     ControlSelect,
@@ -144,10 +171,12 @@ enum Screen {
 ///
 /// This structure transfers request to the module, asking to lit LEDs or
 /// set CV output.
-struct DesiredOutput {
-    display: [bool; 8],
-    implulse_led: bool,
-    impulse_trigger: bool,
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct DesiredOutput {
+    pub display: [bool; 8],
+    pub implulse_led: bool,
+    pub impulse_trigger: bool,
 }
 
 /// The current state of all peripherals.
@@ -157,6 +186,8 @@ struct DesiredOutput {
 ///
 /// 1. Detection of plugged CV input is done by the caller.
 /// 2. Button debouncing is done by the caller.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct InputSnapshot {
     pub pre_amp: f32,
     pub drive: f32,
@@ -171,6 +202,8 @@ pub struct InputSnapshot {
     pub button: bool,
 }
 
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct InputSnapshotHead {
     pub position: f32,
     pub volume: f32,
@@ -203,4 +236,9 @@ impl Cache {
         // self.display.tick();
         todo!()
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 }
