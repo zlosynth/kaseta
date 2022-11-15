@@ -4,7 +4,7 @@
 // - [X] Write documentation of these structs
 // - [X] Implement defmt display for all
 // - [X] Implement tests stub
-// - [ ] Write initializer of cache
+// - [X] Write initializer of cache
 // - [ ] Implement raw input passing
 // - [ ] Implement pot processing with smoothening
 // - [ ] Implement CV processing with plug-in
@@ -38,7 +38,7 @@ pub struct Cache {
 ///
 /// This struct turns the raw snapshot into a set of abstracted peripherals.
 /// These peripherals provide features such as smoothening or click detection.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Inputs {
     pre_amp: Pot,
@@ -54,7 +54,7 @@ struct Inputs {
     button: Button,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct InputsHead {
     position: Pot,
@@ -63,13 +63,13 @@ struct InputsHead {
     pan: Pot,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Pot {
     // TODO: Read from it, providing variable smoothening (depending on mode and attribute)
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct CV {
     // TODO: Indicate plug-in
@@ -78,7 +78,7 @@ struct CV {
 
 type Switch = bool;
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Button {
     // TODO: Indicate whether it was just clicked
@@ -101,7 +101,7 @@ enum State {
 /// Options are configured using the DIP switch on the front of the module.
 /// They are meant to provide a quick access to some common extended features
 /// such as quantization, rewind, etc.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Options {
     quantize_8: bool,
@@ -116,7 +116,7 @@ struct Options {
 /// module. Unlike with `Options`, the parameters here may be continuous
 /// (float) or offer enumeration of variants. An examle of a configuration
 /// may be tweaking of head's rewind speed.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Configuration {
     rewind_speed: (),
@@ -126,7 +126,7 @@ struct Configuration {
 ///
 /// This structure can be directly translated to DSP configuration, used
 /// to build the audio processor model.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Attributes {
     pre_amp: f32,
@@ -139,7 +139,7 @@ struct Attributes {
     head: [AttributesHead; 4],
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct AttributesHead {
     position: f32,
@@ -165,6 +165,7 @@ struct Display {
 enum Screen {
     Calibration,
     ControlSelect,
+    Placeholder,
 }
 
 /// Desired state of output peripherals with the exception of audio.
@@ -211,10 +212,33 @@ pub struct InputSnapshotHead {
     pub pan: f32,
 }
 
+impl Default for State {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
+
+impl Display {
+    pub fn new_with_screen(screen: Screen) -> Self {
+        Self {
+            forced: None,
+            prioritized: None,
+            backup: screen,
+        }
+    }
+}
+
 // NOTE: Inputs and outputs will be passed through queues
 impl Cache {
     pub fn new() -> Self {
-        todo!()
+        Self {
+            inputs: Inputs::default(),
+            state: State::default(),
+            options: Options::default(),
+            configurations: Configuration::default(),
+            attributes: Attributes::default(),
+            display: Display::new_with_screen(Screen::Placeholder),
+        }
     }
 
     pub fn apply_input_snapshot(&mut self, input: InputSnapshot) -> () {
@@ -241,4 +265,9 @@ impl Cache {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn it_should_be_possible_to_initialize_cache() {
+        let _cache = Cache::new();
+    }
 }
