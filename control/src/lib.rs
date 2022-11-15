@@ -38,6 +38,7 @@ extern crate approx;
 
 mod delay;
 mod hysteresis;
+pub mod newlib;
 mod quantization;
 mod taper;
 mod wow_flutter;
@@ -50,7 +51,6 @@ use crate::wow_flutter::Cache as WowFlutterCache;
 
 // Pre-amp scales between -20 to +28 dB.
 const PRE_AMP_RANGE: (f32, f32) = (0.0, 25.0);
-
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ControlAction {
