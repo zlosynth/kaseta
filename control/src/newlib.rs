@@ -17,6 +17,9 @@
 // - [ ] Implement calibration
 // - [ ] Implement backup snapshoting (all data needed for restore)
 
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 /// The main store of peripheral abstraction and module configuration.
 ///
 /// This struct is the cenral piece of the control module. It takes
@@ -27,7 +30,7 @@
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
     inputs: Inputs,
-    state: State,
+    pub(crate) state: State,
     options: Options,
     configurations: Configuration,
     attributes: Attributes,
@@ -66,14 +69,23 @@ struct InputsHead {
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Pot {
-    // TODO: Read from it, providing variable smoothening (depending on mode and attribute)
+    buffer: SmoothBuffer<4>,
 }
 
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct CV {
-    // TODO: Indicate plug-in
-    // TODO: Read from it, providing variable smoothening (depending on mode and attribute)
+    pub is_plugged: bool,
+    pub was_plugged: bool,
+    buffer: SmoothBuffer<4>,
+}
+
+// TODO: Try to optimize this with memory manager and a slice reference
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct SmoothBuffer<const N: usize> {
+    buffer: [f32; N],
+    pointer: usize,
 }
 
 type Switch = bool;
@@ -81,7 +93,8 @@ type Switch = bool;
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Button {
-    // TODO: Indicate whether it was just clicked
+    pub pressed: bool,
+    pub clicked: bool,
 }
 
 /// The current state of the control state machine.
@@ -90,7 +103,7 @@ struct Button {
 /// output peripherals will differ based on the current state.
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-enum State {
+pub(crate) enum State {
     Calibrating,
     SelectingControl,
     Normal,
@@ -187,7 +200,7 @@ pub struct DesiredOutput {
 ///
 /// 1. Detection of plugged CV input is done by the caller.
 /// 2. Button debouncing is done by the caller.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct InputSnapshot {
     pub pre_amp: f32,
@@ -203,7 +216,7 @@ pub struct InputSnapshot {
     pub button: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct InputSnapshotHead {
     pub position: f32,
@@ -241,8 +254,18 @@ impl Cache {
         }
     }
 
-    pub fn apply_input_snapshot(&mut self, input: InputSnapshot) -> () {
-        // TODO: Update self.inputs
+    pub fn apply_input_snapshot(&mut self, snapshot: InputSnapshot) -> () {
+        self.inputs.update(snapshot);
+
+        self.state = match self.state {
+            State::Normal => {
+                // TODO: Consider entering another mode
+                State::Normal
+            }
+            State::Calibrating => State::Normal,
+            State::SelectingControl => State::Normal,
+        };
+
         // TODO: Set the state
         // TODO: Based on state update options, configuration and attributes
         // TODO: Return config for DSP
@@ -262,12 +285,328 @@ impl Cache {
     }
 }
 
+impl Inputs {
+    fn update(&mut self, snapshot: InputSnapshot) {
+        self.pre_amp.update(snapshot.pre_amp);
+        self.drive.update(snapshot.drive);
+        self.bias.update(snapshot.bias);
+        self.dry_wet.update(snapshot.dry_wet);
+        self.wow_flut.update(snapshot.wow_flut);
+        self.speed.update(snapshot.speed);
+        self.tone.update(snapshot.tone);
+        for (i, head) in self.head.iter_mut().enumerate() {
+            head.position.update(snapshot.head[i].position);
+            head.volume.update(snapshot.head[i].volume);
+            head.feedback.update(snapshot.head[i].feedback);
+            head.pan.update(snapshot.head[i].pan);
+        }
+        for (i, control) in self.control.iter_mut().enumerate() {
+            control.update(snapshot.control[i]);
+        }
+        self.switch = snapshot.switch;
+        self.button.update(snapshot.button);
+    }
+}
+
+impl Pot {
+    pub fn update(&mut self, value: f32) {
+        self.buffer.write(value);
+    }
+
+    // TODO: Implement window support
+    pub fn value(&self) -> f32 {
+        self.buffer.read()
+    }
+}
+
+impl CV {
+    pub fn update(&mut self, value: Option<f32>) {
+        let was_plugged = self.is_plugged;
+        if let Some(value) = value {
+            self.is_plugged = true;
+            self.buffer.write(value);
+        } else {
+            self.is_plugged = false;
+            self.buffer.reset();
+        }
+        self.was_plugged = !was_plugged && self.is_plugged;
+    }
+
+    pub fn value(&self) -> f32 {
+        self.buffer.read()
+    }
+}
+
+impl Button {
+    pub fn update(&mut self, down: bool) {
+        let was_pressed = self.pressed;
+        self.pressed = down;
+        self.clicked = !was_pressed && self.pressed;
+    }
+}
+
+impl<const N: usize> Default for SmoothBuffer<N> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<const N: usize> SmoothBuffer<N> {
+    pub fn new() -> Self {
+        Self {
+            buffer: [0.0; N],
+            pointer: 0,
+        }
+    }
+
+    // TODO: Optimize by wrapping pow 2
+    pub fn write(&mut self, value: f32) {
+        self.buffer[self.pointer] = value;
+        self.pointer = (self.pointer + 1) % N;
+    }
+
+    // TODO: Implement read with variable smoothing range
+    pub fn read(&self) -> f32 {
+        let sum: f32 = self.buffer.iter().sum();
+        sum / N as f32
+    }
+
+    // TODO: Try optimizing with block of zeros
+    pub fn reset(&mut self) {
+        self.buffer = [0.0; N];
+    }
+
+    pub fn traveled(&self) -> f32 {
+        let newest = (self.pointer - 1).rem_euclid(N);
+        let oldest = self.pointer;
+        (self.buffer[newest] - self.buffer[oldest]).abs()
+    }
+}
+
 #[cfg(test)]
-mod tests {
+mod cache_tests {
     use super::*;
 
     #[test]
     fn it_should_be_possible_to_initialize_cache() {
         let _cache = Cache::new();
+    }
+
+    // TODO: pass input snapshot, test that inputs were updated accordingly
+
+    #[test]
+    fn given_normal_mode_when_control_is_plugged_in_it_enters_select_mode() {
+        let mut cache = Cache::new();
+
+        let mut first_input = InputSnapshot::default();
+        first_input.control[0] = None;
+        cache.apply_input_snapshot(first_input);
+
+        let mut second_input = InputSnapshot::default();
+        second_input.control[0] = Some(0.0);
+        cache.apply_input_snapshot(second_input);
+
+        assert!(matches!(cache.state, State::Calibrating));
+    }
+
+    #[test]
+    fn given_normal_mode_when_control_is_plugged_while_holding_button_it_enters_calibration_mode() {
+        let mut cache = Cache::new();
+
+        let mut first_input = InputSnapshot::default();
+        first_input.control[0] = None;
+        first_input.button = false;
+        cache.apply_input_snapshot(first_input);
+
+        let mut second_input = InputSnapshot::default();
+        second_input.control[0] = Some(0.0);
+        second_input.button = true;
+        cache.apply_input_snapshot(second_input);
+
+        assert!(matches!(cache.state, State::SelectingControl));
+    }
+
+    #[test]
+    fn given_normal_mode_when_regular_parameter_is_changed_it_stays_in_normal_state() {
+        let mut cache = Cache::new();
+
+        let mut first_input = InputSnapshot::default();
+        first_input.drive = 0.1;
+        cache.apply_input_snapshot(first_input);
+        assert!(matches!(cache.state, State::Normal));
+
+        let mut second_input = InputSnapshot::default();
+        second_input.drive = 0.2;
+        cache.apply_input_snapshot(second_input);
+        assert!(matches!(cache.state, State::Normal));
+    }
+}
+
+#[cfg(test)]
+mod inputs_tests {
+    use super::*;
+
+    #[test]
+    fn when_input_snapshot_is_written_its_reflected_in_attributes() {
+        let mut inputs = Inputs::default();
+        inputs.update(InputSnapshot {
+            pre_amp: 0.01,
+            drive: 0.02,
+            bias: 0.03,
+            dry_wet: 0.04,
+            wow_flut: 0.05,
+            speed: 0.06,
+            tone: 0.07,
+            head: [
+                InputSnapshotHead {
+                    position: 0.09,
+                    volume: 0.10,
+                    feedback: 0.11,
+                    pan: 0.12,
+                },
+                InputSnapshotHead {
+                    position: 0.13,
+                    volume: 0.14,
+                    feedback: 0.15,
+                    pan: 0.16,
+                },
+                InputSnapshotHead {
+                    position: 0.17,
+                    volume: 0.18,
+                    feedback: 0.19,
+                    pan: 0.20,
+                },
+                InputSnapshotHead {
+                    position: 0.21,
+                    volume: 0.22,
+                    feedback: 0.23,
+                    pan: 0.24,
+                },
+            ],
+            control: [Some(0.25), Some(0.26), Some(0.27), Some(0.28)],
+            switch: [true; 10],
+            button: true,
+        });
+
+        let mut previous = 0.0;
+        for value in [
+            inputs.pre_amp.value(),
+            inputs.drive.value(),
+            inputs.bias.value(),
+            inputs.dry_wet.value(),
+            inputs.wow_flut.value(),
+            inputs.speed.value(),
+            inputs.tone.value(),
+            inputs.head[0].position.value(),
+            inputs.head[0].volume.value(),
+            inputs.head[0].feedback.value(),
+            inputs.head[0].pan.value(),
+            inputs.head[1].position.value(),
+            inputs.head[1].volume.value(),
+            inputs.head[1].feedback.value(),
+            inputs.head[1].pan.value(),
+            inputs.head[2].position.value(),
+            inputs.head[2].volume.value(),
+            inputs.head[2].feedback.value(),
+            inputs.head[2].pan.value(),
+            inputs.head[3].position.value(),
+            inputs.head[3].volume.value(),
+            inputs.head[3].feedback.value(),
+            inputs.head[3].pan.value(),
+            inputs.control[0].value(),
+            inputs.control[1].value(),
+            inputs.control[2].value(),
+            inputs.control[3].value(),
+        ] {
+            assert!(value > previous, "{} !> {}", value, previous);
+            previous = value;
+        }
+
+        for switch in &inputs.switch {
+            assert!(switch);
+        }
+
+        assert!(inputs.button.clicked);
+    }
+}
+
+#[cfg(test)]
+mod cv_tests {
+    use super::*;
+
+    #[test]
+    fn when_none_is_written_its_value_should_be_zero() {
+        let mut cv = CV::default();
+        cv.update(Some(10.0));
+        cv.update(None);
+        assert_relative_eq!(cv.value(), 0.0);
+    }
+
+    #[test]
+    fn when_some_is_being_written_its_value_should_eventually_reach_it() {
+        let mut cv = CV::default();
+
+        let mut value = cv.value();
+        for _ in 0..20 {
+            cv.update(Some(1.0));
+            let new_value = cv.value();
+            assert!(new_value > value);
+            value = new_value;
+            if relative_eq!(value, 1.0) {
+                return;
+            }
+        }
+
+        panic!("CV have not reached the target {}", value);
+    }
+
+    #[test]
+    fn when_some_is_written_after_none_it_reports_as_plugged_for_one_cycle() {
+        let mut cv = CV::default();
+        cv.update(None);
+        cv.update(Some(10.0));
+        assert!(cv.was_plugged);
+        cv.update(None);
+        assert!(!cv.was_plugged);
+    }
+}
+
+#[cfg(test)]
+mod pot_tests {
+    use super::*;
+
+    #[test]
+    fn when_some_is_being_written_its_value_should_eventually_reach_it() {
+        let mut pot = Pot::default();
+
+        let mut value = pot.value();
+        for _ in 0..20 {
+            pot.update(1.0);
+            let new_value = pot.value();
+            assert!(new_value > value);
+            value = new_value;
+            if relative_eq!(value, 1.0) {
+                return;
+            }
+        }
+
+        panic!("CV have not reached the target {}", value);
+    }
+}
+
+#[cfg(test)]
+mod button_test {
+    use super::*;
+
+    #[test]
+    fn when_was_up_and_now_is_down_it_is_marked_as_clicked() {
+        let mut button = Button::default();
+        assert!(!button.clicked);
+        button.update(true);
+        assert!(button.clicked);
+        button.update(true);
+        assert!(!button.clicked);
+        button.update(false);
+        assert!(!button.clicked);
     }
 }
