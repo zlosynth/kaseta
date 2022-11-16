@@ -259,8 +259,18 @@ impl Cache {
 
         self.state = match self.state {
             State::Normal => {
-                // TODO: Consider entering another mode
-                State::Normal
+                let mut new_state = None;
+                for cv in self.inputs.control.iter() {
+                    if cv.was_plugged {
+                        if self.inputs.button.pressed {
+                            new_state = Some(State::Calibrating);
+                        } else {
+                            new_state = Some(State::SelectingControl);
+                        };
+                        break;
+                    }
+                }
+                new_state.unwrap_or(State::Normal)
             }
             State::Calibrating => State::Normal,
             State::SelectingControl => State::Normal,
@@ -269,7 +279,6 @@ impl Cache {
         // TODO: Set the state
         // TODO: Based on state update options, configuration and attributes
         // TODO: Return config for DSP
-        todo!();
     }
 
     pub fn apply_dsp_reaction(&mut self, dsp_reaction: ()) {
@@ -406,7 +415,7 @@ mod cache_tests {
         second_input.control[0] = Some(0.0);
         cache.apply_input_snapshot(second_input);
 
-        assert!(matches!(cache.state, State::Calibrating));
+        assert!(matches!(cache.state, State::SelectingControl));
     }
 
     #[test]
@@ -423,7 +432,7 @@ mod cache_tests {
         second_input.button = true;
         cache.apply_input_snapshot(second_input);
 
-        assert!(matches!(cache.state, State::SelectingControl));
+        assert!(matches!(cache.state, State::Calibrating));
     }
 
     #[test]
