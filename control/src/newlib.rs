@@ -36,7 +36,7 @@ pub struct Cache {
     pub(crate) state: State,
     queue: Queue,
     mapping: Mapping,
-    calibration: Calibration,
+    calibrations: Calibrations,
     options: Options,
     configurations: Configuration,
     attributes: Attributes,
@@ -111,9 +111,16 @@ struct Button {
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum State {
-    Calibrating,
+    Calibrating(usize, CalibrationPhase),
     Mapping(usize),
     Normal,
+}
+
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub(crate) enum CalibrationPhase {
+    Octave1,
+    Octave2(f32),
 }
 
 /// The queue of control inputs waiting for mapping or calibration.
@@ -158,9 +165,17 @@ enum AttributeIdentifier {
 }
 
 /// TODO Docs
-#[derive(Debug, Default)]
+// TODO: One per head, offset and amplification
+type Calibrations = [Calibration; 4];
+
+/// TODO Docs
+// TODO: One per head, offset and amplification
+#[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Calibration {}
+struct Calibration {
+    offset: f32,
+    scaling: f32,
+}
 
 /// Easy to access modifications of the default module behavior.
 ///
@@ -302,7 +317,7 @@ impl Cache {
             state: State::default(),
             queue: Queue::default(),
             mapping: Mapping::default(),
-            calibration: Calibration::default(),
+            calibrations: Calibrations::default(),
             options: Options::default(),
             configurations: Configuration::default(),
             attributes: Attributes::default(),
@@ -335,7 +350,9 @@ impl Cache {
         if matches!(self.state, State::Normal) {
             if let Some(action) = self.queue.pop() {
                 match action {
-                    ControlAction::Calibrate(_) => self.state = State::Calibrating,
+                    ControlAction::Calibrate(i) => {
+                        self.state = State::Calibrating(i, CalibrationPhase::Octave1)
+                    }
                     ControlAction::Map(i) => self.state = State::Mapping(i),
                 }
             }
@@ -343,7 +360,7 @@ impl Cache {
 
         match self.state {
             State::Normal => (),
-            State::Calibrating => (),
+            State::Calibrating(_, _) => (),
             State::Mapping(i) => {
                 let destination = self.active_attribute();
                 if !destination.is_none() && !self.mapping.contains(&destination) {
@@ -568,6 +585,47 @@ impl AttributeIdentifier {
     }
 }
 
+impl Default for Calibration {
+    fn default() -> Self {
+        Calibration {
+            offset: 0.0,
+            scaling: 1.0,
+        }
+    }
+}
+
+impl Calibration {
+    fn try_new(octave_1: f32, octave_2: f32) -> Option<Self> {
+        let (bottom, top) = if octave_1 < octave_2 {
+            (octave_1, octave_2)
+        } else {
+            (octave_2, octave_1)
+        };
+
+        let distance = top - bottom;
+        if distance < 0.5 {
+            return None;
+        } else if distance > 1.9 {
+            return None;
+        }
+
+        let scaling = 1.0 / (top - bottom);
+
+        let scaled_bottom_fract = (bottom * scaling).fract();
+        let offset = if scaled_bottom_fract > 0.5 {
+            1.0 - scaled_bottom_fract
+        } else {
+            -1.0 * scaled_bottom_fract
+        };
+
+        Some(Self { scaling, offset })
+    }
+
+    fn apply(&self, value: f32) -> f32 {
+        value * self.scaling + self.offset
+    }
+}
+
 #[cfg(test)]
 mod cache_tests {
     use super::*;
@@ -612,7 +670,10 @@ mod cache_tests {
             input.control[1] = Some(1.0);
             cache.apply_input_snapshot(input);
 
-            assert!(matches!(cache.state, State::Calibrating));
+            assert!(matches!(
+                cache.state,
+                State::Calibrating(1, CalibrationPhase::Octave1)
+            ));
         }
 
         #[test]
@@ -989,5 +1050,54 @@ mod button_test {
         assert!(!button.clicked);
         button.update(false);
         assert!(!button.clicked);
+    }
+}
+
+#[cfg(test)]
+mod calibration_test {
+    use super::*;
+
+    #[cfg(test)]
+    mod with_octave_2_above_octave_1 {
+        use super::*;
+
+        #[test]
+        fn when_sets_proper_octaves_it_calibrates_properly() {
+            let calibration = Calibration::try_new(1.1, 2.3).expect("Calibration failed");
+            assert_relative_eq!(calibration.apply(1.1), 1.0);
+            assert_relative_eq!(calibration.apply(2.3), 2.0);
+        }
+
+        #[test]
+        fn when_sets_second_octave_too_close_it_fails() {
+            assert!(Calibration::try_new(1.1, 1.3).is_none());
+        }
+
+        #[test]
+        fn when_sets_second_octave_too_far_it_fails() {
+            assert!(Calibration::try_new(1.3, 3.3).is_none());
+        }
+    }
+
+    #[cfg(test)]
+    mod with_octave_2_below_octave_1 {
+        use super::*;
+
+        #[test]
+        fn when_sets_proper_octaves_it_sets_offset_and_scale_accordingly() {
+            let calibration = Calibration::try_new(2.3, 1.1).expect("Calibration failed");
+            assert_relative_eq!(calibration.apply(1.1), 1.0);
+            assert_relative_eq!(calibration.apply(2.3), 2.0);
+        }
+
+        #[test]
+        fn when_sets_second_octave_too_close_it_fails() {
+            assert!(Calibration::try_new(1.3, 1.1).is_none());
+        }
+
+        #[test]
+        fn when_sets_second_octave_too_far_it_fails() {
+            assert!(Calibration::try_new(3.3, 1.3).is_none());
+        }
     }
 }
