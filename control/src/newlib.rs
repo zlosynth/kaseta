@@ -116,7 +116,7 @@ pub(crate) enum State {
     Normal,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum CalibrationPhase {
     Octave1,
@@ -170,7 +170,7 @@ type Calibrations = [Calibration; 4];
 
 /// TODO Docs
 // TODO: One per head, offset and amplification
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Calibration {
     offset: f32,
@@ -347,20 +347,34 @@ impl Cache {
             self.queue.push(ControlAction::Map(*i));
         }
 
-        if matches!(self.state, State::Normal) {
-            if let Some(action) = self.queue.pop() {
-                match action {
-                    ControlAction::Calibrate(i) => {
-                        self.state = State::Calibrating(i, CalibrationPhase::Octave1)
+        match self.state {
+            State::Normal => {
+                if let Some(action) = self.queue.pop() {
+                    match action {
+                        ControlAction::Calibrate(i) => {
+                            self.state = State::Calibrating(i, CalibrationPhase::Octave1)
+                        }
+                        ControlAction::Map(i) => self.state = State::Mapping(i),
                     }
-                    ControlAction::Map(i) => self.state = State::Mapping(i),
                 }
             }
-        }
-
-        match self.state {
-            State::Normal => (),
-            State::Calibrating(_, _) => (),
+            State::Calibrating(i, phase) => {
+                if self.inputs.button.clicked {
+                    match phase {
+                        CalibrationPhase::Octave1 => {
+                            let octave_1 = self.inputs.control[i].value();
+                            self.state = State::Calibrating(i, CalibrationPhase::Octave2(octave_1));
+                        }
+                        CalibrationPhase::Octave2(octave_1) => {
+                            let octave_2 = self.inputs.control[i].value();
+                            if let Some(calibration) = Calibration::try_new(octave_1, octave_2) {
+                                self.calibrations[i] = calibration;
+                            }
+                            self.state = State::Normal;
+                        }
+                    }
+                }
+            }
             State::Mapping(i) => {
                 let destination = self.active_attribute();
                 if !destination.is_none() && !self.mapping.contains(&destination) {
@@ -878,6 +892,142 @@ mod cache_tests {
             assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
             assert_eq!(cache.mapping[1], AttributeIdentifier::None);
             assert_eq!(cache.state, State::Mapping(1));
+        }
+    }
+
+    #[cfg(test)]
+    mod given_calibrating_mode {
+        use super::*;
+
+        fn init_cache(pending: usize) -> (Cache, InputSnapshot) {
+            let mut cache = Cache::new();
+            let mut input = InputSnapshot::default();
+
+            for i in 0..pending {
+                input.control[i] = None;
+            }
+            cache.apply_input_snapshot(input);
+
+            input.button = true;
+            cache.apply_input_snapshot(input);
+
+            for i in 0..pending {
+                input.control[i] = Some(1.0);
+            }
+            cache.apply_input_snapshot(input);
+
+            input.button = false;
+            cache.apply_input_snapshot(input);
+
+            (cache, input)
+        }
+
+        fn apply_input_snapshot(cache: &mut Cache, input: InputSnapshot) {
+            // NOTE: Applying it 4 times makes sure that control smoothening is
+            // not affecting following asserts.
+            for _ in 0..4 {
+                cache.apply_input_snapshot(input);
+            }
+        }
+
+        fn click_button(cache: &mut Cache, mut input: InputSnapshot) {
+            input.button = true;
+            apply_input_snapshot(cache, input);
+            input.button = false;
+            apply_input_snapshot(cache, input);
+        }
+
+        #[test]
+        fn when_correct_values_are_given_it_successfully_converges_and_turns_to_mapping() {
+            let (mut cache, mut input) = init_cache(1);
+            assert_eq!(
+                cache.state,
+                State::Calibrating(0, CalibrationPhase::Octave1)
+            );
+
+            input.control[0] = Some(1.3);
+            apply_input_snapshot(&mut cache, input);
+            click_button(&mut cache, input);
+            assert_eq!(
+                cache.state,
+                State::Calibrating(0, CalibrationPhase::Octave2(1.3))
+            );
+
+            input.control[0] = Some(2.4);
+            apply_input_snapshot(&mut cache, input);
+            click_button(&mut cache, input);
+            assert_ne!(cache.calibrations[0].offset, Calibration::default().offset);
+            assert_ne!(
+                cache.calibrations[0].scaling,
+                Calibration::default().scaling
+            );
+            assert_eq!(cache.state, State::Mapping(0));
+        }
+
+        #[test]
+        fn when_multiple_controls_are_plugged_then_they_are_all_added_to_queue() {
+            let (mut cache, mut input) = init_cache(2);
+            assert_eq!(
+                cache.state,
+                State::Calibrating(0, CalibrationPhase::Octave1)
+            );
+            assert_eq!(cache.queue.len(), 3);
+            assert!(cache.queue.contains(&ControlAction::Map(0)));
+            assert!(cache.queue.contains(&ControlAction::Calibrate(1)));
+            assert!(cache.queue.contains(&ControlAction::Map(1)));
+
+            input.control[2] = Some(1.0);
+            input.control[3] = Some(1.0);
+            cache.apply_input_snapshot(input);
+            assert_eq!(
+                cache.state,
+                State::Calibrating(0, CalibrationPhase::Octave1)
+            );
+            assert_eq!(cache.queue.len(), 5);
+            assert!(cache.queue.contains(&ControlAction::Map(0)));
+            assert!(cache.queue.contains(&ControlAction::Calibrate(1)));
+            assert!(cache.queue.contains(&ControlAction::Map(1)));
+            assert!(cache.queue.contains(&ControlAction::Map(2)));
+            assert!(cache.queue.contains(&ControlAction::Map(3)));
+        }
+
+        #[test]
+        fn when_control_is_unplugged_it_is_removed_from_queue() {
+            let (mut cache, mut input) = init_cache(3);
+            assert_eq!(
+                cache.state,
+                State::Calibrating(0, CalibrationPhase::Octave1)
+            );
+            assert_eq!(cache.queue.len(), 5);
+
+            input.control[1] = None;
+            cache.apply_input_snapshot(input);
+            assert_eq!(
+                cache.state,
+                State::Calibrating(0, CalibrationPhase::Octave1)
+            );
+            assert_eq!(cache.queue.len(), 3);
+        }
+
+        #[test]
+        fn when_calibrated_control_is_unplugged_it_retains_calibration() {
+            let (mut cache, mut input) = init_cache(1);
+
+            input.control[0] = Some(1.3);
+            apply_input_snapshot(&mut cache, input);
+            click_button(&mut cache, input);
+
+            input.control[0] = Some(2.4);
+            apply_input_snapshot(&mut cache, input);
+            click_button(&mut cache, input);
+
+            let original = cache.calibrations[0];
+
+            input.control[0] = None;
+            apply_input_snapshot(&mut cache, input);
+
+            assert_relative_eq!(cache.calibrations[0].offset, original.offset);
+            assert_relative_eq!(cache.calibrations[0].scaling, original.scaling);
         }
     }
 
