@@ -34,7 +34,9 @@ use heapless::Vec;
 pub struct Cache {
     inputs: Inputs,
     pub(crate) state: State,
+    queue: Queue,
     mapping: Mapping,
+    calibration: Calibration,
     options: Options,
     configurations: Configuration,
     attributes: Attributes,
@@ -81,6 +83,7 @@ struct Pot {
 struct CV {
     pub is_plugged: bool,
     pub was_plugged: bool,
+    pub was_unplugged: bool,
     buffer: SmoothBuffer<4>,
 }
 
@@ -105,12 +108,29 @@ struct Button {
 ///
 /// The module can be in one of multiple states. The behavior of input and
 /// output peripherals will differ based on the current state.
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum State {
     Calibrating,
-    SelectingControl,
+    Mapping(usize),
     Normal,
+}
+
+/// The queue of control inputs waiting for mapping or calibration.
+///
+/// This queue is used to sequentially process these operations without loosing
+/// new requests that may be added meanwhile.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct Queue {
+    queue: Vec<ControlAction, 8>,
+}
+
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+enum ControlAction {
+    Calibrate(usize),
+    Map(usize),
 }
 
 /// Linking between universal CV input and attributes controlled through pots.
@@ -118,14 +138,9 @@ pub(crate) enum State {
 /// This mapping is used to store mapping between control inputs and
 /// attributes. It also represents the state machine ordering controls that
 /// are yet to be mapped.
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Mapping {
-    queue: Vec<usize, 4>,
-    map: [AttributeIdentifier; 4],
-}
+type Mapping = [AttributeIdentifier; 4];
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 enum AttributeIdentifier {
     PreAmp,
@@ -141,6 +156,11 @@ enum AttributeIdentifier {
     Pan(u8),
     None,
 }
+
+/// TODO Docs
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct Calibration {}
 
 /// Easy to access modifications of the default module behavior.
 ///
@@ -233,7 +253,7 @@ pub struct DesiredOutput {
 ///
 /// 1. Detection of plugged CV input is done by the caller.
 /// 2. Button debouncing is done by the caller.
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct InputSnapshot {
     pub pre_amp: f32,
@@ -249,7 +269,7 @@ pub struct InputSnapshot {
     pub button: bool,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct InputSnapshotHead {
     pub position: f32,
@@ -280,7 +300,9 @@ impl Cache {
         Self {
             inputs: Inputs::default(),
             state: State::default(),
+            queue: Queue::default(),
             mapping: Mapping::default(),
+            calibration: Calibration::default(),
             options: Options::default(),
             configurations: Configuration::default(),
             attributes: Attributes::default(),
@@ -290,49 +312,66 @@ impl Cache {
 
     pub fn apply_input_snapshot(&mut self, snapshot: InputSnapshot) -> () {
         self.inputs.update(snapshot);
+        self.reduce_changed_inputs();
+        // TODO: Return config for DSP
+    }
 
-        // TODO: Based on state update options, configuration and attributes
-        self.state = match self.state {
-            State::Normal => {
-                let mut new_state = || {
-                    for (i, cv) in self.inputs.control.iter().enumerate() {
-                        if cv.was_plugged {
-                            if self.inputs.button.pressed {
-                                return Some(State::Calibrating);
-                            } else {
-                                // NOTE: When entering from normal state, the queue
-                                // is always empty.
-                                let _ = self.mapping.queue.push(i);
-                                return Some(State::SelectingControl);
-                            };
-                        }
-                    }
-                    None
-                };
-                new_state().unwrap_or(State::Normal)
+    fn reduce_changed_inputs(&mut self) {
+        let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
+
+        for i in &unplugged_controls {
+            self.queue.remove_control(*i);
+            self.mapping[*i] = AttributeIdentifier::None;
+        }
+
+        for i in &plugged_controls {
+            self.queue.remove_control(*i);
+            if self.inputs.button.pressed {
+                self.queue.push(ControlAction::Calibrate(*i));
             }
-            State::Calibrating => State::Normal,
-            State::SelectingControl => {
-                let destination = self.active_attribute();
+            self.queue.push(ControlAction::Map(*i));
+        }
 
-                if destination.is_none() {
-                    State::SelectingControl
-                } else {
-                    // TODO: Verify that it is not already asigned to something else
-                    let control_index = self.mapping.queue[0];
-                    self.mapping.map[control_index] = destination;
-                    self.mapping.queue.remove(0);
-                    if self.mapping.queue.is_empty() {
-                        State::Normal
-                    } else {
-                        State::SelectingControl
-                    }
+        if matches!(self.state, State::Normal) {
+            if let Some(action) = self.queue.pop() {
+                match action {
+                    ControlAction::Calibrate(_) => self.state = State::Calibrating,
+                    ControlAction::Map(i) => self.state = State::Mapping(i),
+                }
+            }
+        }
+
+        match self.state {
+            State::Normal => (),
+            State::Calibrating => (),
+            State::Mapping(i) => {
+                let destination = self.active_attribute();
+                if !destination.is_none() && !self.mapping.contains(&destination) {
+                    self.mapping[i] = destination;
+                    self.state = State::Normal;
                 }
             }
         };
 
         // TODO: Recalculate attributes, options, config
-        // TODO: Return config for DSP
+        // self.reduce_changed_inputs_for_all();
+    }
+
+    fn plugged_and_unplugged_controls(&self) -> (Vec<usize, 4>, Vec<usize, 4>) {
+        let mut plugged = Vec::new();
+        let mut unplugged = Vec::new();
+        for (i, cv) in self.inputs.control.iter().enumerate() {
+            if cv.was_plugged {
+                // NOTE: This is safe since the number of controls is equal to the
+                // size of the Vec.
+                let _ = plugged.push(i);
+            }
+            if cv.was_unplugged {
+                // NOTE: Ditto.
+                let _ = unplugged.push(i);
+            }
+        }
+        (plugged, unplugged)
     }
 
     fn active_attribute(&self) -> AttributeIdentifier {
@@ -428,6 +467,7 @@ impl CV {
             self.buffer.reset();
         }
         self.was_plugged = !was_plugged && self.is_plugged;
+        self.was_unplugged = was_plugged && !self.is_plugged;
     }
 
     pub fn value(&self) -> f32 {
@@ -475,9 +515,44 @@ impl<const N: usize> SmoothBuffer<N> {
     }
 
     pub fn traveled(&self) -> f32 {
-        let newest = (self.pointer - 1).rem_euclid(N);
+        let newest = (self.pointer as i32 - 1).rem_euclid(N as i32) as usize;
         let oldest = self.pointer;
         (self.buffer[newest] - self.buffer[oldest]).abs()
+    }
+}
+
+impl Default for Queue {
+    fn default() -> Self {
+        Queue { queue: Vec::new() }
+    }
+}
+
+impl Queue {
+    fn len(&self) -> usize {
+        self.queue.len()
+    }
+
+    fn push(&mut self, action: ControlAction) {
+        self.queue.push(action);
+    }
+
+    fn pop(&mut self) -> Option<ControlAction> {
+        if self.queue.is_empty() {
+            None
+        } else {
+            Some(self.queue.remove(0))
+        }
+    }
+
+    fn contains(&self, action: &ControlAction) -> bool {
+        self.queue.contains(action)
+    }
+
+    fn remove_control(&mut self, control_id: usize) {
+        self.queue.retain(|a| match a {
+            ControlAction::Calibrate(id) => *id != control_id,
+            ControlAction::Map(id) => *id != control_id,
+        })
     }
 }
 
@@ -502,83 +577,250 @@ mod cache_tests {
         let _cache = Cache::new();
     }
 
-    // TODO: pass input snapshot, test that inputs were updated accordingly
+    #[cfg(test)]
+    mod given_normal_mode {
+        use super::*;
 
-    #[test]
-    fn given_normal_mode_when_control_is_plugged_in_it_enters_select_mode() {
-        // TODO: It should also show animation liting nth bottom LED and blinking top row
-        let mut cache = Cache::new();
+        fn init_cache() -> Cache {
+            Cache::new()
+        }
 
-        let mut first_input = InputSnapshot::default();
-        first_input.control[0] = None;
-        cache.apply_input_snapshot(first_input);
+        #[test]
+        fn when_control_is_plugged_then_state_changes_to_mapping() {
+            let mut cache = init_cache();
+            let mut input = InputSnapshot::default();
 
-        let mut second_input = InputSnapshot::default();
-        second_input.control[0] = Some(0.0);
-        cache.apply_input_snapshot(second_input);
+            input.control[1] = None;
+            cache.apply_input_snapshot(input);
 
-        assert!(matches!(cache.state, State::SelectingControl));
-        assert_eq!(cache.mapping.queue[0], 0);
+            input.control[1] = Some(1.0);
+            cache.apply_input_snapshot(input);
+
+            assert!(matches!(cache.state, State::Mapping(1)));
+        }
+
+        #[test]
+        fn when_control_is_plugged_while_holding_button_then_state_changes_to_calibration() {
+            let mut cache = init_cache();
+            let mut input = InputSnapshot::default();
+
+            input.button = false;
+            input.control[1] = None;
+            cache.apply_input_snapshot(input);
+
+            input.button = true;
+            input.control[1] = Some(1.0);
+            cache.apply_input_snapshot(input);
+
+            assert!(matches!(cache.state, State::Calibrating));
+        }
+
+        #[test]
+        fn when_multiple_controls_are_plugged_then_are_all_added_to_queue() {
+            let mut cache = init_cache();
+
+            let mut input = InputSnapshot::default();
+            input.control[1] = None;
+            input.control[2] = None;
+            cache.apply_input_snapshot(input);
+
+            let mut input = InputSnapshot::default();
+            input.control[1] = Some(1.0);
+            input.control[2] = Some(1.0);
+            cache.apply_input_snapshot(input);
+
+            assert!(matches!(cache.state, State::Mapping(1)));
+            assert_eq!(cache.queue.len(), 1);
+        }
+
+        #[test]
+        fn when_control_is_unplugged_it_is_removed_from_queue() {
+            let mut cache = init_cache();
+            let mut input = InputSnapshot::default();
+
+            input.control[1] = None;
+            input.control[2] = None;
+            input.control[3] = None;
+            cache.apply_input_snapshot(input);
+
+            input.control[1] = Some(1.0);
+            input.control[2] = Some(1.0);
+            input.control[3] = Some(1.0);
+            cache.apply_input_snapshot(input);
+
+            assert!(matches!(cache.state, State::Mapping(1)));
+            assert_eq!(cache.queue.len(), 2);
+
+            input.control[2] = None;
+            cache.apply_input_snapshot(input);
+
+            assert!(matches!(cache.state, State::Mapping(1)));
+            assert_eq!(cache.queue.len(), 1);
+        }
+
+        #[test]
+        fn when_mapped_control_in_unplugged_it_is_unmapped() {
+            let mut cache = init_cache();
+            let mut input = InputSnapshot::default();
+
+            input.control[0] = None;
+            cache.apply_input_snapshot(input);
+
+            input.control[0] = Some(1.0);
+            cache.apply_input_snapshot(input);
+
+            input.drive = 0.4;
+            cache.apply_input_snapshot(input);
+
+            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
+
+            input.control[0] = None;
+            cache.apply_input_snapshot(input);
+
+            assert_eq!(cache.mapping[0], AttributeIdentifier::None);
+        }
     }
 
-    #[test]
-    fn given_normal_mode_when_control_is_plugged_while_holding_button_it_enters_calibration_mode() {
-        let mut cache = Cache::new();
+    #[cfg(test)]
+    mod given_mapping_mode {
+        use super::*;
 
-        let mut first_input = InputSnapshot::default();
-        first_input.control[0] = None;
-        first_input.button = false;
-        cache.apply_input_snapshot(first_input);
+        fn init_cache(pending: usize) -> (Cache, InputSnapshot) {
+            let mut cache = Cache::new();
+            let mut input = InputSnapshot::default();
 
-        let mut second_input = InputSnapshot::default();
-        second_input.control[0] = Some(0.0);
-        second_input.button = true;
-        cache.apply_input_snapshot(second_input);
+            for i in 0..pending {
+                input.control[i] = None;
+            }
+            cache.apply_input_snapshot(input);
 
-        assert!(matches!(cache.state, State::Calibrating));
+            for i in 0..pending {
+                input.control[i] = Some(1.0);
+            }
+            cache.apply_input_snapshot(input);
+
+            (cache, input)
+        }
+
+        fn apply_input_snapshot(cache: &mut Cache, input: InputSnapshot) {
+            // NOTE: Applying it 4 times makes sure that pot smoothening is
+            // not affecting following asserts.
+            for _ in 0..4 {
+                cache.apply_input_snapshot(input);
+            }
+        }
+
+        #[test]
+        fn when_pot_is_active_it_gets_mapped_to_the_current_control() {
+            let (mut cache, mut input) = init_cache(4);
+
+            input.drive = 0.1;
+            apply_input_snapshot(&mut cache, input);
+            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
+
+            input.speed = 0.1;
+            apply_input_snapshot(&mut cache, input);
+            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(cache.mapping[1], AttributeIdentifier::Speed);
+
+            input.dry_wet = 0.1;
+            apply_input_snapshot(&mut cache, input);
+            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(cache.mapping[1], AttributeIdentifier::Speed);
+            assert_eq!(cache.mapping[2], AttributeIdentifier::DryWet);
+
+            input.bias = 0.1;
+            apply_input_snapshot(&mut cache, input);
+            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(cache.mapping[1], AttributeIdentifier::Speed);
+            assert_eq!(cache.mapping[2], AttributeIdentifier::DryWet);
+            assert_eq!(cache.mapping[3], AttributeIdentifier::Bias);
+        }
+
+        #[test]
+        fn when_last_pending_control_is_processed_then_state_changes_to_normal() {
+            let (mut cache, mut input) = init_cache(1);
+            assert_eq!(cache.state, State::Mapping(0));
+
+            input.drive = 0.1;
+            apply_input_snapshot(&mut cache, input);
+            assert_eq!(cache.state, State::Normal);
+        }
+
+        #[test]
+        fn when_second_last_pending_control_is_processed_it_moves_to_last() {
+            let (mut cache, mut input) = init_cache(2);
+
+            input.drive = 0.1;
+            apply_input_snapshot(&mut cache, input);
+            assert_eq!(cache.state, State::Mapping(1));
+        }
+
+        #[test]
+        fn when_multiple_controls_are_plugged_then_they_are_all_added_to_queue() {
+            let (mut cache, mut input) = init_cache(2);
+            assert_eq!(cache.state, State::Mapping(0));
+            assert_eq!(cache.queue.len(), 1);
+            assert!(cache.queue.contains(&ControlAction::Map(1)));
+
+            input.control[2] = Some(1.0);
+            input.control[3] = Some(1.0);
+            cache.apply_input_snapshot(input);
+            assert_eq!(cache.state, State::Mapping(0));
+            assert_eq!(cache.queue.len(), 3);
+            assert!(cache.queue.contains(&ControlAction::Map(1)));
+            assert!(cache.queue.contains(&ControlAction::Map(2)));
+            assert!(cache.queue.contains(&ControlAction::Map(3)));
+        }
+
+        #[test]
+        fn when_control_is_unplugged_it_is_removed_from_queue() {
+            let (mut cache, mut input) = init_cache(3);
+            assert_eq!(cache.state, State::Mapping(0));
+            assert_eq!(cache.queue.len(), 2);
+            assert!(cache.queue.contains(&ControlAction::Map(1)));
+            assert!(cache.queue.contains(&ControlAction::Map(2)));
+
+            input.control[1] = None;
+            cache.apply_input_snapshot(input);
+            assert_eq!(cache.state, State::Mapping(0));
+            assert_eq!(cache.queue.len(), 1);
+            assert!(cache.queue.contains(&ControlAction::Map(2)));
+        }
+
+        #[test]
+        fn when_mapped_control_in_unplugged_it_is_unmapped() {
+            let (mut cache, mut input) = init_cache(2);
+
+            input.drive = 0.4;
+            apply_input_snapshot(&mut cache, input);
+            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(cache.state, State::Mapping(1));
+
+            input.control[0] = None;
+            apply_input_snapshot(&mut cache, input);
+            assert_eq!(cache.mapping[0], AttributeIdentifier::None);
+            assert_eq!(cache.state, State::Mapping(1));
+        }
+
+        #[test]
+        fn when_active_pot_is_assigned_it_is_not_reassigned() {
+            let (mut cache, mut input) = init_cache(2);
+
+            input.drive = 0.1;
+            apply_input_snapshot(&mut cache, input);
+            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(cache.mapping[1], AttributeIdentifier::None);
+
+            input.drive = 0.2;
+            apply_input_snapshot(&mut cache, input);
+            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(cache.mapping[1], AttributeIdentifier::None);
+            assert_eq!(cache.state, State::Mapping(1));
+        }
     }
 
-    #[test]
-    fn given_normal_mode_when_regular_parameter_is_changed_it_stays_in_normal_state() {
-        let mut cache = Cache::new();
-
-        let mut first_input = InputSnapshot::default();
-        first_input.drive = 0.1;
-        cache.apply_input_snapshot(first_input);
-        assert!(matches!(cache.state, State::Normal));
-
-        let mut second_input = InputSnapshot::default();
-        second_input.drive = 0.2;
-        cache.apply_input_snapshot(second_input);
-        assert!(matches!(cache.state, State::Normal));
-    }
-
-    #[test]
-    fn given_control_select_mode_when_unplugs_cv_it_returns_to_normal() {
-        todo!();
-    }
-
-    #[test]
-    fn given_control_select_mode_when_turns_unassigned_pot_it_assigns_control() {
-        todo!();
-    }
-
-    #[test]
-    fn given_control_select_mode_when_turns_assigned_pot_it_ignores_it() {
-        // TODO: Eventually respond with fail animation
-        todo!();
-    }
-
-    #[test]
-    fn given_control_select_mode_when_plugs_in_another_cv_it_adds_it_to_queue() {
-        // TODO: Eventually respond with fail animation
-        todo!();
-    }
-
-    #[test]
-    fn given_any_mode_when_unplugs_cv_it_unmaps_it() {
-        todo!();
-    }
+    // TODO: Test that calibration is followed by mapping
 }
 
 #[cfg(test)]
