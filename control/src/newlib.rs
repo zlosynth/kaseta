@@ -16,9 +16,12 @@
 // - [ ] Implement CV select
 // - [ ] Implement calibration
 // - [ ] Implement backup snapshoting (all data needed for restore)
+// - [ ] Implement reset, connected CVs must be reassigned
 
 #[allow(unused_imports)]
 use micromath::F32Ext;
+
+use heapless::Vec;
 
 /// The main store of peripheral abstraction and module configuration.
 ///
@@ -31,6 +34,7 @@ use micromath::F32Ext;
 pub struct Cache {
     inputs: Inputs,
     pub(crate) state: State,
+    mapping: Mapping,
     options: Options,
     configurations: Configuration,
     attributes: Attributes,
@@ -107,6 +111,35 @@ pub(crate) enum State {
     Calibrating,
     SelectingControl,
     Normal,
+}
+
+/// Linking between universal CV input and attributes controlled through pots.
+//
+/// This mapping is used to store mapping between control inputs and
+/// attributes. It also represents the state machine ordering controls that
+/// are yet to be mapped.
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct Mapping {
+    queue: Vec<usize, 4>,
+    map: [AttributeIdentifier; 4],
+}
+
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+enum AttributeIdentifier {
+    PreAmp,
+    Drive,
+    Bias,
+    DryWet,
+    WowFlut,
+    Speed,
+    Tone,
+    Position(u8),
+    Volume(u8),
+    Feedback(u8),
+    Pan(u8),
+    None,
 }
 
 /// Easy to access modifications of the default module behavior.
@@ -247,6 +280,7 @@ impl Cache {
         Self {
             inputs: Inputs::default(),
             state: State::default(),
+            mapping: Mapping::default(),
             options: Options::default(),
             configurations: Configuration::default(),
             attributes: Attributes::default(),
@@ -257,28 +291,79 @@ impl Cache {
     pub fn apply_input_snapshot(&mut self, snapshot: InputSnapshot) -> () {
         self.inputs.update(snapshot);
 
+        // TODO: Based on state update options, configuration and attributes
         self.state = match self.state {
             State::Normal => {
-                let mut new_state = None;
-                for cv in self.inputs.control.iter() {
-                    if cv.was_plugged {
-                        if self.inputs.button.pressed {
-                            new_state = Some(State::Calibrating);
-                        } else {
-                            new_state = Some(State::SelectingControl);
-                        };
-                        break;
+                let mut new_state = || {
+                    for (i, cv) in self.inputs.control.iter().enumerate() {
+                        if cv.was_plugged {
+                            if self.inputs.button.pressed {
+                                return Some(State::Calibrating);
+                            } else {
+                                // NOTE: When entering from normal state, the queue
+                                // is always empty.
+                                let _ = self.mapping.queue.push(i);
+                                return Some(State::SelectingControl);
+                            };
+                        }
                     }
-                }
-                new_state.unwrap_or(State::Normal)
+                    None
+                };
+                new_state().unwrap_or(State::Normal)
             }
             State::Calibrating => State::Normal,
-            State::SelectingControl => State::Normal,
+            State::SelectingControl => {
+                let destination = self.active_attribute();
+
+                if destination.is_none() {
+                    State::SelectingControl
+                } else {
+                    // TODO: Verify that it is not already asigned to something else
+                    let control_index = self.mapping.queue[0];
+                    self.mapping.map[control_index] = destination;
+                    self.mapping.queue.remove(0);
+                    if self.mapping.queue.is_empty() {
+                        State::Normal
+                    } else {
+                        State::SelectingControl
+                    }
+                }
+            }
         };
 
-        // TODO: Set the state
-        // TODO: Based on state update options, configuration and attributes
+        // TODO: Recalculate attributes, options, config
         // TODO: Return config for DSP
+    }
+
+    fn active_attribute(&self) -> AttributeIdentifier {
+        for (pot, identifier) in [
+            (&self.inputs.pre_amp, AttributeIdentifier::PreAmp),
+            (&self.inputs.drive, AttributeIdentifier::Drive),
+            (&self.inputs.bias, AttributeIdentifier::Bias),
+            (&self.inputs.dry_wet, AttributeIdentifier::DryWet),
+            (&self.inputs.wow_flut, AttributeIdentifier::WowFlut),
+            (&self.inputs.speed, AttributeIdentifier::Speed),
+            (&self.inputs.tone, AttributeIdentifier::Tone),
+        ] {
+            if pot.active() {
+                return identifier;
+            }
+        }
+
+        for (i, head) in self.inputs.head.iter().enumerate() {
+            for (pot, identifier) in [
+                (&head.position, AttributeIdentifier::Position(i as u8)),
+                (&head.volume, AttributeIdentifier::Volume(i as u8)),
+                (&head.feedback, AttributeIdentifier::Feedback(i as u8)),
+                (&head.pan, AttributeIdentifier::Pan(i as u8)),
+            ] {
+                if pot.active() {
+                    return identifier;
+                }
+            }
+        }
+
+        AttributeIdentifier::None
     }
 
     pub fn apply_dsp_reaction(&mut self, dsp_reaction: ()) {
@@ -325,6 +410,10 @@ impl Pot {
     // TODO: Implement window support
     pub fn value(&self) -> f32 {
         self.buffer.read()
+    }
+
+    pub fn active(&self) -> bool {
+        self.buffer.traveled() > 0.001
     }
 }
 
@@ -392,6 +481,18 @@ impl<const N: usize> SmoothBuffer<N> {
     }
 }
 
+impl Default for AttributeIdentifier {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+impl AttributeIdentifier {
+    fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
+}
+
 #[cfg(test)]
 mod cache_tests {
     use super::*;
@@ -405,6 +506,7 @@ mod cache_tests {
 
     #[test]
     fn given_normal_mode_when_control_is_plugged_in_it_enters_select_mode() {
+        // TODO: It should also show animation liting nth bottom LED and blinking top row
         let mut cache = Cache::new();
 
         let mut first_input = InputSnapshot::default();
@@ -416,6 +518,7 @@ mod cache_tests {
         cache.apply_input_snapshot(second_input);
 
         assert!(matches!(cache.state, State::SelectingControl));
+        assert_eq!(cache.mapping.queue[0], 0);
     }
 
     #[test]
@@ -448,6 +551,33 @@ mod cache_tests {
         second_input.drive = 0.2;
         cache.apply_input_snapshot(second_input);
         assert!(matches!(cache.state, State::Normal));
+    }
+
+    #[test]
+    fn given_control_select_mode_when_unplugs_cv_it_returns_to_normal() {
+        todo!();
+    }
+
+    #[test]
+    fn given_control_select_mode_when_turns_unassigned_pot_it_assigns_control() {
+        todo!();
+    }
+
+    #[test]
+    fn given_control_select_mode_when_turns_assigned_pot_it_ignores_it() {
+        // TODO: Eventually respond with fail animation
+        todo!();
+    }
+
+    #[test]
+    fn given_control_select_mode_when_plugs_in_another_cv_it_adds_it_to_queue() {
+        // TODO: Eventually respond with fail animation
+        todo!();
+    }
+
+    #[test]
+    fn given_any_mode_when_unplugs_cv_it_unmaps_it() {
+        todo!();
     }
 }
 
