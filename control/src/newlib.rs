@@ -5,18 +5,24 @@
 // - [X] Implement defmt display for all
 // - [X] Implement tests stub
 // - [X] Write initializer of cache
-// - [ ] Implement raw input passing
-// - [ ] Implement pot processing with smoothening
-// - [ ] Implement CV processing with plug-in
-// - [ ] Implement translation to attributes
+// - [X] Implement raw input passing
+// - [X] Implement pot processing with smoothening
+// - [X] Implement CV processing with plug-in
+// - [X] Implement translation to attributes
 // - [ ] Implement passing of attributes to pseudo-DSP
 // - [ ] Implement passing of config and options to pseudo-DSP
 // - [ ] Implement impulse output
+// - [ ] Implement display for impulse output
 // - [ ] Implement display output for basic attributes
-// - [ ] Implement CV select
-// - [ ] Implement calibration
+// - [X] Implement CV select
+// - [X] Implement calibration
 // - [ ] Implement backup snapshoting (all data needed for restore)
 // - [ ] Implement reset, connected CVs must be reassigned
+// - [ ] Implement display for calibration and mapping
+// - [ ] Unify cv naming to Control
+// - [ ] Unify control select naming to mapping
+// - [ ] Use this instead of the current lib binding, update automation
+// - [ ] Divide this into submodules
 
 #[allow(unused_imports)]
 use micromath::F32Ext;
@@ -600,11 +606,12 @@ impl Cache {
     }
 
     fn control_for_attribute(&mut self, attribute: AttributeIdentifier) -> Option<f32> {
-        let pre_amp_control_index = self.mapping.iter().position(|a| *a == attribute);
-        if let Some(pre_amp_control_index) = pre_amp_control_index {
-            let control = &self.inputs.control[pre_amp_control_index];
+        let i = self.mapping.iter().position(|a| *a == attribute);
+        if let Some(i) = i {
+            let control = &self.inputs.control[i];
             if control.is_plugged {
-                Some(control.value())
+                let calibration = self.calibrations[i];
+                Some(calibration.apply(control.value()))
             } else {
                 None
             }
