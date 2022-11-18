@@ -9,8 +9,8 @@
 // - [X] Implement pot processing with smoothening
 // - [X] Implement CV processing with plug-in
 // - [X] Implement translation to attributes
-// - [ ] Implement passing of attributes to pseudo-DSP
-// - [ ] Implement passing of config and options to pseudo-DSP
+// - [X] Implement passing of attributes to pseudo-DSP
+// - [X] Implement passing of config and options to pseudo-DSP
 // - [ ] Implement impulse output
 // - [ ] Implement display for impulse output
 // - [ ] Implement display output for basic attributes
@@ -304,20 +304,31 @@ pub struct InputSnapshotHead {
     pub pan: f32,
 }
 
-impl Default for State {
-    fn default() -> Self {
-        Self::Normal
-    }
+/// TODO: Docs
+// TODO: Move this under DSP module
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct DSPAttributes {
+    pub pre_amp: f32,
+    pub drive: f32,
+    pub saturation: f32,
+    pub bias: f32,
+    pub dry_wet: f32,
+    pub wow: f32,
+    pub flutter: f32,
+    pub speed: f32,
+    pub tone: f32,
+    pub head: [DSPAttributesHead; 4],
+    pub rewind: bool,
 }
 
-impl Display {
-    pub fn new_with_screen(screen: Screen) -> Self {
-        Self {
-            forced: None,
-            prioritized: None,
-            backup: screen,
-        }
-    }
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct DSPAttributesHead {
+    pub position: f32,
+    pub volume: f32,
+    pub feedback: f32,
+    pub pan: f32,
 }
 
 // NOTE: Inputs and outputs will be passed through queues
@@ -336,10 +347,10 @@ impl Cache {
         }
     }
 
-    pub fn apply_input_snapshot(&mut self, snapshot: InputSnapshot) -> () {
+    pub fn apply_input_snapshot(&mut self, snapshot: InputSnapshot) -> DSPAttributes {
         self.inputs.update(snapshot);
         self.reconcile_changed_inputs();
-        // TODO: Return config for DSP
+        self.build_dsp_attributes()
     }
 
     fn reconcile_changed_inputs(&mut self) {
@@ -620,6 +631,47 @@ impl Cache {
         }
     }
 
+    fn build_dsp_attributes(&mut self) -> DSPAttributes {
+        DSPAttributes {
+            pre_amp: self.attributes.pre_amp,
+            drive: self.attributes.drive,
+            saturation: self.attributes.saturation,
+            bias: self.attributes.bias,
+            dry_wet: self.attributes.dry_wet,
+            wow: self.attributes.wow,
+            flutter: self.attributes.flutter,
+            speed: self.attributes.speed,
+            tone: self.attributes.tone,
+            head: [
+                DSPAttributesHead {
+                    position: self.attributes.head[0].position,
+                    volume: self.attributes.head[0].volume,
+                    feedback: self.attributes.head[0].feedback,
+                    pan: self.attributes.head[0].pan,
+                },
+                DSPAttributesHead {
+                    position: self.attributes.head[1].position,
+                    volume: self.attributes.head[1].volume,
+                    feedback: self.attributes.head[1].feedback,
+                    pan: self.attributes.head[1].pan,
+                },
+                DSPAttributesHead {
+                    position: self.attributes.head[2].position,
+                    volume: self.attributes.head[2].volume,
+                    feedback: self.attributes.head[2].feedback,
+                    pan: self.attributes.head[2].pan,
+                },
+                DSPAttributesHead {
+                    position: self.attributes.head[3].position,
+                    volume: self.attributes.head[3].volume,
+                    feedback: self.attributes.head[3].feedback,
+                    pan: self.attributes.head[3].pan,
+                },
+            ],
+            rewind: self.options.rewind,
+        }
+    }
+
     pub fn apply_dsp_reaction(&mut self, dsp_reaction: ()) {
         // TODO: If DSP detected clipping, or impulse, apply it in cache
         todo!();
@@ -838,6 +890,22 @@ impl Calibration {
 
     fn apply(&self, value: f32) -> f32 {
         value * self.scaling + self.offset
+    }
+}
+
+impl Default for State {
+    fn default() -> Self {
+        Self::Normal
+    }
+}
+
+impl Display {
+    pub fn new_with_screen(screen: Screen) -> Self {
+        Self {
+            forced: None,
+            prioritized: None,
+            backup: screen,
+        }
     }
 }
 
