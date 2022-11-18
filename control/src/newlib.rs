@@ -23,6 +23,9 @@ use micromath::F32Ext;
 
 use heapless::Vec;
 
+use crate::quantization::{quantize, Quantization};
+use crate::taper;
+
 /// The main store of peripheral abstraction and module configuration.
 ///
 /// This struct is the cenral piece of the control module. It takes
@@ -157,10 +160,10 @@ enum AttributeIdentifier {
     WowFlut,
     Speed,
     Tone,
-    Position(u8),
-    Volume(u8),
-    Feedback(u8),
-    Pan(u8),
+    Position(usize),
+    Volume(usize),
+    Feedback(usize),
+    Pan(usize),
     None,
 }
 
@@ -212,9 +215,11 @@ struct Configuration {
 struct Attributes {
     pre_amp: f32,
     drive: f32,
+    saturation: f32,
     bias: f32,
     dry_wet: f32,
-    wow_flut: f32,
+    wow: f32,
+    flutter: f32,
     speed: f32,
     tone: f32,
     head: [AttributesHead; 4],
@@ -327,11 +332,11 @@ impl Cache {
 
     pub fn apply_input_snapshot(&mut self, snapshot: InputSnapshot) -> () {
         self.inputs.update(snapshot);
-        self.reduce_changed_inputs();
+        self.reconcile_changed_inputs();
         // TODO: Return config for DSP
     }
 
-    fn reduce_changed_inputs(&mut self) {
+    fn reconcile_changed_inputs(&mut self) {
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
 
         for i in &unplugged_controls {
@@ -384,8 +389,12 @@ impl Cache {
             }
         };
 
-        // TODO: Recalculate attributes, options, config
-        // self.reduce_changed_inputs_for_all();
+        self.reconcile_pre_amp();
+        self.reconcile_hysteresis();
+        self.reconcile_wow_flut();
+        self.reconcile_tone();
+        self.reconcile_speed();
+        self.reconcile_heads();
     }
 
     fn plugged_and_unplugged_controls(&self) -> (Vec<usize, 4>, Vec<usize, 4>) {
@@ -422,10 +431,10 @@ impl Cache {
 
         for (i, head) in self.inputs.head.iter().enumerate() {
             for (pot, identifier) in [
-                (&head.position, AttributeIdentifier::Position(i as u8)),
-                (&head.volume, AttributeIdentifier::Volume(i as u8)),
-                (&head.feedback, AttributeIdentifier::Feedback(i as u8)),
-                (&head.pan, AttributeIdentifier::Pan(i as u8)),
+                (&head.position, AttributeIdentifier::Position(i)),
+                (&head.volume, AttributeIdentifier::Volume(i)),
+                (&head.feedback, AttributeIdentifier::Feedback(i)),
+                (&head.pan, AttributeIdentifier::Pan(i)),
             ] {
                 if pot.active() {
                     return identifier;
@@ -434,6 +443,174 @@ impl Cache {
         }
 
         AttributeIdentifier::None
+    }
+
+    fn reconcile_pre_amp(&mut self) {
+        // Pre-amp scales between -20 to +28 dB.
+        const PRE_AMP_RANGE: (f32, f32) = (0.0, 25.0);
+
+        self.attributes.pre_amp = calculate(
+            self.inputs.pre_amp.value(),
+            self.control_for_attribute(AttributeIdentifier::PreAmp),
+            PRE_AMP_RANGE,
+            Some(taper::log),
+        );
+    }
+
+    fn reconcile_hysteresis(&mut self) {
+        const DRY_WET_RANGE: (f32, f32) = (0.0, 1.0);
+        const DRIVE_RANGE: (f32, f32) = (0.1, 1.1);
+        const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
+        const BIAS_RANGE: (f32, f32) = (0.01, 1.0);
+
+        // Maximum limit of how much place on the slider is occupied by drive. This
+        // gets scaled down based on bias.
+        const DRIVE_PORTION: f32 = 1.0 / 2.0;
+
+        // Using <https://mycurvefit.com/> quadratic interpolation over data gathered
+        // while testing the instability peak. The lower bias end was flattened not
+        // to overdrive too much. Input data (maximum stable bias per drive):
+        // 1.0 0.9 0.8 0.7 0.6 0.5 0.4 0.3 0.2 0.1
+        // 0.1 0.992 1.091 1.240 1.240 1.388 1.580 1.580 1.780 1.780
+        fn max_bias_for_drive(drive: f32) -> f32 {
+            const D4B_B: f32 = 1.0;
+            const D4B_A1: f32 = 0.0;
+            const D4B_A2: f32 = -0.2;
+
+            let drive2 = drive * drive;
+            D4B_B + D4B_A1 * drive + D4B_A2 * drive2
+        }
+
+        self.attributes.dry_wet = calculate(
+            self.inputs.dry_wet.value(),
+            self.control_for_attribute(AttributeIdentifier::DryWet),
+            DRY_WET_RANGE,
+            None,
+        );
+
+        let drive_input = calculate(
+            self.inputs.drive.value(),
+            self.control_for_attribute(AttributeIdentifier::Drive),
+            (0.0, 1.0),
+            None,
+        );
+
+        let drive = calculate(
+            (drive_input / DRIVE_PORTION).min(1.0),
+            None,
+            DRIVE_RANGE,
+            None,
+        );
+        self.attributes.drive = drive;
+
+        self.attributes.saturation = calculate(
+            ((drive_input - DRIVE_PORTION) / (1.0 - DRIVE_PORTION)).clamp(0.0, 1.0),
+            None,
+            SATURATION_RANGE,
+            None,
+        );
+
+        let max_bias = max_bias_for_drive(drive).clamp(BIAS_RANGE.0, BIAS_RANGE.1);
+        self.attributes.bias = calculate(
+            self.inputs.bias.value(),
+            self.control_for_attribute(AttributeIdentifier::Bias),
+            (0.01, max_bias),
+            Some(taper::log),
+        );
+    }
+
+    fn reconcile_wow_flut(&mut self) {
+        const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 0.2);
+        const FLUTTER_DEPTH_RANGE: (f32, f32) = (0.0, 0.0015);
+
+        let depth = calculate(
+            self.inputs.wow_flut.value(),
+            self.control_for_attribute(AttributeIdentifier::WowFlut),
+            (-1.0, 1.0),
+            None,
+        );
+
+        (self.attributes.wow, self.attributes.flutter) = if depth.is_sign_negative() {
+            (calculate(-depth, None, WOW_DEPTH_RANGE, None), 0.0)
+        } else {
+            (0.0, calculate(depth, None, FLUTTER_DEPTH_RANGE, None))
+        };
+    }
+
+    fn reconcile_tone(&mut self) {
+        self.attributes.tone = calculate(
+            self.inputs.tone.value(),
+            self.control_for_attribute(AttributeIdentifier::Tone),
+            (0.0, 1.0),
+            None,
+        );
+    }
+
+    fn reconcile_speed(&mut self) {
+        // TODO: Rename to speed and revert it 1/X
+        const LENGTH_LONG_RANGE: (f32, f32) = (0.02, 2.0 * 60.0);
+        const LENGTH_SHORT_RANGE: (f32, f32) = (1.0 / 400.0, 1.0);
+
+        self.attributes.speed = calculate(
+            self.inputs.speed.value(),
+            self.control_for_attribute(AttributeIdentifier::Speed),
+            if self.options.short_delay_range {
+                LENGTH_SHORT_RANGE
+            } else {
+                LENGTH_LONG_RANGE
+            },
+            Some(taper::reverse_log),
+        );
+    }
+
+    fn reconcile_heads(&mut self) {
+        for i in 0..4 {
+            self.reconcile_head(i);
+        }
+    }
+
+    fn reconcile_head(&mut self, i: usize) {
+        self.attributes.head[i].position = quantize(
+            calculate(
+                self.inputs.head[i].position.value(),
+                self.control_for_attribute(AttributeIdentifier::Position(i)),
+                (0.0, 1.0),
+                None,
+            ),
+            Quantization::from((self.options.quantize_6, self.options.quantize_8)),
+        );
+        self.attributes.head[i].volume = calculate(
+            self.inputs.head[i].volume.value(),
+            self.control_for_attribute(AttributeIdentifier::Volume(i)),
+            (0.0, 1.0),
+            None,
+        );
+        self.attributes.head[i].feedback = calculate(
+            self.inputs.head[i].feedback.value(),
+            self.control_for_attribute(AttributeIdentifier::Feedback(i)),
+            (0.0, 1.0),
+            None,
+        );
+        self.attributes.head[i].pan = calculate(
+            self.inputs.head[i].pan.value(),
+            self.control_for_attribute(AttributeIdentifier::Pan(i)),
+            (0.0, 1.0),
+            None,
+        );
+    }
+
+    fn control_for_attribute(&mut self, attribute: AttributeIdentifier) -> Option<f32> {
+        let pre_amp_control_index = self.mapping.iter().position(|a| *a == attribute);
+        if let Some(pre_amp_control_index) = pre_amp_control_index {
+            let control = &self.inputs.control[pre_amp_control_index];
+            if control.is_plugged {
+                Some(control.value())
+            } else {
+                None
+            }
+        } else {
+            None
+        }
     }
 
     pub fn apply_dsp_reaction(&mut self, dsp_reaction: ()) {
@@ -447,6 +624,23 @@ impl Cache {
         // self.display.tick();
         todo!()
     }
+}
+
+#[allow(clippy::let_and_return)]
+fn calculate(
+    pot: f32,
+    cv: Option<f32>,
+    range: (f32, f32),
+    taper_function: Option<fn(f32) -> f32>,
+) -> f32 {
+    let sum = (pot + cv.unwrap_or(0.0)).clamp(0.0, 1.0);
+    let curved = if let Some(taper_function) = taper_function {
+        taper_function(sum)
+    } else {
+        sum
+    };
+    let scaled = curved * (range.1 - range.0) + range.0;
+    scaled
 }
 
 impl Inputs {
@@ -1030,8 +1224,6 @@ mod cache_tests {
             assert_relative_eq!(cache.calibrations[0].scaling, original.scaling);
         }
     }
-
-    // TODO: Test that calibration is followed by mapping
 }
 
 #[cfg(test)]

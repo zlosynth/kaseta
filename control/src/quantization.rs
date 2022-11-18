@@ -3,6 +3,7 @@ pub enum Quantization {
     Six,
     Eight,
     Both,
+    None,
 }
 
 impl From<(bool, bool)> for Quantization {
@@ -11,7 +12,7 @@ impl From<(bool, bool)> for Quantization {
             (true, true) => Self::Both,
             (true, false) => Self::Six,
             (false, true) => Self::Eight,
-            _ => panic!(),
+            (false, false) => Self::None,
         }
     }
 }
@@ -92,5 +93,6 @@ pub fn quantize(x: f32, quantization: Quantization) -> f32 {
                 7.0 * EIGHTH
             }
         }
+        Quantization::None => x,
     }
 }
