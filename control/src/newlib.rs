@@ -19,8 +19,8 @@
 // - [ ] Implement backup snapshoting (all data needed for restore)
 // - [ ] Implement reset, connected controls must be reassigned
 // - [ ] Implement display for calibration and mapping
-// - [ ] Unify cv naming to Control
-// - [ ] Unify control select naming to mapping
+// - [X] Unify cv naming to Control
+// - [X] Unify control select naming to mapping
 // - [ ] Implement Configuration passing
 // - [ ] Use this instead of the current lib binding, update automation
 // - [ ] Divide this into submodules
@@ -280,7 +280,7 @@ struct Display {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 enum Screen {
     Calibration,
-    ControlSelect,
+    Mapping,
     Placeholder,
 }
 
