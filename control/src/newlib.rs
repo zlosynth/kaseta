@@ -7,20 +7,21 @@
 // - [X] Write initializer of cache
 // - [X] Implement raw input passing
 // - [X] Implement pot processing with smoothening
-// - [X] Implement CV processing with plug-in
+// - [X] Implement control processing with plug-in
 // - [X] Implement translation to attributes
 // - [X] Implement passing of attributes to pseudo-DSP
 // - [X] Implement passing of config and options to pseudo-DSP
-// - [ ] Implement impulse output
-// - [ ] Implement display for impulse output
+// - [X] Implement impulse output
+// - [X] Implement display for impulse output
 // - [ ] Implement display output for basic attributes
-// - [X] Implement CV select
+// - [X] Implement control select
 // - [X] Implement calibration
 // - [ ] Implement backup snapshoting (all data needed for restore)
-// - [ ] Implement reset, connected CVs must be reassigned
+// - [ ] Implement reset, connected controls must be reassigned
 // - [ ] Implement display for calibration and mapping
 // - [ ] Unify cv naming to Control
 // - [ ] Unify control select naming to mapping
+// - [ ] Implement Configuration passing
 // - [ ] Use this instead of the current lib binding, update automation
 // - [ ] Divide this into submodules
 
@@ -47,9 +48,9 @@ pub struct Cache {
     mapping: Mapping,
     calibrations: Calibrations,
     options: Options,
-    configurations: Configuration,
+    // configurations: Configuration,
     attributes: Attributes,
-    display: Display,
+    outputs: Outputs,
 }
 
 /// Stateful store of raw inputs.
@@ -67,7 +68,7 @@ struct Inputs {
     speed: Pot,
     tone: Pot,
     head: [InputsHead; 4],
-    control: [CV; 4],
+    control: [Control; 4],
     switch: [Switch; 10],
     button: Button,
 }
@@ -89,7 +90,7 @@ struct Pot {
 
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct CV {
+struct Control {
     pub is_plugged: bool,
     pub was_plugged: bool,
     pub was_unplugged: bool,
@@ -149,7 +150,7 @@ enum ControlAction {
     Map(usize),
 }
 
-/// Linking between universal CV input and attributes controlled through pots.
+/// Linking between universal control input and attributes controlled through pots.
 //
 /// This mapping is used to store mapping between control inputs and
 /// attributes. It also represents the state machine ordering controls that
@@ -200,17 +201,17 @@ struct Options {
     rewind: bool,
 }
 
-/// Tweaking of the default module configuration.
-///
-/// This is mean to allow tweaking of some more nieche configuration of the
-/// module. Unlike with `Options`, the parameters here may be continuous
-/// (float) or offer enumeration of variants. An examle of a configuration
-/// may be tweaking of head's rewind speed.
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Configuration {
-    rewind_speed: (),
-}
+// /// Tweaking of the default module configuration.
+// ///
+// /// This is mean to allow tweaking of some more nieche configuration of the
+// /// module. Unlike with `Options`, the parameters here may be continuous
+// /// (float) or offer enumeration of variants. An examle of a configuration
+// /// may be tweaking of head's rewind speed.
+// #[derive(Debug, Default)]
+// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+// struct Configuration {
+//     rewind_speed: (),
+// }
 
 /// Interpreted attributes for the DSP.
 ///
@@ -240,11 +241,34 @@ struct AttributesHead {
     pan: f32,
 }
 
+/// TODO docs
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct Outputs {
+    impulse_trigger: TriggerOutput,
+    impulse_led: Led,
+    display: Display,
+}
+
+/// TODO docs
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct TriggerOutput {
+    since: u32,
+}
+
+/// TODO docs
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct Led {
+    since: u32,
+}
+
 /// State machine representing 8 display LEDs of the module.
 ///
 /// This structure handles the prioritization of display modes, their
 /// changing from one to another, or animations.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Display {
     forced: Option<Screen>,
@@ -263,12 +287,12 @@ enum Screen {
 /// Desired state of output peripherals with the exception of audio.
 ///
 /// This structure transfers request to the module, asking to lit LEDs or
-/// set CV output.
+/// set control output.
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct DesiredOutput {
     pub display: [bool; 8],
-    pub implulse_led: bool,
+    pub impulse_led: bool,
     pub impulse_trigger: bool,
 }
 
@@ -277,7 +301,7 @@ pub struct DesiredOutput {
 /// InputSnapshot is meant to be passed from the hardware binding to the
 /// control package. It should pass pretty raw data, with two exceptions:
 ///
-/// 1. Detection of plugged CV input is done by the caller.
+/// 1. Detection of plugged control input is done by the caller.
 /// 2. Button debouncing is done by the caller.
 #[derive(Debug, Default, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -331,6 +355,15 @@ pub struct DSPAttributesHead {
     pub pan: f32,
 }
 
+/// TODO: Docs
+// TODO: Move this under DSP module
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct DSPReaction {
+    pub impulse: bool,
+    pub clipping: bool,
+}
+
 // NOTE: Inputs and outputs will be passed through queues
 impl Cache {
     pub fn new() -> Self {
@@ -341,9 +374,9 @@ impl Cache {
             mapping: Mapping::default(),
             calibrations: Calibrations::default(),
             options: Options::default(),
-            configurations: Configuration::default(),
+            // configurations: Configuration::default(),
             attributes: Attributes::default(),
-            display: Display::new_with_screen(Screen::Placeholder),
+            outputs: Outputs::default(),
         }
     }
 
@@ -672,16 +705,24 @@ impl Cache {
         }
     }
 
-    pub fn apply_dsp_reaction(&mut self, dsp_reaction: ()) {
-        // TODO: If DSP detected clipping, or impulse, apply it in cache
-        todo!();
+    pub fn apply_dsp_reaction(&mut self, dsp_reaction: DSPReaction) {
+        if dsp_reaction.clipping {
+            self.outputs.impulse_trigger.trigger();
+            self.outputs.impulse_led.trigger();
+        }
     }
 
     pub fn tick(&mut self) -> DesiredOutput {
-        // TODO: Mark that time has passed
-        // TODO: This will update timers of display and impulse output
-        // self.display.tick();
-        todo!()
+        let output = DesiredOutput {
+            display: [false; 8],
+            impulse_trigger: self.outputs.impulse_trigger.triggered(),
+            impulse_led: self.outputs.impulse_led.triggered(),
+        };
+
+        self.outputs.impulse_trigger.tick();
+        self.outputs.impulse_led.tick();
+
+        output
     }
 }
 
@@ -740,7 +781,7 @@ impl Pot {
     }
 }
 
-impl CV {
+impl Control {
     pub fn update(&mut self, value: Option<f32>) {
         let was_plugged = self.is_plugged;
         if let Some(value) = value {
@@ -899,13 +940,37 @@ impl Default for State {
     }
 }
 
-impl Display {
-    pub fn new_with_screen(screen: Screen) -> Self {
-        Self {
-            forced: None,
-            prioritized: None,
-            backup: screen,
-        }
+impl Default for Screen {
+    fn default() -> Self {
+        Screen::Placeholder
+    }
+}
+
+impl TriggerOutput {
+    fn trigger(&mut self) {
+        self.since = 0;
+    }
+
+    fn tick(&mut self) {
+        self.since.saturating_add(1);
+    }
+
+    fn triggered(&self) -> bool {
+        self.since < 10
+    }
+}
+
+impl Led {
+    fn trigger(&mut self) {
+        self.since = 0;
+    }
+
+    fn tick(&mut self) {
+        self.since.saturating_add(1);
+    }
+
+    fn triggered(&self) -> bool {
+        self.since < 100
     }
 }
 
@@ -1390,12 +1455,12 @@ mod inputs_tests {
 }
 
 #[cfg(test)]
-mod cv_tests {
+mod control_tests {
     use super::*;
 
     #[test]
     fn when_none_is_written_its_value_should_be_zero() {
-        let mut cv = CV::default();
+        let mut cv = Control::default();
         cv.update(Some(10.0));
         cv.update(None);
         assert_relative_eq!(cv.value(), 0.0);
@@ -1403,7 +1468,7 @@ mod cv_tests {
 
     #[test]
     fn when_some_is_being_written_its_value_should_eventually_reach_it() {
-        let mut cv = CV::default();
+        let mut cv = Control::default();
 
         let mut value = cv.value();
         for _ in 0..20 {
@@ -1416,12 +1481,12 @@ mod cv_tests {
             }
         }
 
-        panic!("CV have not reached the target {}", value);
+        panic!("Control have not reached the target {}", value);
     }
 
     #[test]
     fn when_some_is_written_after_none_it_reports_as_plugged_for_one_cycle() {
-        let mut cv = CV::default();
+        let mut cv = Control::default();
         cv.update(None);
         cv.update(Some(10.0));
         assert!(cv.was_plugged);
@@ -1449,7 +1514,7 @@ mod pot_tests {
             }
         }
 
-        panic!("CV have not reached the target {}", value);
+        panic!("Control have not reached the target {}", value);
     }
 }
 
