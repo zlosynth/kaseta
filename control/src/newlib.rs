@@ -13,14 +13,14 @@
 // - [X] Implement passing of config and options to pseudo-DSP
 // - [X] Implement impulse output
 // - [X] Implement display for impulse output
-// - [ ] Implement display output for basic attributes
 // - [X] Implement control select
 // - [X] Implement calibration
-// - [ ] Implement backup snapshoting (all data needed for restore)
-// - [ ] Implement reset, connected controls must be reassigned
-// - [ ] Implement display for calibration and mapping
 // - [X] Unify cv naming to Control
 // - [X] Unify control select naming to mapping
+// - [ ] Implement display output for basic attributes
+// - [ ] Implement display for calibration and mapping
+// - [ ] Implement backup snapshoting (all data needed for restore)
+// - [ ] Implement reset, connected controls must be reassigned
 // - [ ] Implement Configuration passing
 // - [ ] Use this instead of the current lib binding, update automation
 // - [ ] Divide this into submodules
@@ -357,7 +357,7 @@ pub struct DSPAttributesHead {
 
 /// TODO: Docs
 // TODO: Move this under DSP module
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct DSPReaction {
     pub impulse: bool,
@@ -853,12 +853,9 @@ impl Default for Queue {
 }
 
 impl Queue {
-    fn len(&self) -> usize {
-        self.queue.len()
-    }
-
     fn push(&mut self, action: ControlAction) {
-        self.queue.push(action);
+        // NOTE: The capacity is set to accomodate for all possible actions.
+        let _ = self.queue.push(action);
     }
 
     fn pop(&mut self) -> Option<ControlAction> {
@@ -869,15 +866,21 @@ impl Queue {
         }
     }
 
-    fn contains(&self, action: &ControlAction) -> bool {
-        self.queue.contains(action)
-    }
-
     fn remove_control(&mut self, control_id: usize) {
         self.queue.retain(|a| match a {
             ControlAction::Calibrate(id) => *id != control_id,
             ControlAction::Map(id) => *id != control_id,
         })
+    }
+
+    #[cfg(test)]
+    fn len(&self) -> usize {
+        self.queue.len()
+    }
+
+    #[cfg(test)]
+    fn contains(&self, action: &ControlAction) -> bool {
+        self.queue.contains(action)
     }
 }
 
@@ -952,7 +955,7 @@ impl TriggerOutput {
     }
 
     fn tick(&mut self) {
-        self.since.saturating_add(1);
+        self.since = self.since.saturating_add(1);
     }
 
     fn triggered(&self) -> bool {
@@ -966,7 +969,7 @@ impl Led {
     }
 
     fn tick(&mut self) {
-        self.since.saturating_add(1);
+        self.since = self.since.saturating_add(1);
     }
 
     fn triggered(&self) -> bool {
@@ -981,6 +984,58 @@ mod cache_tests {
     #[test]
     fn it_should_be_possible_to_initialize_cache() {
         let _cache = Cache::new();
+    }
+
+    #[test]
+    fn when_dsp_returns_impulse_it_should_set_output_trigger_for_multiple_cycles() {
+        let mut cache = Cache::new();
+        let mut dsp_reaction = DSPReaction::default();
+
+        dsp_reaction.impulse = true;
+        cache.apply_dsp_reaction(dsp_reaction);
+
+        dsp_reaction.impulse = false;
+        cache.apply_dsp_reaction(dsp_reaction);
+
+        let output = cache.tick();
+        assert!(output.impulse_trigger);
+        let output = cache.tick();
+        assert!(output.impulse_trigger);
+
+        for _ in 0..100 {
+            let output = cache.tick();
+            if !output.impulse_trigger {
+                return;
+            }
+        }
+
+        panic!("Trigger was not set down within given timeout");
+    }
+
+    #[test]
+    fn when_dsp_returns_impulse_it_should_lit_impulse_led_for_multiple_cycles() {
+        let mut cache = Cache::new();
+        let mut dsp_reaction = DSPReaction::default();
+
+        dsp_reaction.impulse = true;
+        cache.apply_dsp_reaction(dsp_reaction);
+
+        dsp_reaction.impulse = false;
+        cache.apply_dsp_reaction(dsp_reaction);
+
+        let output = cache.tick();
+        assert!(output.impulse_led);
+        let output = cache.tick();
+        assert!(output.impulse_led);
+
+        for _ in 0..100 {
+            let output = cache.tick();
+            if !output.impulse_led {
+                return;
+            }
+        }
+
+        panic!("Trigger was not set down within given timeout");
     }
 
     #[cfg(test)]
