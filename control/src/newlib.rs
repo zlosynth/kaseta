@@ -22,6 +22,7 @@
 // - [ ] Implement backup snapshoting (all data needed for restore)
 // - [ ] Implement reset, connected controls must be reassigned
 // - [ ] Implement Configuration passing
+// - [ ] If all positions are on edge, move the active ones to the edge of leds
 // - [ ] Use this instead of the current lib binding, update automation
 // - [ ] Divide this into submodules
 
@@ -268,20 +269,26 @@ struct Led {
 ///
 /// This structure handles the prioritization of display modes, their
 /// changing from one to another, or animations.
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Display {
-    forced: Option<Screen>,
-    prioritized: Option<(Screen, u32)>,
-    backup: Screen,
-}
-
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct Display {
+    prioritized: [Option<Screen>; 3],
+}
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
 enum Screen {
-    Calibration,
-    Mapping,
-    Placeholder,
+    Calibration(CalibrationScreen),
+    Mapping(usize, u32),
+    Failure(u32),
+    Heads([bool; 4], [bool; 4]),
+}
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+enum CalibrationScreen {
+    SelectOctave1(usize, u32),
+    SelectOctave2(usize, u32),
 }
 
 /// Desired state of output peripherals with the exception of audio.
@@ -407,23 +414,35 @@ impl Cache {
                 if let Some(action) = self.queue.pop() {
                     match action {
                         ControlAction::Calibrate(i) => {
-                            self.state = State::Calibrating(i, CalibrationPhase::Octave1)
+                            self.state = State::Calibrating(i, CalibrationPhase::Octave1);
+                            self.outputs.display.prioritized[1] = Some(Screen::calibration_1(i));
                         }
-                        ControlAction::Map(i) => self.state = State::Mapping(i),
+                        ControlAction::Map(i) => {
+                            self.state = State::Mapping(i);
+                            self.outputs.display.prioritized[1] = Some(Screen::mapping(i));
+                        }
                     }
+                } else {
+                    self.outputs.display.prioritized[1] = None;
                 }
             }
             State::Calibrating(i, phase) => {
-                if self.inputs.button.clicked {
+                if !self.inputs.control[i].is_plugged {
+                    self.outputs.display.prioritized[0] = Some(Screen::failure());
+                    self.state = State::Normal;
+                } else if self.inputs.button.clicked {
                     match phase {
                         CalibrationPhase::Octave1 => {
                             let octave_1 = self.inputs.control[i].value();
                             self.state = State::Calibrating(i, CalibrationPhase::Octave2(octave_1));
+                            self.outputs.display.prioritized[1] = Some(Screen::calibration_2(i));
                         }
                         CalibrationPhase::Octave2(octave_1) => {
                             let octave_2 = self.inputs.control[i].value();
                             if let Some(calibration) = Calibration::try_new(octave_1, octave_2) {
                                 self.calibrations[i] = calibration;
+                            } else {
+                                self.outputs.display.prioritized[0] = Some(Screen::failure());
                             }
                             self.state = State::Normal;
                         }
@@ -445,6 +464,35 @@ impl Cache {
         self.reconcile_tone();
         self.reconcile_speed();
         self.reconcile_heads();
+
+        let mut ordered_heads = [
+            &self.attributes.head[0],
+            &self.attributes.head[1],
+            &self.attributes.head[2],
+            &self.attributes.head[3],
+        ];
+        for i in 0..ordered_heads.len() {
+            for j in 0..ordered_heads.len() - 1 - i {
+                if ordered_heads[j].position > ordered_heads[j + 1].position {
+                    ordered_heads.swap(j, j + 1);
+                }
+            }
+        }
+
+        self.outputs.display.prioritized[2] = Some(Screen::Heads(
+            [
+                ordered_heads[0].volume > 0.05,
+                ordered_heads[1].volume > 0.05,
+                ordered_heads[2].volume > 0.05,
+                ordered_heads[3].volume > 0.05,
+            ],
+            [
+                ordered_heads[0].feedback > 0.05,
+                ordered_heads[1].feedback > 0.05,
+                ordered_heads[2].feedback > 0.05,
+                ordered_heads[3].feedback > 0.05,
+            ],
+        ));
     }
 
     fn plugged_and_unplugged_controls(&self) -> (Vec<usize, 4>, Vec<usize, 4>) {
@@ -706,7 +754,7 @@ impl Cache {
     }
 
     pub fn apply_dsp_reaction(&mut self, dsp_reaction: DSPReaction) {
-        if dsp_reaction.clipping {
+        if dsp_reaction.impulse {
             self.outputs.impulse_trigger.trigger();
             self.outputs.impulse_led.trigger();
         }
@@ -714,13 +762,14 @@ impl Cache {
 
     pub fn tick(&mut self) -> DesiredOutput {
         let output = DesiredOutput {
-            display: [false; 8],
+            display: self.outputs.display.active_screen().leds(),
             impulse_trigger: self.outputs.impulse_trigger.triggered(),
             impulse_led: self.outputs.impulse_led.triggered(),
         };
 
         self.outputs.impulse_trigger.tick();
         self.outputs.impulse_led.tick();
+        self.outputs.display.tick();
 
         output
     }
@@ -945,7 +994,7 @@ impl Default for State {
 
 impl Default for Screen {
     fn default() -> Self {
-        Screen::Placeholder
+        Screen::Heads([false; 4], [false; 4])
     }
 }
 
@@ -977,6 +1026,150 @@ impl Led {
     }
 }
 
+impl Default for Display {
+    fn default() -> Self {
+        Self {
+            prioritized: [None, None, Some(Screen::Heads([false; 4], [false; 4]))],
+        }
+    }
+}
+
+impl Display {
+    fn tick(&mut self) {
+        for screen in self.prioritized.iter_mut().filter(|p| p.is_some()) {
+            *screen = screen.unwrap().ticked();
+        }
+    }
+
+    fn active_screen(&self) -> &Screen {
+        self.prioritized
+            .iter()
+            .find(|p| p.is_some())
+            .map(|p| p.as_ref().unwrap())
+            .expect("The always is at least one active page.")
+    }
+}
+
+impl Screen {
+    fn leds(&self) -> [bool; 8] {
+        match self {
+            Self::Calibration(calibration) => match calibration {
+                CalibrationScreen::SelectOctave1(i, cycles) => {
+                    let mut leds = [false; 8];
+                    leds[4 + i] = true;
+                    if *cycles < 240 {
+                        leds[0] = true;
+                        leds[1] = true;
+                    } else if *cycles < 240 * 2 {
+                        leds[0] = false;
+                        leds[1] = false;
+                    } else if *cycles < 240 * 3 {
+                        leds[0] = true;
+                        leds[1] = true;
+                    } else {
+                        leds[0] = false;
+                        leds[1] = false;
+                    }
+                    leds
+                }
+                CalibrationScreen::SelectOctave2(i, cycles) => {
+                    let mut leds = [false; 8];
+                    leds[4 + i] = true;
+                    if *cycles < 240 {
+                        leds[2] = true;
+                        leds[3] = true;
+                    } else if *cycles < 240 * 2 {
+                        leds[2] = false;
+                        leds[3] = false;
+                    } else if *cycles < 240 * 3 {
+                        leds[2] = true;
+                        leds[3] = true;
+                    } else {
+                        leds[2] = false;
+                        leds[3] = false;
+                    }
+                    leds
+                }
+            },
+            Self::Mapping(i, cycles) => {
+                let mut leds = [false; 8];
+                leds[4 + i] = true;
+                if *cycles < 240 {
+                    leds[0] = true;
+                } else if *cycles < 240 * 2 {
+                    leds[1] = true;
+                } else if *cycles < 240 * 3 {
+                    leds[2] = true;
+                } else {
+                    leds[3] = true;
+                }
+                leds
+            }
+            Self::Heads(top, bottom) => [
+                top[0], top[1], top[2], top[3], bottom[0], bottom[1], bottom[2], bottom[3],
+            ],
+            Self::Failure(cycles) => {
+                if *cycles < 80 {
+                    [true; 8]
+                } else if *cycles < 240 {
+                    [false; 8]
+                } else if *cycles < 320 {
+                    [true; 8]
+                } else {
+                    [false; 8]
+                }
+            }
+        }
+    }
+
+    fn ticked(self) -> Option<Self> {
+        match self {
+            Screen::Calibration(calibration) => match calibration {
+                CalibrationScreen::SelectOctave1(i, cycles) => {
+                    Some(Screen::Calibration(CalibrationScreen::SelectOctave1(
+                        i,
+                        if cycles > 240 * 6 { 0 } else { cycles + 1 },
+                    )))
+                }
+                CalibrationScreen::SelectOctave2(i, cycles) => {
+                    Some(Screen::Calibration(CalibrationScreen::SelectOctave2(
+                        i,
+                        if cycles > 240 * 6 { 0 } else { cycles + 1 },
+                    )))
+                }
+            },
+            Screen::Mapping(i, cycles) => Some(Screen::Mapping(
+                i,
+                if cycles > 240 * 4 { 0 } else { cycles + 1 },
+            )),
+            Screen::Failure(cycles) => {
+                if cycles > 480 {
+                    None
+                } else {
+                    Some(Screen::Failure(cycles + 1))
+                }
+            }
+            _ => Some(self),
+        }
+    }
+
+    fn failure() -> Self {
+        Self::Failure(0)
+    }
+
+    fn calibration_1(i: usize) -> Self {
+        Self::Calibration(CalibrationScreen::SelectOctave1(i, 0))
+    }
+
+    fn calibration_2(i: usize) -> Self {
+        Self::Calibration(CalibrationScreen::SelectOctave2(i, 0))
+    }
+
+    fn mapping(i: usize) -> Self {
+        Self::Mapping(i, 0)
+    }
+}
+
 #[cfg(test)]
 mod cache_tests {
     use super::*;
@@ -984,6 +1177,61 @@ mod cache_tests {
     #[test]
     fn it_should_be_possible_to_initialize_cache() {
         let _cache = Cache::new();
+    }
+
+    fn assert_animation(cache: &mut Cache, transitions: &[u32]) {
+        fn u32_into_digits(mut x: u32) -> [u32; 4] {
+            assert!(x < 10000);
+
+            let a = x % 10;
+            x /= 10;
+            let b = x % 10;
+            x /= 10;
+            let c = x % 10;
+            x /= 10;
+            let d = x % 10;
+
+            [d, c, b, a]
+        }
+
+        fn digits_into_bools(digits: [u32; 4]) -> [bool; 8] {
+            let mut bools = [false; 8];
+
+            for (i, digit) in digits.iter().enumerate() {
+                match digit {
+                    9 => bools[i] = true,
+                    6 => bools[i + 4] = true,
+                    8 => {
+                        bools[i] = true;
+                        bools[i + 4] = true;
+                    }
+                    0 => (),
+                    _ => panic!("Led code must consist of 6, 8, 9 and 0"),
+                }
+            }
+
+            bools
+        }
+
+        fn transition_into_bools(x: u32) -> [bool; 8] {
+            let digits = u32_into_digits(x);
+            digits_into_bools(digits)
+        }
+
+        let mut old_display = None;
+        'transition: for transition in transitions {
+            for _ in 0..10000 {
+                let display = cache.tick().display;
+                let bools = transition_into_bools(*transition);
+                if display == bools {
+                    old_display = Some(display);
+                    continue 'transition;
+                } else if old_display.is_some() && old_display.unwrap() != display {
+                    panic!("Reached unexpected transition {:?}", display);
+                }
+            }
+            panic!("Transition was not reached within the given timeout");
+        }
     }
 
     #[test]
@@ -1058,6 +1306,10 @@ mod cache_tests {
             cache.apply_input_snapshot(input);
 
             assert!(matches!(cache.state, State::Mapping(1)));
+            assert_animation(
+                &mut cache,
+                &[9600, 0800, 0690, 0609, 9600, 0800, 0690, 0609],
+            );
         }
 
         #[test]
@@ -1077,6 +1329,7 @@ mod cache_tests {
                 cache.state,
                 State::Calibrating(1, CalibrationPhase::Octave1)
             ));
+            assert_animation(&mut cache, &[9800, 0600, 9800, 0600]);
         }
 
         #[test]
@@ -1142,6 +1395,34 @@ mod cache_tests {
             cache.apply_input_snapshot(input);
 
             assert_eq!(cache.mapping[0], AttributeIdentifier::None);
+        }
+
+        #[test]
+        fn it_displays_enabled_volume_and_feedback_based_on_head_order() {
+            let mut cache = init_cache();
+            let mut input = InputSnapshot::default();
+
+            input.head[0].position = 1.0;
+            input.head[0].volume = 1.0;
+            input.head[0].feedback = 1.0;
+
+            input.head[1].position = 0.4;
+            input.head[1].volume = 0.0;
+            input.head[1].feedback = 0.2;
+
+            input.head[2].position = 0.8;
+            input.head[2].volume = 0.7;
+            input.head[2].feedback = 0.0;
+
+            input.head[3].position = 0.7;
+            input.head[3].volume = 0.0;
+            input.head[3].feedback = 0.0;
+
+            for _ in 0..4 {
+                cache.apply_input_snapshot(input);
+            }
+
+            assert_animation(&mut cache, &[6098]);
         }
     }
 
@@ -1209,6 +1490,7 @@ mod cache_tests {
             input.drive = 0.1;
             apply_input_snapshot(&mut cache, input);
             assert_eq!(cache.state, State::Normal);
+            assert_animation(&mut cache, &[0000]);
         }
 
         #[test]
@@ -1281,6 +1563,8 @@ mod cache_tests {
             assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
             assert_eq!(cache.mapping[1], AttributeIdentifier::None);
             assert_eq!(cache.state, State::Mapping(1));
+
+            assert_animation(&mut cache, &[9600, 0800, 0690, 0609]);
         }
     }
 
@@ -1333,6 +1617,7 @@ mod cache_tests {
                 cache.state,
                 State::Calibrating(0, CalibrationPhase::Octave1)
             );
+            assert_animation(&mut cache, &[8900, 6000, 8900, 6000]);
 
             input.control[0] = Some(1.3);
             apply_input_snapshot(&mut cache, input);
@@ -1341,6 +1626,7 @@ mod cache_tests {
                 cache.state,
                 State::Calibrating(0, CalibrationPhase::Octave2(1.3))
             );
+            assert_animation(&mut cache, &[6099, 6000, 6099, 6000]);
 
             input.control[0] = Some(2.4);
             apply_input_snapshot(&mut cache, input);
@@ -1351,6 +1637,37 @@ mod cache_tests {
                 Calibration::default().scaling
             );
             assert_eq!(cache.state, State::Mapping(0));
+            assert_animation(&mut cache, &[8000, 6900, 6090, 6009]);
+        }
+
+        #[test]
+        fn when_incorrect_values_are_given_it_it_cancels_calibration_and_turns_to_mapping() {
+            let (mut cache, mut input) = init_cache(1);
+            assert_eq!(
+                cache.state,
+                State::Calibrating(0, CalibrationPhase::Octave1)
+            );
+            assert_animation(&mut cache, &[8900, 6000, 8900, 6000]);
+
+            input.control[0] = Some(1.3);
+            apply_input_snapshot(&mut cache, input);
+            click_button(&mut cache, input);
+            assert_eq!(
+                cache.state,
+                State::Calibrating(0, CalibrationPhase::Octave2(1.3))
+            );
+            assert_animation(&mut cache, &[6099, 6000, 6099, 6000]);
+
+            input.control[0] = Some(1.4);
+            apply_input_snapshot(&mut cache, input);
+            click_button(&mut cache, input);
+            assert_eq!(cache.calibrations[0].offset, Calibration::default().offset);
+            assert_eq!(
+                cache.calibrations[0].scaling,
+                Calibration::default().scaling
+            );
+            assert_eq!(cache.state, State::Mapping(0));
+            assert_animation(&mut cache, &[8888, 0000, 8888, 0000, 6090, 6009]);
         }
 
         #[test]
@@ -1396,6 +1713,21 @@ mod cache_tests {
                 State::Calibrating(0, CalibrationPhase::Octave1)
             );
             assert_eq!(cache.queue.len(), 3);
+        }
+
+        #[test]
+        fn when_currently_mapping_control_is_unplugged_it_returns_to_normal() {
+            let (mut cache, mut input) = init_cache(1);
+            assert_eq!(
+                cache.state,
+                State::Calibrating(0, CalibrationPhase::Octave1)
+            );
+            assert_eq!(cache.queue.len(), 1);
+
+            input.control[0] = None;
+            cache.apply_input_snapshot(input);
+            assert_eq!(cache.state, State::Normal);
+            assert_animation(&mut cache, &[8888, 0000, 8888, 0000]);
         }
 
         #[test]
@@ -1638,3 +1970,18 @@ mod calibration_test {
         }
     }
 }
+
+// #[cfg(test)]
+// mod display_tests {
+//     use super::*;
+
+//     #[test]
+//     fn when_sets_forced_screen_it_is_immediatelly_shown() {
+//         todo!();
+//     }
+
+//     #[test]
+//     fn when_forced_screen_is_reset_it_immediatelly_falls_back_to_fallback() {
+//         todo!();
+//     }
+// }
