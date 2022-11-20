@@ -17,10 +17,10 @@
 // - [X] Implement calibration
 // - [X] Unify cv naming to Control
 // - [X] Unify control select naming to mapping
-// - [ ] Implement display output for basic attributes
-// - [ ] Implement display for calibration and mapping
-// - [ ] Implement backup snapshoting (all data needed for restore)
-// - [ ] Implement reset, connected controls must be reassigned
+// - [X] Implement display output for basic attributes
+// - [X] Implement display for calibration and mapping
+// - [X] Implement backup snapshoting (all data needed for restore)
+// - [X] Implement reset, connected controls must be reassigned
 // - [ ] Implement Configuration passing
 // - [ ] If all positions are on edge, move the active ones to the edge of leds
 // - [ ] Use this instead of the current lib binding, update automation
@@ -44,7 +44,7 @@ use crate::taper;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
     inputs: Inputs,
-    pub(crate) state: State,
+    state: State,
     queue: Queue,
     mapping: Mapping,
     calibrations: Calibrations,
@@ -158,7 +158,7 @@ enum ControlAction {
 /// are yet to be mapped.
 type Mapping = [AttributeIdentifier; 4];
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 enum AttributeIdentifier {
     PreAmp,
@@ -181,7 +181,7 @@ type Calibrations = [Calibration; 4];
 
 /// TODO Docs
 // TODO: One per head, offset and amplification
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Calibration {
     offset: f32,
@@ -371,6 +371,14 @@ pub struct DSPReaction {
     pub clipping: bool,
 }
 
+/// TODO: Docs
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct Save {
+    mapping: Mapping,
+    calibrations: Calibrations,
+}
+
 // NOTE: Inputs and outputs will be passed through queues
 impl Cache {
     pub fn new() -> Self {
@@ -406,7 +414,9 @@ impl Cache {
             if self.inputs.button.pressed {
                 self.queue.push(ControlAction::Calibrate(*i));
             }
-            self.queue.push(ControlAction::Map(*i));
+            if self.mapping[*i].is_none() {
+                self.queue.push(ControlAction::Map(*i));
+            }
         }
 
         match self.state {
@@ -772,6 +782,22 @@ impl Cache {
         self.outputs.display.tick();
 
         output
+    }
+
+    pub fn save(&self) -> Save {
+        Save {
+            mapping: self.mapping,
+            calibrations: self.calibrations,
+        }
+    }
+}
+
+impl From<Save> for Cache {
+    fn from(save: Save) -> Self {
+        let mut cache = Self::new();
+        cache.mapping = save.mapping;
+        cache.calibrations = save.calibrations;
+        cache
     }
 }
 
@@ -1284,6 +1310,150 @@ mod cache_tests {
         }
 
         panic!("Trigger was not set down within given timeout");
+    }
+
+    #[test]
+    fn given_save_it_recovers_previously_set_mapping() {
+        let mut cache = Cache::new();
+        let mut input = InputSnapshot::default();
+
+        input.control[1] = None;
+        cache.apply_input_snapshot(input);
+
+        input.control[1] = Some(1.0);
+        cache.apply_input_snapshot(input);
+
+        input.drive = 0.1;
+        cache.apply_input_snapshot(input);
+
+        let save = cache.save();
+        let mut cache = Cache::from(save);
+        cache.apply_input_snapshot(input);
+
+        assert_eq!(cache.mapping[1], AttributeIdentifier::Drive);
+        assert_eq!(cache.state, State::Normal);
+    }
+
+    #[test]
+    fn given_save_if_new_control_was_plugged_since_it_gets_to_the_queque() {
+        let cache = Cache::new();
+
+        let save = cache.save();
+
+        let mut input = InputSnapshot::default();
+        input.control[1] = Some(1.0);
+
+        let mut cache = Cache::from(save);
+        cache.apply_input_snapshot(input);
+
+        assert_eq!(cache.state, State::Mapping(1));
+    }
+
+    #[test]
+    fn given_save_it_recovers_previously_set_calibration_and_mapping() {
+        fn click_button(cache: &mut Cache, mut input: InputSnapshot) {
+            input.button = true;
+            cache.apply_input_snapshot(input);
+            input.button = false;
+            cache.apply_input_snapshot(input);
+        }
+
+        let mut cache = Cache::new();
+        let mut input = InputSnapshot::default();
+
+        input.control[1] = None;
+        cache.apply_input_snapshot(input);
+
+        input.button = true;
+        cache.apply_input_snapshot(input);
+
+        input.control[1] = Some(1.0);
+        cache.apply_input_snapshot(input);
+
+        input.button = false;
+        cache.apply_input_snapshot(input);
+
+        input.control[1] = Some(1.2);
+        for _ in 0..10 {
+            cache.apply_input_snapshot(input);
+        }
+        click_button(&mut cache, input);
+
+        input.control[1] = Some(2.3);
+        for _ in 0..10 {
+            cache.apply_input_snapshot(input);
+        }
+        click_button(&mut cache, input);
+
+        input.drive = 0.1;
+        cache.apply_input_snapshot(input);
+        assert_eq!(cache.state, State::Normal);
+
+        let calibration = cache.calibrations[1];
+        let mapping = cache.mapping[1];
+
+        let save = cache.save();
+        let mut cache = Cache::from(save);
+        cache.apply_input_snapshot(input);
+
+        assert_eq!(cache.calibrations[1], calibration);
+        assert_eq!(cache.mapping[1], mapping);
+        assert_eq!(cache.state, State::Normal);
+    }
+
+    #[test]
+    fn given_save_after_calibration_was_done_but_mapping_not_it_recovers_calibration_and_continues_mapping(
+    ) {
+        // TODO: Single helper for all cache tests
+        fn click_button(cache: &mut Cache, mut input: InputSnapshot) {
+            input.button = true;
+            cache.apply_input_snapshot(input);
+            input.button = false;
+            cache.apply_input_snapshot(input);
+        }
+
+        let mut cache = Cache::new();
+        let mut input = InputSnapshot::default();
+
+        input.control[1] = None;
+        cache.apply_input_snapshot(input);
+
+        input.button = true;
+        cache.apply_input_snapshot(input);
+
+        input.control[1] = Some(1.0);
+        cache.apply_input_snapshot(input);
+
+        input.button = false;
+        cache.apply_input_snapshot(input);
+
+        input.control[1] = Some(1.2);
+        for _ in 0..10 {
+            cache.apply_input_snapshot(input);
+        }
+        click_button(&mut cache, input);
+
+        input.control[1] = Some(2.3);
+        for _ in 0..10 {
+            cache.apply_input_snapshot(input);
+        }
+        click_button(&mut cache, input);
+
+        input.drive = 0.1;
+        cache.apply_input_snapshot(input);
+
+        assert_eq!(cache.state, State::Normal);
+
+        let calibration = cache.calibrations[1];
+        let mapping = cache.mapping[1];
+
+        let save = cache.save();
+        let mut cache = Cache::from(save);
+        cache.apply_input_snapshot(input);
+
+        assert_eq!(cache.calibrations[1], calibration);
+        assert_eq!(cache.mapping[1], mapping);
+        assert_eq!(cache.state, State::Normal);
     }
 
     #[cfg(test)]
@@ -1970,18 +2140,3 @@ mod calibration_test {
         }
     }
 }
-
-// #[cfg(test)]
-// mod display_tests {
-//     use super::*;
-
-//     #[test]
-//     fn when_sets_forced_screen_it_is_immediatelly_shown() {
-//         todo!();
-//     }
-
-//     #[test]
-//     fn when_forced_screen_is_reset_it_immediatelly_falls_back_to_fallback() {
-//         todo!();
-//     }
-// }
