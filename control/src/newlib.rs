@@ -21,10 +21,12 @@
 // - [X] Implement display for calibration and mapping
 // - [X] Implement backup snapshoting (all data needed for restore)
 // - [X] Implement reset, connected controls must be reassigned
+// - [X] Implement saving, returned from Cache when a change to it was made
 // - [ ] Implement Configuration passing
 // - [ ] If all positions are on edge, move the active ones to the edge of leds
 // - [ ] Use this instead of the current lib binding, update automation
 // - [ ] Divide this into submodules
+// - [ ] List all the improvements introduced here in the changelog
 
 #[allow(unused_imports)]
 use micromath::F32Ext;
@@ -372,7 +374,7 @@ pub struct DSPReaction {
 }
 
 /// TODO: Docs
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Save {
     mapping: Mapping,
@@ -395,13 +397,19 @@ impl Cache {
         }
     }
 
-    pub fn apply_input_snapshot(&mut self, snapshot: InputSnapshot) -> DSPAttributes {
+    pub fn apply_input_snapshot(
+        &mut self,
+        snapshot: InputSnapshot,
+    ) -> (DSPAttributes, Option<Save>) {
         self.inputs.update(snapshot);
-        self.reconcile_changed_inputs();
-        self.build_dsp_attributes()
+        let save = self.reconcile_changed_inputs();
+        let dsp_attributes = self.build_dsp_attributes();
+        (dsp_attributes, save)
     }
 
-    fn reconcile_changed_inputs(&mut self) {
+    fn reconcile_changed_inputs(&mut self) -> Option<Save> {
+        let mut needs_save = false;
+
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
 
         for i in &unplugged_controls {
@@ -450,6 +458,7 @@ impl Cache {
                         CalibrationPhase::Octave2(octave_1) => {
                             let octave_2 = self.inputs.control[i].value();
                             if let Some(calibration) = Calibration::try_new(octave_1, octave_2) {
+                                needs_save = true;
                                 self.calibrations[i] = calibration;
                             } else {
                                 self.outputs.display.prioritized[0] = Some(Screen::failure());
@@ -462,6 +471,7 @@ impl Cache {
             State::Mapping(i) => {
                 let destination = self.active_attribute();
                 if !destination.is_none() && !self.mapping.contains(&destination) {
+                    needs_save = true;
                     self.mapping[i] = destination;
                     self.state = State::Normal;
                 }
@@ -503,6 +513,12 @@ impl Cache {
                 ordered_heads[3].feedback > 0.05,
             ],
         ));
+
+        if needs_save {
+            Some(self.save())
+        } else {
+            None
+        }
     }
 
     fn plugged_and_unplugged_controls(&self) -> (Vec<usize, 4>, Vec<usize, 4>) {
@@ -784,7 +800,7 @@ impl Cache {
         output
     }
 
-    pub fn save(&self) -> Save {
+    fn save(&self) -> Save {
         Save {
             mapping: self.mapping,
             calibrations: self.calibrations,
@@ -1473,8 +1489,9 @@ mod cache_tests {
             cache.apply_input_snapshot(input);
 
             input.control[1] = Some(1.0);
-            cache.apply_input_snapshot(input);
+            let (_, save) = cache.apply_input_snapshot(input);
 
+            assert!(save.is_none());
             assert!(matches!(cache.state, State::Mapping(1)));
             assert_animation(
                 &mut cache,
@@ -1493,8 +1510,9 @@ mod cache_tests {
 
             input.button = true;
             input.control[1] = Some(1.0);
-            cache.apply_input_snapshot(input);
+            let (_, save) = cache.apply_input_snapshot(input);
 
+            assert!(save.is_none());
             assert!(matches!(
                 cache.state,
                 State::Calibrating(1, CalibrationPhase::Octave1)
@@ -1626,26 +1644,39 @@ mod cache_tests {
         }
 
         #[test]
-        fn when_pot_is_active_it_gets_mapped_to_the_current_control() {
+        fn when_pot_is_active_it_gets_mapped_to_the_current_control_and_saved() {
             let (mut cache, mut input) = init_cache(4);
 
             input.drive = 0.1;
-            apply_input_snapshot(&mut cache, input);
+            let (_, save) = cache.apply_input_snapshot(input);
+            assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
             assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
+            apply_input_snapshot(&mut cache, input); // Let the pot converge
 
             input.speed = 0.1;
-            apply_input_snapshot(&mut cache, input);
+            let (_, save) = cache.apply_input_snapshot(input);
+            assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
             assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
             assert_eq!(cache.mapping[1], AttributeIdentifier::Speed);
+            apply_input_snapshot(&mut cache, input); // Let the pot converge
 
             input.dry_wet = 0.1;
-            apply_input_snapshot(&mut cache, input);
+            let (_, save) = cache.apply_input_snapshot(input);
+            assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
+            assert_eq!(save.unwrap().mapping[2], AttributeIdentifier::DryWet);
             assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
             assert_eq!(cache.mapping[1], AttributeIdentifier::Speed);
             assert_eq!(cache.mapping[2], AttributeIdentifier::DryWet);
+            apply_input_snapshot(&mut cache, input); // Let the pot converge
 
             input.bias = 0.1;
-            apply_input_snapshot(&mut cache, input);
+            let (_, save) = cache.apply_input_snapshot(input);
+            assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
+            assert_eq!(save.unwrap().mapping[2], AttributeIdentifier::DryWet);
+            assert_eq!(save.unwrap().mapping[3], AttributeIdentifier::Bias);
             assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
             assert_eq!(cache.mapping[1], AttributeIdentifier::Speed);
             assert_eq!(cache.mapping[2], AttributeIdentifier::DryWet);
@@ -1773,15 +1804,16 @@ mod cache_tests {
             }
         }
 
-        fn click_button(cache: &mut Cache, mut input: InputSnapshot) {
+        fn click_button(cache: &mut Cache, mut input: InputSnapshot) -> Option<Save> {
             input.button = true;
-            apply_input_snapshot(cache, input);
+            let (_, save_1) = cache.apply_input_snapshot(input);
             input.button = false;
-            apply_input_snapshot(cache, input);
+            let (_, save_2) = cache.apply_input_snapshot(input);
+            save_1.or(save_2)
         }
 
         #[test]
-        fn when_correct_values_are_given_it_successfully_converges_and_turns_to_mapping() {
+        fn when_correct_values_are_given_it_successfully_converges_turns_to_mapping_and_saves() {
             let (mut cache, mut input) = init_cache(1);
             assert_eq!(
                 cache.state,
@@ -1799,19 +1831,21 @@ mod cache_tests {
             assert_animation(&mut cache, &[6099, 6000, 6099, 6000]);
 
             input.control[0] = Some(2.4);
-            apply_input_snapshot(&mut cache, input);
-            click_button(&mut cache, input);
-            assert_ne!(cache.calibrations[0].offset, Calibration::default().offset);
-            assert_ne!(
-                cache.calibrations[0].scaling,
-                Calibration::default().scaling
-            );
+            cache.apply_input_snapshot(input);
+            let save = click_button(&mut cache, input);
+            let saved_calibration = save.unwrap().calibrations[0];
+            assert_ne!(saved_calibration.offset, Calibration::default().offset);
+            assert_ne!(saved_calibration.scaling, Calibration::default().scaling);
+            let cache_calibration = cache.calibrations[0];
+            assert_ne!(cache_calibration.offset, Calibration::default().offset);
+            assert_ne!(cache_calibration.scaling, Calibration::default().scaling);
             assert_eq!(cache.state, State::Mapping(0));
             assert_animation(&mut cache, &[8000, 6900, 6090, 6009]);
         }
 
         #[test]
-        fn when_incorrect_values_are_given_it_it_cancels_calibration_and_turns_to_mapping() {
+        fn when_incorrect_values_are_given_it_it_cancels_calibration_turns_to_mapping_and_does_not_save(
+        ) {
             let (mut cache, mut input) = init_cache(1);
             assert_eq!(
                 cache.state,
@@ -1829,13 +1863,12 @@ mod cache_tests {
             assert_animation(&mut cache, &[6099, 6000, 6099, 6000]);
 
             input.control[0] = Some(1.4);
-            apply_input_snapshot(&mut cache, input);
-            click_button(&mut cache, input);
-            assert_eq!(cache.calibrations[0].offset, Calibration::default().offset);
-            assert_eq!(
-                cache.calibrations[0].scaling,
-                Calibration::default().scaling
-            );
+            cache.apply_input_snapshot(input);
+            let save = click_button(&mut cache, input);
+            assert!(save.is_none());
+            let cache_calibration = cache.calibrations[0];
+            assert_eq!(cache_calibration.offset, Calibration::default().offset);
+            assert_eq!(cache_calibration.scaling, Calibration::default().scaling);
             assert_eq!(cache.state, State::Mapping(0));
             assert_animation(&mut cache, &[8888, 0000, 8888, 0000, 6090, 6009]);
         }
