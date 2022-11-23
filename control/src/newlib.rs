@@ -1,4 +1,4 @@
-// TODO: This is a temporary draft of the new control architecture.
+// This is a temporary draft of the new control architecture.
 //
 // - [X] Define stubs of all needed structs
 // - [X] Write documentation of these structs
@@ -22,11 +22,13 @@
 // - [X] Implement backup snapshoting (all data needed for restore)
 // - [X] Implement reset, connected controls must be reassigned
 // - [X] Implement saving, returned from Cache when a change to it was made
-// - [ ] Implement Configuration passing
-// - [ ] If all positions are on edge, move the active ones to the edge of leds
+// - [~] Implement Configuration passing
+// - [ ] Detect 4 consecutive clicks setting a tempo and set it in attributes
+// - [ ] Detect that control input is getting clock triggers and reflect that
 // - [ ] Use this instead of the current lib binding, update automation
 // - [ ] Divide this into submodules
 // - [ ] List all the improvements introduced here in the changelog
+// - [ ] Remove this TODO list and release a new version
 
 #[allow(unused_imports)]
 use micromath::F32Ext;
@@ -51,7 +53,7 @@ pub struct Cache {
     mapping: Mapping,
     calibrations: Calibrations,
     options: Options,
-    // configurations: Configuration,
+    configuration: Configuration,
     attributes: Attributes,
     outputs: Outputs,
 }
@@ -115,6 +117,7 @@ type Switch = bool;
 struct Button {
     pub pressed: bool,
     pub clicked: bool,
+    pub held: u32,
 }
 
 /// The current state of the control state machine.
@@ -126,6 +129,7 @@ struct Button {
 pub(crate) enum State {
     Calibrating(usize, CalibrationPhase),
     Mapping(usize),
+    Configuring(Configuration),
     Normal,
 }
 
@@ -204,17 +208,17 @@ struct Options {
     rewind: bool,
 }
 
-// /// Tweaking of the default module configuration.
-// ///
-// /// This is mean to allow tweaking of some more nieche configuration of the
-// /// module. Unlike with `Options`, the parameters here may be continuous
-// /// (float) or offer enumeration of variants. An examle of a configuration
-// /// may be tweaking of head's rewind speed.
-// #[derive(Debug, Default)]
-// #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-// struct Configuration {
-//     rewind_speed: (),
-// }
+/// Tweaking of the default module configuration.
+///
+/// This is mean to allow tweaking of some more niche configuration of the
+/// module. Unlike with `Options`, the parameters here may be continuous
+/// (float) or offer enumeration of variants. An examle of a configuration
+/// may be tweaking of head's rewind speed.
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub(crate) struct Configuration {
+    rewind_speed: [(f32, f32); 4],
+}
 
 /// Interpreted attributes for the DSP.
 ///
@@ -282,6 +286,7 @@ struct Display {
 enum Screen {
     Calibration(CalibrationScreen),
     Mapping(usize, u32),
+    Configuration(ConfigurationScreen),
     Failure(u32),
     Heads([bool; 4], [bool; 4]),
 }
@@ -291,6 +296,13 @@ enum Screen {
 enum CalibrationScreen {
     SelectOctave1(usize, u32),
     SelectOctave2(usize, u32),
+}
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+enum ConfigurationScreen {
+    Idle(u32),
+    Rewind((usize, usize)),
 }
 
 /// Desired state of output peripherals with the exception of audio.
@@ -353,6 +365,7 @@ pub struct DSPAttributes {
     pub tone: f32,
     pub head: [DSPAttributesHead; 4],
     pub rewind: bool,
+    rewind_speed: [(f32, f32); 4],
 }
 
 #[derive(Debug, Default)]
@@ -379,6 +392,7 @@ pub struct DSPReaction {
 pub struct Save {
     mapping: Mapping,
     calibrations: Calibrations,
+    configuration: Configuration,
 }
 
 // NOTE: Inputs and outputs will be passed through queues
@@ -391,7 +405,7 @@ impl Cache {
             mapping: Mapping::default(),
             calibrations: Calibrations::default(),
             options: Options::default(),
-            // configurations: Configuration::default(),
+            configuration: Configuration::default(),
             attributes: Attributes::default(),
             outputs: Outputs::default(),
         }
@@ -429,7 +443,10 @@ impl Cache {
 
         match self.state {
             State::Normal => {
-                if let Some(action) = self.queue.pop() {
+                if self.inputs.button.held > 5_000 {
+                    self.state = State::Configuring(self.configuration);
+                    self.outputs.display.prioritized[1] = Some(Screen::configuration());
+                } else if let Some(action) = self.queue.pop() {
                     match action {
                         ControlAction::Calibrate(i) => {
                             self.state = State::Calibrating(i, CalibrationPhase::Octave1);
@@ -442,6 +459,48 @@ impl Cache {
                     }
                 } else {
                     self.outputs.display.prioritized[1] = None;
+                }
+            }
+            State::Configuring(draft) => {
+                if self.inputs.button.clicked {
+                    needs_save = true;
+                    self.configuration = draft;
+                    self.state = State::Normal;
+                } else {
+                    let mut active_configuration_screen = None;
+                    for head in self.inputs.head.iter() {
+                        if head.position.active() || head.feedback.active() {
+                            let volume = head.volume.value();
+                            let rewind_index = if volume < 0.25 {
+                                0
+                            } else if volume < 0.5 {
+                                1
+                            } else if volume < 0.75 {
+                                2
+                            } else {
+                                3
+                            };
+                            let feedback = head.feedback.value();
+                            let fast_forward_index = if feedback < 0.25 {
+                                0
+                            } else if feedback < 0.5 {
+                                1
+                            } else if feedback < 0.75 {
+                                2
+                            } else {
+                                3
+                            };
+                            active_configuration_screen = Some(Screen::Configuration(
+                                ConfigurationScreen::Rewind((rewind_index, fast_forward_index)),
+                            ));
+                            break;
+                        }
+                    }
+                    if active_configuration_screen.is_some() {
+                        self.outputs.display.prioritized[1] = active_configuration_screen;
+                    }
+
+                    self.state = State::Configuring(self.snapshot_configuration_from_pots(draft));
                 }
             }
             State::Calibrating(i, phase) => {
@@ -776,6 +835,7 @@ impl Cache {
                 },
             ],
             rewind: self.options.rewind,
+            rewind_speed: self.configuration.rewind_speed,
         }
     }
 
@@ -804,7 +864,47 @@ impl Cache {
         Save {
             mapping: self.mapping,
             calibrations: self.calibrations,
+            configuration: self.configuration,
         }
+    }
+
+    fn snapshot_configuration_from_pots(&self, mut configuration: Configuration) -> Configuration {
+        // TODO: Unite this and the code figuring out the current screen
+        for (i, rewind_speed) in configuration.rewind_speed.iter_mut().enumerate() {
+            let fast_forward = if self.inputs.head[i].volume.active() {
+                let volume = self.inputs.head[i].volume.value();
+                if volume < 0.25 {
+                    1.0
+                } else if volume < 0.5 {
+                    2.0
+                } else if volume < 0.75 {
+                    4.0
+                } else {
+                    8.0
+                }
+            } else {
+                rewind_speed.1
+            };
+
+            let rewind = if self.inputs.head[i].feedback.active() {
+                let feedback = self.inputs.head[i].feedback.value();
+                if feedback < 0.25 {
+                    0.75
+                } else if feedback < 0.5 {
+                    0.5
+                } else if feedback < 0.75 {
+                    -1.0
+                } else {
+                    -4.0
+                }
+            } else {
+                rewind_speed.0
+            };
+
+            *rewind_speed = (rewind, fast_forward);
+        }
+
+        configuration
     }
 }
 
@@ -896,6 +996,11 @@ impl Button {
         let was_pressed = self.pressed;
         self.pressed = down;
         self.clicked = !was_pressed && self.pressed;
+        self.held = if self.pressed {
+            self.held.saturating_add(1)
+        } else {
+            0
+        };
     }
 }
 
@@ -1147,6 +1252,25 @@ impl Screen {
                 }
                 leds
             }
+            Self::Configuration(configuration) => match configuration {
+                ConfigurationScreen::Idle(cycles) => {
+                    if *cycles < 500 {
+                        [true, false, true, false, false, true, false, true]
+                    } else {
+                        [false, true, false, true, true, false, true, false]
+                    }
+                }
+                ConfigurationScreen::Rewind((rewind, fast_forward)) => {
+                    let mut leds = [false; 8];
+                    for i in 0..=*fast_forward {
+                        leds[i] = true;
+                    }
+                    for i in 0..=*rewind {
+                        leds[leds.len() - 1 - i] = true;
+                    }
+                    leds
+                }
+            },
             Self::Heads(top, bottom) => [
                 top[0], top[1], top[2], top[3], bottom[0], bottom[1], bottom[2], bottom[3],
             ],
@@ -1166,6 +1290,12 @@ impl Screen {
 
     fn ticked(self) -> Option<Self> {
         match self {
+            Screen::Configuration(configuration) => match configuration {
+                ConfigurationScreen::Idle(cycles) => Some(Screen::Configuration(
+                    ConfigurationScreen::Idle(if cycles > 1000 { 0 } else { cycles + 1 }),
+                )),
+                ConfigurationScreen::Rewind(_) => Some(self),
+            },
             Screen::Calibration(calibration) => match calibration {
                 CalibrationScreen::SelectOctave1(i, cycles) => {
                     Some(Screen::Calibration(CalibrationScreen::SelectOctave1(
@@ -1197,6 +1327,10 @@ impl Screen {
 
     fn failure() -> Self {
         Self::Failure(0)
+    }
+
+    fn configuration() -> Self {
+        Self::Configuration(ConfigurationScreen::Idle(0))
     }
 
     fn calibration_1(i: usize) -> Self {
@@ -1472,6 +1606,38 @@ mod cache_tests {
         assert_eq!(cache.state, State::Normal);
     }
 
+    #[test]
+    fn given_save_it_recovers_previously_set_configuration() {
+        let mut cache = Cache::new();
+        let mut input = InputSnapshot::default();
+
+        // TODO: Define global helper for this
+        input.button = true;
+        for _ in 0..6 * 1000 {
+            cache.apply_input_snapshot(input);
+        }
+        input.button = false;
+        cache.apply_input_snapshot(input);
+
+        for head in input.head.iter_mut() {
+            head.volume = 1.0;
+            head.feedback = 1.0;
+        }
+        for _ in 0..4 {
+            cache.apply_input_snapshot(input);
+        }
+
+        input.button = true;
+        let (_, save) = cache.apply_input_snapshot(input);
+        input.button = false;
+        cache.apply_input_snapshot(input);
+
+        assert_eq!(save.unwrap().configuration.rewind_speed[0], (-4.0, 8.0));
+        assert_eq!(save.unwrap().configuration.rewind_speed[1], (-4.0, 8.0));
+        assert_eq!(save.unwrap().configuration.rewind_speed[2], (-4.0, 8.0));
+        assert_eq!(save.unwrap().configuration.rewind_speed[3], (-4.0, 8.0));
+    }
+
     #[cfg(test)]
     mod given_normal_mode {
         use super::*;
@@ -1564,6 +1730,21 @@ mod cache_tests {
         }
 
         #[test]
+        fn when_button_is_held_for_5_seconds_it_enters_configuration_mode() {
+            let mut cache = init_cache();
+            let mut input = InputSnapshot::default();
+
+            input.button = true;
+            for _ in 0..6 * 1000 {
+                cache.apply_input_snapshot(input);
+            }
+            input.button = false;
+            cache.apply_input_snapshot(input);
+
+            assert!(matches!(cache.state, State::Configuring(_)));
+        }
+
+        #[test]
         fn when_mapped_control_in_unplugged_it_is_unmapped() {
             let mut cache = init_cache();
             let mut input = InputSnapshot::default();
@@ -1611,6 +1792,123 @@ mod cache_tests {
             }
 
             assert_animation(&mut cache, &[6098]);
+        }
+    }
+
+    #[cfg(test)]
+    mod given_configuration_mode {
+        use super::*;
+
+        fn init_cache() -> (Cache, InputSnapshot) {
+            let mut cache = Cache::new();
+            let input = InputSnapshot::default();
+
+            hold_button(&mut cache, input);
+
+            (cache, input)
+        }
+
+        fn hold_button(cache: &mut Cache, mut input: InputSnapshot) {
+            input.button = true;
+            for _ in 0..6 * 1000 {
+                cache.apply_input_snapshot(input);
+            }
+            input.button = false;
+            cache.apply_input_snapshot(input);
+        }
+
+        fn click_button(cache: &mut Cache, mut input: InputSnapshot) {
+            input.button = true;
+            cache.apply_input_snapshot(input);
+            input.button = false;
+            cache.apply_input_snapshot(input);
+        }
+
+        fn apply_input_snapshot(cache: &mut Cache, input: InputSnapshot) {
+            // NOTE: Applying it 4 times makes sure that pot smoothening is
+            // not affecting following asserts.
+            for _ in 0..4 {
+                cache.apply_input_snapshot(input);
+            }
+        }
+
+        #[test]
+        fn when_clicks_button_it_saves_configuration_and_enters_normal_mode() {
+            let (mut cache, mut input) = init_cache();
+
+            input.head[0].volume = 0.05;
+            input.head[0].feedback = 0.05;
+            input.head[1].volume = 0.35;
+            input.head[1].feedback = 0.35;
+            input.head[2].volume = 0.7;
+            input.head[2].feedback = 0.7;
+            input.head[3].volume = 1.0;
+            input.head[3].feedback = 1.0;
+            apply_input_snapshot(&mut cache, input);
+
+            click_button(&mut cache, input);
+
+            assert_eq!(cache.configuration.rewind_speed[0], (0.75, 1.0));
+            assert_eq!(cache.configuration.rewind_speed[1], (0.5, 2.0));
+            assert_eq!(cache.configuration.rewind_speed[2], (-1.0, 4.0));
+            assert_eq!(cache.configuration.rewind_speed[3], (-4.0, 8.0));
+        }
+
+        #[test]
+        fn when_turns_volume_and_feedback_the_rewind_speed_is_visualized_on_display() {
+            let (mut cache, mut input) = init_cache();
+
+            input.head[0].volume = 0.05;
+            input.head[0].feedback = 0.05;
+            apply_input_snapshot(&mut cache, input);
+            assert_animation(&mut cache, &[9006]);
+
+            input.head[1].volume = 0.35;
+            input.head[1].feedback = 0.35;
+            apply_input_snapshot(&mut cache, input);
+            assert_animation(&mut cache, &[9966]);
+
+            input.head[2].volume = 0.7;
+            input.head[2].feedback = 0.7;
+            apply_input_snapshot(&mut cache, input);
+            assert_animation(&mut cache, &[9886]);
+
+            input.head[3].volume = 1.0;
+            input.head[3].feedback = 1.0;
+            apply_input_snapshot(&mut cache, input);
+            assert_animation(&mut cache, &[8888]);
+        }
+
+        #[test]
+        fn when_does_not_change_attribute_it_keeps_the_previously_set_value() {
+            let (mut cache, mut input) = init_cache();
+
+            input.head[2].volume = 0.7;
+            input.head[2].feedback = 0.7;
+            apply_input_snapshot(&mut cache, input);
+            click_button(&mut cache, input);
+
+            assert_eq!(cache.configuration.rewind_speed[2], (-1.0, 4.0));
+
+            input.head[2].volume = 0.0;
+            input.head[2].feedback = 0.0;
+            apply_input_snapshot(&mut cache, input);
+
+            hold_button(&mut cache, input);
+
+            input.head[1].volume = 0.35;
+            input.head[1].feedback = 0.35;
+            apply_input_snapshot(&mut cache, input);
+            click_button(&mut cache, input);
+
+            assert_eq!(cache.configuration.rewind_speed[2], (-1.0, 4.0));
+            assert_eq!(cache.configuration.rewind_speed[1], (0.5, 2.0));
+        }
+
+        #[test]
+        fn when_no_attribute_was_changed_yet_it_shows_animation() {
+            let (mut cache, _) = init_cache();
+            assert_animation(&mut cache, &[9696, 6969]);
         }
     }
 
@@ -2123,6 +2421,22 @@ mod button_test {
         button.update(false);
         assert!(!button.clicked);
     }
+
+    #[test]
+    fn when_is_down_it_reports_how_many_cycles() {
+        let mut button = Button::default();
+        assert_eq!(button.held, 0);
+        button.update(false);
+        assert_eq!(button.held, 0);
+        button.update(true);
+        assert_eq!(button.held, 1);
+        button.update(true);
+        assert_eq!(button.held, 2);
+        button.update(true);
+        assert_eq!(button.held, 3);
+        button.update(false);
+        assert_eq!(button.held, 0);
+    }
 }
 
 #[cfg(test)]
@@ -2173,3 +2487,5 @@ mod calibration_test {
         }
     }
 }
+
+// TODO: Don't overwrite the tempo set with tap-in, unless speed knob moves significantly
