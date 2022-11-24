@@ -22,8 +22,8 @@
 // - [X] Implement backup snapshoting (all data needed for restore)
 // - [X] Implement reset, connected controls must be reassigned
 // - [X] Implement saving, returned from Cache when a change to it was made
-// - [~] Implement Configuration passing
-// - [ ] Detect 4 consecutive clicks setting a tempo and set it in attributes
+// - [X] Implement Configuration passing
+// - [X] Detect 4 consecutive clicks setting a tempo and set it in attributes
 // - [ ] Detect that control input is getting clock triggers and reflect that
 // - [ ] Use this instead of the current lib binding, update automation
 // - [ ] Divide this into submodules
@@ -54,6 +54,7 @@ pub struct Cache {
     calibrations: Calibrations,
     options: Options,
     configuration: Configuration,
+    tapped_tempo: TappedTempo,
     attributes: Attributes,
     outputs: Outputs,
 }
@@ -118,6 +119,8 @@ struct Button {
     pub pressed: bool,
     pub clicked: bool,
     pub held: u32,
+    clicks_age: [u32; 3],
+    pub detected_tempo: Option<u32>,
 }
 
 /// The current state of the control state machine.
@@ -219,6 +222,9 @@ struct Options {
 pub(crate) struct Configuration {
     rewind_speed: [(f32, f32); 4],
 }
+
+/// TODO: doc
+type TappedTempo = Option<f32>;
 
 /// Interpreted attributes for the DSP.
 ///
@@ -393,6 +399,7 @@ pub struct Save {
     mapping: Mapping,
     calibrations: Calibrations,
     configuration: Configuration,
+    tapped_tempo: TappedTempo,
 }
 
 // NOTE: Inputs and outputs will be passed through queues
@@ -406,9 +413,14 @@ impl Cache {
             calibrations: Calibrations::default(),
             options: Options::default(),
             configuration: Configuration::default(),
+            tapped_tempo: TappedTempo::default(),
             attributes: Attributes::default(),
             outputs: Outputs::default(),
         }
+    }
+
+    pub fn warm_up(&mut self, snapshot: InputSnapshot) {
+        self.inputs.update(snapshot);
     }
 
     pub fn apply_input_snapshot(
@@ -443,6 +455,11 @@ impl Cache {
 
         match self.state {
             State::Normal => {
+                if let Some(detected_tempo) = self.inputs.button.detected_tempo {
+                    needs_save = true;
+                    self.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
+                }
+
                 if self.inputs.button.held > 5_000 {
                     self.state = State::Configuring(self.configuration);
                     self.outputs.display.prioritized[1] = Some(Screen::configuration());
@@ -730,20 +747,26 @@ impl Cache {
     }
 
     fn reconcile_speed(&mut self) {
-        // TODO: Rename to speed and revert it 1/X
-        const LENGTH_LONG_RANGE: (f32, f32) = (0.02, 2.0 * 60.0);
-        const LENGTH_SHORT_RANGE: (f32, f32) = (1.0 / 400.0, 1.0);
+        if self.inputs.speed.active() {
+            self.tapped_tempo = None;
 
-        self.attributes.speed = calculate(
-            self.inputs.speed.value(),
-            self.control_for_attribute(AttributeIdentifier::Speed),
-            if self.options.short_delay_range {
-                LENGTH_SHORT_RANGE
-            } else {
-                LENGTH_LONG_RANGE
-            },
-            Some(taper::reverse_log),
-        );
+            // TODO: Rename to speed and revert it 1/X
+            const LENGTH_LONG_RANGE: (f32, f32) = (0.02, 2.0 * 60.0);
+            const LENGTH_SHORT_RANGE: (f32, f32) = (1.0 / 400.0, 1.0);
+
+            self.attributes.speed = calculate(
+                self.inputs.speed.value(),
+                self.control_for_attribute(AttributeIdentifier::Speed),
+                if self.options.short_delay_range {
+                    LENGTH_SHORT_RANGE
+                } else {
+                    LENGTH_LONG_RANGE
+                },
+                Some(taper::reverse_log),
+            );
+        } else if let Some(tapped_tempo) = self.tapped_tempo {
+            self.attributes.speed = tapped_tempo;
+        }
     }
 
     fn reconcile_heads(&mut self) {
@@ -865,6 +888,7 @@ impl Cache {
             mapping: self.mapping,
             calibrations: self.calibrations,
             configuration: self.configuration,
+            tapped_tempo: self.tapped_tempo,
         }
     }
 
@@ -913,6 +937,8 @@ impl From<Save> for Cache {
         let mut cache = Self::new();
         cache.mapping = save.mapping;
         cache.calibrations = save.calibrations;
+        cache.configuration = save.configuration;
+        cache.tapped_tempo = save.tapped_tempo;
         cache
     }
 }
@@ -1001,6 +1027,33 @@ impl Button {
         } else {
             0
         };
+
+        for x in self.clicks_age.iter_mut() {
+            *x = x.saturating_add(1);
+        }
+
+        if self.clicked {
+            let minus_1 = self.clicks_age[2];
+            let minus_2 = self.clicks_age[1];
+            let minus_3 = self.clicks_age[0];
+
+            let distance = minus_1;
+            let tolerance = distance / 20;
+            if distance > 100
+                && (minus_2 - minus_1) > (distance - tolerance)
+                && (minus_2 - minus_1) < (distance + tolerance)
+                && (minus_3 - minus_2) > (distance - tolerance)
+                && (minus_3 - minus_2) < (distance + tolerance)
+            {
+                self.detected_tempo = Some(distance);
+            } else {
+                self.detected_tempo = None;
+            }
+
+            self.clicks_age[0] = self.clicks_age[1];
+            self.clicks_age[1] = self.clicks_age[2];
+            self.clicks_age[2] = 0;
+        }
     }
 }
 
@@ -1463,6 +1516,49 @@ mod cache_tests {
     }
 
     #[test]
+    fn given_save_it_recovers_previously_set_tapped_tempo() {
+        let mut cache = Cache::new();
+        let mut input = InputSnapshot::default();
+
+        input.button = true;
+        cache.apply_input_snapshot(input);
+
+        input.button = false;
+        for _ in 0..1999 {
+            cache.apply_input_snapshot(input);
+        }
+
+        input.button = true;
+        cache.apply_input_snapshot(input);
+
+        input.button = false;
+        for _ in 0..1999 {
+            cache.apply_input_snapshot(input);
+        }
+
+        input.button = true;
+        cache.apply_input_snapshot(input);
+
+        input.button = false;
+        for _ in 0..1999 {
+            cache.apply_input_snapshot(input);
+        }
+
+        input.button = true;
+        let (_, save) = cache.apply_input_snapshot(input);
+        assert_relative_eq!(cache.attributes.speed, 2.0);
+
+        let mut cache = Cache::from(save.unwrap());
+        let mut input = InputSnapshot::default();
+        input.speed = 0.5;
+        for _ in 0..10 {
+            cache.warm_up(input);
+        }
+        cache.apply_input_snapshot(input);
+        assert_relative_eq!(cache.attributes.speed, 2.0);
+    }
+
+    #[test]
     fn given_save_it_recovers_previously_set_mapping() {
         let mut cache = Cache::new();
         let mut input = InputSnapshot::default();
@@ -1629,13 +1725,16 @@ mod cache_tests {
 
         input.button = true;
         let (_, save) = cache.apply_input_snapshot(input);
+
         input.button = false;
+
+        let mut cache = Cache::from(save.unwrap());
         cache.apply_input_snapshot(input);
 
-        assert_eq!(save.unwrap().configuration.rewind_speed[0], (-4.0, 8.0));
-        assert_eq!(save.unwrap().configuration.rewind_speed[1], (-4.0, 8.0));
-        assert_eq!(save.unwrap().configuration.rewind_speed[2], (-4.0, 8.0));
-        assert_eq!(save.unwrap().configuration.rewind_speed[3], (-4.0, 8.0));
+        assert_eq!(cache.configuration.rewind_speed[0], (-4.0, 8.0));
+        assert_eq!(cache.configuration.rewind_speed[1], (-4.0, 8.0));
+        assert_eq!(cache.configuration.rewind_speed[2], (-4.0, 8.0));
+        assert_eq!(cache.configuration.rewind_speed[3], (-4.0, 8.0));
     }
 
     #[cfg(test)]
@@ -1644,6 +1743,88 @@ mod cache_tests {
 
         fn init_cache() -> Cache {
             Cache::new()
+        }
+
+        #[test]
+        fn when_clicking_button_in_equal_intervals_it_sets_speed() {
+            let mut cache = init_cache();
+            let mut input = InputSnapshot::default();
+
+            input.button = true;
+            cache.apply_input_snapshot(input);
+
+            input.button = false;
+            for _ in 0..1999 {
+                cache.apply_input_snapshot(input);
+            }
+
+            input.button = true;
+            cache.apply_input_snapshot(input);
+
+            input.button = false;
+            for _ in 0..1999 {
+                cache.apply_input_snapshot(input);
+            }
+
+            input.button = true;
+            cache.apply_input_snapshot(input);
+
+            input.button = false;
+            for _ in 0..1999 {
+                cache.apply_input_snapshot(input);
+            }
+
+            input.button = true;
+            let (_, save) = cache.apply_input_snapshot(input);
+
+            assert_relative_eq!(cache.attributes.speed, 2.0);
+            assert_relative_eq!(save.unwrap().tapped_tempo.unwrap(), 2.0);
+        }
+
+        #[test]
+        fn when_tempo_is_tapped_in_it_is_overwritten_only_after_speed_pot_turning() {
+            let mut cache = init_cache();
+            let mut input = InputSnapshot::default();
+
+            input.button = true;
+            cache.apply_input_snapshot(input);
+
+            input.button = false;
+            for _ in 0..1999 {
+                cache.apply_input_snapshot(input);
+            }
+
+            input.button = true;
+            cache.apply_input_snapshot(input);
+
+            input.button = false;
+            for _ in 0..1999 {
+                cache.apply_input_snapshot(input);
+            }
+
+            input.button = true;
+            cache.apply_input_snapshot(input);
+
+            input.button = false;
+            for _ in 0..1999 {
+                cache.apply_input_snapshot(input);
+            }
+
+            input.button = true;
+            cache.apply_input_snapshot(input);
+
+            assert_relative_eq!(cache.attributes.speed, 2.0);
+
+            input.button = false;
+            cache.apply_input_snapshot(input);
+
+            input.tone = 1.0;
+            cache.apply_input_snapshot(input);
+            assert_relative_eq!(cache.attributes.speed, 2.0);
+
+            input.speed = 0.5;
+            cache.apply_input_snapshot(input);
+            assert!(cache.attributes.speed > 20.0);
         }
 
         #[test]
@@ -2436,6 +2617,68 @@ mod button_test {
         assert_eq!(button.held, 3);
         button.update(false);
         assert_eq!(button.held, 0);
+    }
+
+    #[test]
+    fn when_clicked_in_exact_interval_it_detects_tempo() {
+        let mut button = Button::default();
+        for _ in 0..4 {
+            for _ in 0..1999 {
+                button.update(false);
+            }
+            button.update(true);
+        }
+        assert_eq!(button.detected_tempo, Some(2000));
+    }
+
+    #[test]
+    fn when_clicked_in_rough_interval_within_toleration_it_detects_tempo() {
+        let mut button = Button::default();
+        button.update(true);
+        for _ in 0..1990 {
+            button.update(false);
+        }
+        button.update(true);
+        for _ in 0..2059 {
+            button.update(false);
+        }
+        button.update(true);
+        for _ in 0..1999 {
+            button.update(false);
+        }
+        button.update(true);
+        assert_eq!(button.detected_tempo, Some(2000));
+    }
+
+    #[test]
+    fn when_clicked_too_fast_it_does_not_detect_tempo() {
+        let mut button = Button::default();
+        for _ in 0..4 {
+            for _ in 0..19 {
+                button.update(false);
+            }
+            button.update(true);
+        }
+        assert_eq!(button.detected_tempo, None);
+    }
+
+    #[test]
+    fn when_clicked_in_unequal_interval_it_does_not_detect_tempo() {
+        let mut button = Button::default();
+        button.update(true);
+        for _ in 0..1999 {
+            button.update(false);
+        }
+        button.update(true);
+        for _ in 0..1999 {
+            button.update(false);
+        }
+        button.update(true);
+        for _ in 0..1083 {
+            button.update(false);
+        }
+        button.update(true);
+        assert_eq!(button.detected_tempo, None);
     }
 }
 
