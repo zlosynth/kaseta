@@ -40,7 +40,7 @@ use crate::taper;
 
 /// The main store of peripheral abstraction and module configuration.
 ///
-/// This struct is the cenral piece of the control module. It takes
+/// This struct is the central piece of the control module. It takes
 /// `InputSnapshot` on its inputs, passes it to peripheral abstractions,
 /// interprets the current input into module configuration and manages
 /// the whole state machine of that.
@@ -101,6 +101,9 @@ struct Control {
     pub was_plugged: bool,
     pub was_unplugged: bool,
     buffer: SmoothBuffer<4>,
+    // TODO: Implement
+    trigger_age: [u32; 3],
+    pub detected_tempo: Option<u32>,
 }
 
 // TODO: Try to optimize this with memory manager and a slice reference
@@ -2562,6 +2565,36 @@ mod control_tests {
         cv.update(None);
         assert!(!cv.was_plugged);
     }
+
+    #[ignore]
+    #[test]
+    fn when_steady_clock_passes_in_it_detects_tempo() {
+        todo!();
+    }
+
+    #[ignore]
+    #[test]
+    fn when_clock_within_toleration_passes_it_detects_tempo() {
+        todo!();
+    }
+
+    #[ignore]
+    #[test]
+    fn when_unevenly_spaced_triggers_are_given_it_is_not_recognized_as_tempo() {
+        todo!();
+    }
+
+    #[ignore]
+    #[test]
+    fn when_signal_goes_below_zero_it_is_not_recognized_as_clock() {
+        todo!();
+    }
+
+    #[ignore]
+    #[test]
+    fn when_signal_does_not_have_fast_attacks_it_is_not_recognized_as_clock() {
+        todo!();
+    }
 }
 
 #[cfg(test)]
@@ -2731,4 +2764,4 @@ mod calibration_test {
     }
 }
 
-// TODO: Don't overwrite the tempo set with tap-in, unless speed knob moves significantly
+// TODO: Test that control tempo gets combined correctly with speed knob
