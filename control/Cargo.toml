@@ -17,4 +17,4 @@ heapless = "0.7"
 approx = "0.4"
 
 [features]
-defmt = ["dep:defmt"]
+defmt = ["dep:defmt", "heapless/defmt-impl"]

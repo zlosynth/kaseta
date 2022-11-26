@@ -32,6 +32,7 @@
 #![allow(clippy::cast_sign_loss)]
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_precision_loss)]
+#![allow(clippy::explicit_iter_loop)]
 
 #[cfg(test)]
 #[macro_use]
@@ -149,7 +150,7 @@ struct Control {
 // TODO: Try to optimize this with memory manager and a slice reference
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct SmoothBuffer<const N: usize> {
+pub(crate) struct SmoothBuffer<const N: usize> {
     buffer: [f32; N],
     pointer: usize,
 }
@@ -245,6 +246,7 @@ struct Calibration {
 /// Options are configured using the DIP switch on the front of the module.
 /// They are meant to provide a quick access to some common extended features
 /// such as quantization, rewind, etc.
+#[allow(clippy::struct_excessive_bools)]
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Options {
@@ -368,7 +370,7 @@ pub struct DesiredOutput {
 
 /// The current state of all peripherals.
 ///
-/// InputSnapshot is meant to be passed from the hardware binding to the
+/// `InputSnapshot` is meant to be passed from the hardware binding to the
 /// control package. It should pass pretty raw data, with two exceptions:
 ///
 /// 1. Detection of plugged control input is done by the caller.
@@ -448,7 +450,9 @@ pub struct Save {
 }
 
 // NOTE: Inputs and outputs will be passed through queues
+#[allow(clippy::new_without_default)]
 impl Cache {
+    #[must_use]
     pub fn new() -> Self {
         Self {
             inputs: Inputs::default(),
@@ -478,6 +482,8 @@ impl Cache {
         (dsp_attributes, save)
     }
 
+    // TODO
+    #[allow(clippy::too_many_lines)]
     fn reconcile_changed_inputs(&mut self) -> Option<Save> {
         let mut needs_save = false;
 
@@ -1199,9 +1205,8 @@ impl Queue {
 
     fn remove_control(&mut self, control_id: usize) {
         self.queue.retain(|a| match a {
-            ControlAction::Calibrate(id) => *id != control_id,
-            ControlAction::Map(id) => *id != control_id,
-        })
+            ControlAction::Map(id) | ControlAction::Calibrate(id) => *id != control_id,
+        });
     }
 
     #[cfg(test)]
@@ -1245,9 +1250,7 @@ impl Calibration {
         };
 
         let distance = top - bottom;
-        if distance < 0.5 {
-            return None;
-        } else if distance > 1.9 {
+        if !(0.5..=1.9).contains(&distance) {
             return None;
         }
 
@@ -1260,10 +1263,10 @@ impl Calibration {
             -1.0 * scaled_bottom_fract
         };
 
-        Some(Self { scaling, offset })
+        Some(Self { offset, scaling })
     }
 
-    fn apply(&self, value: f32) -> f32 {
+    fn apply(self, value: f32) -> f32 {
         value * self.scaling + self.offset
     }
 }
@@ -1326,8 +1329,7 @@ impl Display {
     fn active_screen(&self) -> &Screen {
         self.prioritized
             .iter()
-            .find(|p| p.is_some())
-            .map(|p| p.as_ref().unwrap())
+            .find_map(Option::as_ref)
             .expect("The always is at least one active page.")
     }
 }
@@ -1397,6 +1399,7 @@ impl Screen {
                 }
                 ConfigurationScreen::Rewind((rewind, fast_forward)) => {
                     let mut leds = [false; 8];
+                    #[allow(clippy::needless_range_loop)] // Keep it symmetrical with rewind
                     for i in 0..=*fast_forward {
                         leds[i] = true;
                     }
@@ -1456,7 +1459,7 @@ impl Screen {
                     Some(Screen::Failure(cycles + 1))
                 }
             }
-            _ => Some(self),
+            Screen::Heads(_, _) => Some(self),
         }
     }
 
@@ -1483,6 +1486,10 @@ impl Screen {
 
 #[cfg(test)]
 mod cache_tests {
+    #![allow(clippy::field_reassign_with_default)]
+    #![allow(clippy::manual_assert)]
+    #![allow(clippy::zero_prefixed_literal)]
+
     use super::*;
 
     #[test]
@@ -1494,15 +1501,15 @@ mod cache_tests {
         fn u32_into_digits(mut x: u32) -> [u32; 4] {
             assert!(x < 10000);
 
-            let a = x % 10;
+            let digit_1 = x % 10;
             x /= 10;
-            let b = x % 10;
+            let digit_2 = x % 10;
             x /= 10;
-            let c = x % 10;
+            let digit_3 = x % 10;
             x /= 10;
-            let d = x % 10;
+            let digit_4 = x % 10;
 
-            [d, c, b, a]
+            [digit_4, digit_3, digit_2, digit_1]
         }
 
         fn digits_into_bools(digits: [u32; 4]) -> [bool; 8] {
