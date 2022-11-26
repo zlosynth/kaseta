@@ -4900,7 +4900,7 @@
     (property "Value" "DIP" (id 1) (at 226.7203 222.8596 90)
       (effects (font (size 1.27 1.27)) (justify left) hide)
     )
-    (property "Footprint" "Custom:Preci_DIP_Switch_Socket_x10" (id 2) (at 225.4504 238.8616 0)
+    (property "Footprint" "Button_Switch_THT:SW_DIP_SPSTx10_Slide_9.78x27.58mm_W7.62mm_P2.54mm" (id 2) (at 225.4504 238.8616 0)
       (effects (font (size 1.27 1.27)) hide)
     )
     (property "Datasheet" "~" (id 3) (at 225.4504 238.8616 0)
@@ -6566,7 +6566,7 @@
       (reference "RV23") (unit 1) (value "Tone") (footprint "Custom:Potentiometer_Thonk_Trimmer")
     )
     (path "/9c827c1b-3d8f-4924-84b2-c238e73283ab"
-      (reference "SW1") (unit 1) (value "DIP") (footprint "Custom:Preci_DIP_Switch_Socket_x10")
+      (reference "SW1") (unit 1) (value "DIP") (footprint "Button_Switch_THT:SW_DIP_SPSTx10_Slide_9.78x27.58mm_W7.62mm_P2.54mm")
     )
     (path "/54a1e27b-df3b-457d-b00b-b9e74754d131"
       (reference "SW2") (unit 1) (value "Button") (footprint "Button_Switch_THT:SW_PUSH_6mm")
