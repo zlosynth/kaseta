@@ -42,7 +42,8 @@ mod quantization;
 mod taper;
 
 use heapless::Vec;
-// use kaseta_dsp::processor::{Attributes, Reaction as DSPReaction};
+// TODO: After moving DSP structs to DSP, this can be cleaned up
+use kaseta_dsp::processor::{Attributes as ExternalDSPAttributes, Reaction as ExternalDSPReaction};
 #[allow(unused_imports)]
 use micromath::F32Ext;
 
@@ -75,7 +76,7 @@ use crate::quantization::{quantize, Quantization};
 // - [X] Implement Configuration passing
 // - [X] Detect 4 consecutive clicks setting a tempo and set it in attributes
 // - [X] Detect that control input is getting clock triggers and reflect that
-// - [ ] Use this instead of the current lib binding, update automation
+// - [X] Use this instead of the current lib binding, update automation
 // - [ ] Divide this into submodules
 // - [ ] List all the improvements introduced here in the changelog
 // - [ ] Remove this TODO list and release a new version
@@ -537,7 +538,7 @@ impl Cache {
                 } else {
                     let mut active_configuration_screen = None;
                     for head in self.inputs.head.iter() {
-                        if head.position.active() || head.feedback.active() {
+                        if head.volume.active() || head.feedback.active() {
                             let volume = head.volume.value();
                             let rewind_index = if volume < 0.25 {
                                 0
@@ -1481,6 +1482,49 @@ impl Screen {
 
     fn mapping(i: usize) -> Self {
         Self::Mapping(i, 0)
+    }
+}
+
+impl From<ExternalDSPReaction> for DSPReaction {
+    fn from(reaction: ExternalDSPReaction) -> Self {
+        Self {
+            impulse: reaction.delay_impulse,
+            clipping: reaction.hysteresis_clipping,
+        }
+    }
+}
+
+impl From<DSPAttributes> for ExternalDSPAttributes {
+    fn from(attributes: DSPAttributes) -> Self {
+        Self {
+            pre_amp: attributes.pre_amp,
+            dry_wet: attributes.dry_wet,
+            drive: attributes.drive,
+            saturation: attributes.saturation,
+            width: 1.0 - attributes.bias,
+            wow_depth: attributes.wow,
+            flutter_depth: attributes.flutter,
+            delay_length: attributes.speed,
+            tone: attributes.tone,
+            delay_head_1_position: attributes.head[0].position,
+            delay_head_2_position: attributes.head[1].position,
+            delay_head_3_position: attributes.head[2].position,
+            delay_head_4_position: attributes.head[3].position,
+            delay_head_1_volume: attributes.head[0].volume,
+            delay_head_2_volume: attributes.head[1].volume,
+            delay_head_3_volume: attributes.head[2].volume,
+            delay_head_4_volume: attributes.head[3].volume,
+            delay_head_1_feedback: attributes.head[0].feedback,
+            delay_head_2_feedback: attributes.head[1].feedback,
+            delay_head_3_feedback: attributes.head[2].feedback,
+            delay_head_4_feedback: attributes.head[3].feedback,
+            delay_head_1_pan: attributes.head[0].pan,
+            delay_head_2_pan: attributes.head[1].pan,
+            delay_head_3_pan: attributes.head[2].pan,
+            delay_head_4_pan: attributes.head[3].pan,
+            delay_rewind_forward: attributes.rewind,
+            delay_rewind_backward: attributes.rewind,
+        }
     }
 }
 
