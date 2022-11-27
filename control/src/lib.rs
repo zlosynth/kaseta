@@ -53,6 +53,7 @@ use crate::input::button::Button;
 use crate::input::control::Control;
 use crate::input::led::Led;
 use crate::input::pot::Pot;
+use crate::input::switch::Switch;
 use crate::quantization::{quantize, Quantization};
 
 // This is a temporary draft of the new control architecture.
@@ -136,8 +137,6 @@ struct InputsHead {
     feedback: Pot,
     pan: Pot,
 }
-
-type Switch = bool;
 
 /// The current state of the control state machine.
 ///
