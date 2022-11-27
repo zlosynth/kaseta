@@ -1,6 +1,6 @@
 //! Led abstraction keeping it lit.
 
-/// Abstraction of leds
+/// Abstraction of leds.
 ///
 /// This is useful when a led blink is triggered by a control loop
 /// and it should remain lit for a moment.

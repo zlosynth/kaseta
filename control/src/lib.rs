@@ -43,19 +43,21 @@ mod button;
 mod clock;
 mod control;
 mod led;
+mod pot;
 mod quantization;
 mod taper;
+
+#[allow(unused_imports)]
+use micromath::F32Ext;
 
 use heapless::Vec;
 // TODO: After moving DSP structs to DSP, this can be cleaned up
 use kaseta_dsp::processor::{Attributes as ExternalDSPAttributes, Reaction as ExternalDSPReaction};
-#[allow(unused_imports)]
-use micromath::F32Ext;
 
-use crate::buffer::Buffer;
 use crate::button::Button;
 use crate::control::Control;
 use crate::led::Led;
+use crate::pot::Pot;
 use crate::quantization::{quantize, Quantization};
 
 // This is a temporary draft of the new control architecture.
@@ -138,12 +140,6 @@ struct InputsHead {
     volume: Pot,
     feedback: Pot,
     pan: Pot,
-}
-
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Pot {
-    buffer: Buffer<4>,
 }
 
 type Switch = bool;
@@ -1005,21 +1001,6 @@ impl Inputs {
         }
         self.switch = snapshot.switch;
         self.button.update(snapshot.button);
-    }
-}
-
-impl Pot {
-    pub fn update(&mut self, value: f32) {
-        self.buffer.write(value);
-    }
-
-    // TODO: Implement window support
-    pub fn value(&self) -> f32 {
-        self.buffer.read()
-    }
-
-    pub fn active(&self) -> bool {
-        self.buffer.traveled().abs() > 0.001
     }
 }
 
@@ -2478,29 +2459,6 @@ mod inputs_tests {
         }
 
         assert!(inputs.button.clicked);
-    }
-}
-
-#[cfg(test)]
-mod pot_tests {
-    use super::*;
-
-    #[test]
-    fn when_some_is_being_written_its_value_should_eventually_reach_it() {
-        let mut pot = Pot::default();
-
-        let mut value = pot.value();
-        for _ in 0..20 {
-            pot.update(1.0);
-            let new_value = pot.value();
-            assert!(new_value > value);
-            value = new_value;
-            if relative_eq!(value, 1.0) {
-                return;
-            }
-        }
-
-        panic!("Control have not reached the target {}", value);
     }
 }
 
