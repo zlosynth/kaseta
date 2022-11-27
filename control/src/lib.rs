@@ -38,6 +38,7 @@
 #[macro_use]
 extern crate approx;
 
+mod buffer;
 mod quantization;
 mod taper;
 
@@ -47,6 +48,7 @@ use kaseta_dsp::processor::{Attributes as ExternalDSPAttributes, Reaction as Ext
 #[allow(unused_imports)]
 use micromath::F32Ext;
 
+use crate::buffer::Buffer;
 use crate::quantization::{quantize, Quantization};
 
 // This is a temporary draft of the new control architecture.
@@ -134,7 +136,7 @@ struct InputsHead {
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Pot {
-    buffer: SmoothBuffer<4>,
+    buffer: Buffer<4>,
 }
 
 #[derive(Debug, Default)]
@@ -143,17 +145,9 @@ struct Control {
     pub is_plugged: bool,
     pub was_plugged: bool,
     pub was_unplugged: bool,
-    buffer: SmoothBuffer<4>,
+    buffer: Buffer<4>,
     trigger_age: [u32; 3],
     pub detected_tempo: Option<u32>,
-}
-
-// TODO: Try to optimize this with memory manager and a slice reference
-#[derive(Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct SmoothBuffer<const N: usize> {
-    buffer: [f32; N],
-    pointer: usize,
 }
 
 type Switch = bool;
@@ -1138,49 +1132,6 @@ impl Button {
             self.clicks_age[1] = self.clicks_age[2];
             self.clicks_age[2] = 0;
         }
-    }
-}
-
-impl<const N: usize> Default for SmoothBuffer<N> {
-    fn default() -> Self {
-        Self::new()
-    }
-}
-
-impl<const N: usize> SmoothBuffer<N> {
-    pub fn new() -> Self {
-        Self {
-            buffer: [0.0; N],
-            pointer: 0,
-        }
-    }
-
-    // TODO: Optimize by wrapping pow 2
-    pub fn write(&mut self, value: f32) {
-        self.buffer[self.pointer] = value;
-        self.pointer = (self.pointer + 1) % N;
-    }
-
-    // TODO: Implement read with variable smoothing range
-    pub fn read(&self) -> f32 {
-        let sum: f32 = self.buffer.iter().sum();
-        sum / N as f32
-    }
-
-    pub fn read_raw(&self) -> f32 {
-        let newest = (self.pointer as i32 - 1).rem_euclid(N as i32) as usize;
-        self.buffer[newest]
-    }
-
-    // TODO: Try optimizing with block of zeros
-    pub fn reset(&mut self) {
-        self.buffer = [0.0; N];
-    }
-
-    pub fn traveled(&self) -> f32 {
-        let newest = (self.pointer as i32 - 1).rem_euclid(N as i32) as usize;
-        let oldest = self.pointer;
-        (self.buffer[newest] - self.buffer[oldest]).abs()
     }
 }
 
