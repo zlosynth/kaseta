@@ -13,7 +13,7 @@ use core::ops::Range;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct ClockDetector {
     trigger_age: [u32; 3],
-    pub detected_tempo: Option<u32>,
+    pub tempo: Option<u32>,
 }
 
 impl ClockDetector {
@@ -28,9 +28,9 @@ impl ClockDetector {
             && allowed_range.contains(&(minus_2 - minus_1))
             && allowed_range.contains(&(minus_3 - minus_2))
         {
-            self.detected_tempo = Some(distance);
+            self.tempo = Some(distance);
         } else {
-            self.detected_tempo = None;
+            self.tempo = None;
         }
 
         self.trigger_age[0] = self.trigger_age[1];
@@ -67,7 +67,7 @@ mod tests {
             }
             detector.trigger();
         }
-        assert_eq!(detector.detected_tempo, Some(2000));
+        assert_eq!(detector.tempo, Some(2000));
     }
 
     #[test]
@@ -86,7 +86,7 @@ mod tests {
             detector.tick();
         }
         detector.trigger();
-        assert_eq!(detector.detected_tempo, Some(2000));
+        assert_eq!(detector.tempo, Some(2000));
     }
 
     #[test]
@@ -98,7 +98,7 @@ mod tests {
             }
             detector.tick();
         }
-        assert_eq!(detector.detected_tempo, None);
+        assert_eq!(detector.tempo, None);
     }
 
     #[test]
@@ -117,6 +117,6 @@ mod tests {
             detector.tick();
         }
         detector.trigger();
-        assert_eq!(detector.detected_tempo, None);
+        assert_eq!(detector.tempo, None);
     }
 }

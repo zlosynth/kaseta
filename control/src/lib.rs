@@ -501,7 +501,7 @@ impl Cache {
 
         match self.state {
             State::Normal => {
-                if let Some(detected_tempo) = self.inputs.button.clock_detector.detected_tempo {
+                if let Some(detected_tempo) = self.inputs.button.clock_detector.tempo {
                     needs_save = true;
                     self.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
                 }
@@ -2620,7 +2620,7 @@ mod control_tests {
             control.update(Some(0.5));
         }
         control.update(Some(1.0));
-        assert_eq!(control.clock_detector.detected_tempo.unwrap(), 2000);
+        assert_eq!(control.clock_detector.tempo.unwrap(), 2000);
     }
 
     #[test]
@@ -2639,7 +2639,7 @@ mod control_tests {
             control.update(Some(0.5));
         }
         control.update(Some(1.0));
-        assert_eq!(control.clock_detector.detected_tempo.unwrap(), 2000);
+        assert_eq!(control.clock_detector.tempo.unwrap(), 2000);
     }
 
     #[test]
@@ -2658,7 +2658,7 @@ mod control_tests {
             control.update(Some(0.5));
         }
         control.update(Some(1.0));
-        assert!(control.clock_detector.detected_tempo.is_none());
+        assert!(control.clock_detector.tempo.is_none());
     }
 
     #[test]
@@ -2677,7 +2677,7 @@ mod control_tests {
             control.update(Some(0.1));
         }
         control.update(Some(1.0));
-        assert!(control.clock_detector.detected_tempo.is_none());
+        assert!(control.clock_detector.tempo.is_none());
     }
 
     #[test]
@@ -2689,7 +2689,7 @@ mod control_tests {
             let attack = 3;
             for i in 0..=attack {
                 control.update(Some(0.5 + 0.5 * (i as f32 / attack as f32)));
-                detected |= control.clock_detector.detected_tempo.is_some();
+                detected |= control.clock_detector.tempo.is_some();
             }
             assert_eq!(should_detect, detected, "{:?}", control);
         }
@@ -2697,7 +2697,7 @@ mod control_tests {
         fn silence(control: &mut Control) {
             for _ in 0..1999 {
                 control.update(Some(0.5));
-                assert!(control.clock_detector.detected_tempo.is_none());
+                assert!(control.clock_detector.tempo.is_none());
             }
         }
 
@@ -2717,14 +2717,14 @@ mod control_tests {
         fn attack(control: &mut Control) {
             for i in 0..200 {
                 control.update(Some(0.5 + 0.5 * (i as f32 / 200.0)));
-                assert!(control.clock_detector.detected_tempo.is_none());
+                assert!(control.clock_detector.tempo.is_none());
             }
         }
 
         fn silence(control: &mut Control) {
             for _ in 0..1999 {
                 control.update(Some(0.1));
-                assert!(control.clock_detector.detected_tempo.is_none());
+                assert!(control.clock_detector.tempo.is_none());
             }
         }
 
@@ -2803,7 +2803,7 @@ mod button_test {
             }
             button.update(true);
         }
-        assert_eq!(button.clock_detector.detected_tempo, Some(2000));
+        assert_eq!(button.clock_detector.tempo, Some(2000));
     }
 
     #[test]
@@ -2822,7 +2822,7 @@ mod button_test {
             button.update(false);
         }
         button.update(true);
-        assert_eq!(button.clock_detector.detected_tempo, Some(2000));
+        assert_eq!(button.clock_detector.tempo, Some(2000));
     }
 
     #[test]
@@ -2834,7 +2834,7 @@ mod button_test {
             }
             button.update(true);
         }
-        assert_eq!(button.clock_detector.detected_tempo, None);
+        assert_eq!(button.clock_detector.tempo, None);
     }
 
     #[test]
@@ -2853,7 +2853,7 @@ mod button_test {
             button.update(false);
         }
         button.update(true);
-        assert_eq!(button.clock_detector.detected_tempo, None);
+        assert_eq!(button.clock_detector.tempo, None);
     }
 }
 
