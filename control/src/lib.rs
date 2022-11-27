@@ -39,6 +39,7 @@
 extern crate approx;
 
 mod input;
+mod led;
 mod quantization;
 mod taper;
 
@@ -49,11 +50,9 @@ use heapless::Vec;
 // TODO: After moving DSP structs to DSP, this can be cleaned up
 use kaseta_dsp::processor::{Attributes as ExternalDSPAttributes, Reaction as ExternalDSPReaction};
 
-use crate::input::button::Button;
-use crate::input::control::Control;
-use crate::input::led::Led;
-use crate::input::pot::Pot;
-use crate::input::switch::Switch;
+use crate::input::snapshot::Snapshot as InputSnapshot;
+use crate::input::store::Store as InputStore;
+use crate::led::Led;
 use crate::quantization::{quantize, Quantization};
 
 // This is a temporary draft of the new control architecture.
@@ -97,7 +96,7 @@ use crate::quantization::{quantize, Quantization};
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
-    inputs: Inputs,
+    inputs: InputStore,
     state: State,
     queue: Queue,
     mapping: Mapping,
@@ -107,35 +106,6 @@ pub struct Cache {
     tapped_tempo: TappedTempo,
     attributes: Attributes,
     outputs: Outputs,
-}
-
-/// Stateful store of raw inputs.
-///
-/// This struct turns the raw snapshot into a set of abstracted peripherals.
-/// These peripherals provide features such as smoothening or click detection.
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Inputs {
-    pre_amp: Pot,
-    drive: Pot,
-    bias: Pot,
-    dry_wet: Pot,
-    wow_flut: Pot,
-    speed: Pot,
-    tone: Pot,
-    head: [InputsHead; 4],
-    control: [Control; 4],
-    switch: [Switch; 10],
-    button: Button,
-}
-
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct InputsHead {
-    position: Pot,
-    volume: Pot,
-    feedback: Pot,
-    pan: Pot,
 }
 
 /// The current state of the control state machine.
@@ -332,38 +302,6 @@ pub struct DesiredOutput {
     pub impulse_trigger: bool,
 }
 
-/// The current state of all peripherals.
-///
-/// `InputSnapshot` is meant to be passed from the hardware binding to the
-/// control package. It should pass pretty raw data, with two exceptions:
-///
-/// 1. Detection of plugged control input is done by the caller.
-/// 2. Button debouncing is done by the caller.
-#[derive(Debug, Default, Clone, Copy)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct InputSnapshot {
-    pub pre_amp: f32,
-    pub drive: f32,
-    pub bias: f32,
-    pub dry_wet: f32,
-    pub wow_flut: f32,
-    pub speed: f32,
-    pub tone: f32,
-    pub head: [InputSnapshotHead; 4],
-    pub control: [Option<f32>; 4],
-    pub switch: [bool; 10],
-    pub button: bool,
-}
-
-#[derive(Debug, Default, Clone, Copy)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct InputSnapshotHead {
-    pub position: f32,
-    pub volume: f32,
-    pub feedback: f32,
-    pub pan: f32,
-}
-
 /// TODO: Docs
 // TODO: Move this under DSP module
 #[derive(Debug, Default)]
@@ -419,7 +357,7 @@ impl Cache {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            inputs: Inputs::default(),
+            inputs: InputStore::default(),
             state: State::default(),
             queue: Queue::default(),
             mapping: Mapping::default(),
@@ -973,29 +911,6 @@ fn calculate(
     };
     let scaled = curved * (range.1 - range.0) + range.0;
     scaled
-}
-
-impl Inputs {
-    fn update(&mut self, snapshot: InputSnapshot) {
-        self.pre_amp.update(snapshot.pre_amp);
-        self.drive.update(snapshot.drive);
-        self.bias.update(snapshot.bias);
-        self.dry_wet.update(snapshot.dry_wet);
-        self.wow_flut.update(snapshot.wow_flut);
-        self.speed.update(snapshot.speed);
-        self.tone.update(snapshot.tone);
-        for (i, head) in self.head.iter_mut().enumerate() {
-            head.position.update(snapshot.head[i].position);
-            head.volume.update(snapshot.head[i].volume);
-            head.feedback.update(snapshot.head[i].feedback);
-            head.pan.update(snapshot.head[i].pan);
-        }
-        for (i, control) in self.control.iter_mut().enumerate() {
-            control.update(snapshot.control[i]);
-        }
-        self.switch = snapshot.switch;
-        self.button.update(snapshot.button);
-    }
 }
 
 impl Default for Queue {
@@ -2365,94 +2280,6 @@ mod cache_tests {
             assert_relative_eq!(cache.calibrations[0].offset, original.offset);
             assert_relative_eq!(cache.calibrations[0].scaling, original.scaling);
         }
-    }
-}
-
-#[cfg(test)]
-mod inputs_tests {
-    use super::*;
-
-    #[test]
-    fn when_input_snapshot_is_written_its_reflected_in_attributes() {
-        let mut inputs = Inputs::default();
-        inputs.update(InputSnapshot {
-            pre_amp: 0.01,
-            drive: 0.02,
-            bias: 0.03,
-            dry_wet: 0.04,
-            wow_flut: 0.05,
-            speed: 0.06,
-            tone: 0.07,
-            head: [
-                InputSnapshotHead {
-                    position: 0.09,
-                    volume: 0.10,
-                    feedback: 0.11,
-                    pan: 0.12,
-                },
-                InputSnapshotHead {
-                    position: 0.13,
-                    volume: 0.14,
-                    feedback: 0.15,
-                    pan: 0.16,
-                },
-                InputSnapshotHead {
-                    position: 0.17,
-                    volume: 0.18,
-                    feedback: 0.19,
-                    pan: 0.20,
-                },
-                InputSnapshotHead {
-                    position: 0.21,
-                    volume: 0.22,
-                    feedback: 0.23,
-                    pan: 0.24,
-                },
-            ],
-            control: [Some(0.25), Some(0.26), Some(0.27), Some(0.28)],
-            switch: [true; 10],
-            button: true,
-        });
-
-        let mut previous = 0.0;
-        for value in [
-            inputs.pre_amp.value(),
-            inputs.drive.value(),
-            inputs.bias.value(),
-            inputs.dry_wet.value(),
-            inputs.wow_flut.value(),
-            inputs.speed.value(),
-            inputs.tone.value(),
-            inputs.head[0].position.value(),
-            inputs.head[0].volume.value(),
-            inputs.head[0].feedback.value(),
-            inputs.head[0].pan.value(),
-            inputs.head[1].position.value(),
-            inputs.head[1].volume.value(),
-            inputs.head[1].feedback.value(),
-            inputs.head[1].pan.value(),
-            inputs.head[2].position.value(),
-            inputs.head[2].volume.value(),
-            inputs.head[2].feedback.value(),
-            inputs.head[2].pan.value(),
-            inputs.head[3].position.value(),
-            inputs.head[3].volume.value(),
-            inputs.head[3].feedback.value(),
-            inputs.head[3].pan.value(),
-            inputs.control[0].value(),
-            inputs.control[1].value(),
-            inputs.control[2].value(),
-            inputs.control[3].value(),
-        ] {
-            assert!(value > previous, "{} !> {}", value, previous);
-            previous = value;
-        }
-
-        for switch in &inputs.switch {
-            assert!(switch);
-        }
-
-        assert!(inputs.button.clicked);
     }
 }
 
