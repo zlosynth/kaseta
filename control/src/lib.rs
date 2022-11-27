@@ -38,18 +38,17 @@
 #[macro_use]
 extern crate approx;
 
+mod calibration;
 mod input;
 mod led;
 mod quantization;
 mod taper;
 
-#[allow(unused_imports)]
-use micromath::F32Ext;
-
 use heapless::Vec;
 // TODO: After moving DSP structs to DSP, this can be cleaned up
 use kaseta_dsp::processor::{Attributes as ExternalDSPAttributes, Reaction as ExternalDSPReaction};
 
+use crate::calibration::Calibration;
 use crate::input::snapshot::Snapshot as InputSnapshot;
 use crate::input::store::Store as InputStore;
 use crate::led::Led;
@@ -93,6 +92,7 @@ use crate::quantization::{quantize, Quantization};
 /// `InputSnapshot` on its inputs, passes it to peripheral abstractions,
 /// interprets the current input into module configuration and manages
 /// the whole state machine of that.
+// TODO: Rename to store
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
@@ -172,15 +172,6 @@ enum AttributeIdentifier {
 /// TODO Docs
 // TODO: One per head, offset and amplification
 type Calibrations = [Calibration; 4];
-
-/// TODO Docs
-// TODO: One per head, offset and amplification
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Calibration {
-    offset: f32,
-    scaling: f32,
-}
 
 /// Easy to access modifications of the default module behavior.
 ///
@@ -968,36 +959,6 @@ impl Default for Calibration {
             offset: 0.0,
             scaling: 1.0,
         }
-    }
-}
-
-impl Calibration {
-    fn try_new(octave_1: f32, octave_2: f32) -> Option<Self> {
-        let (bottom, top) = if octave_1 < octave_2 {
-            (octave_1, octave_2)
-        } else {
-            (octave_2, octave_1)
-        };
-
-        let distance = top - bottom;
-        if !(0.5..=1.9).contains(&distance) {
-            return None;
-        }
-
-        let scaling = 1.0 / (top - bottom);
-
-        let scaled_bottom_fract = (bottom * scaling).fract();
-        let offset = if scaled_bottom_fract > 0.5 {
-            1.0 - scaled_bottom_fract
-        } else {
-            -1.0 * scaled_bottom_fract
-        };
-
-        Some(Self { offset, scaling })
-    }
-
-    fn apply(self, value: f32) -> f32 {
-        value * self.scaling + self.offset
     }
 }
 
@@ -2279,55 +2240,6 @@ mod cache_tests {
 
             assert_relative_eq!(cache.calibrations[0].offset, original.offset);
             assert_relative_eq!(cache.calibrations[0].scaling, original.scaling);
-        }
-    }
-}
-
-#[cfg(test)]
-mod calibration_test {
-    use super::*;
-
-    #[cfg(test)]
-    mod with_octave_2_above_octave_1 {
-        use super::*;
-
-        #[test]
-        fn when_sets_proper_octaves_it_calibrates_properly() {
-            let calibration = Calibration::try_new(1.1, 2.3).expect("Calibration failed");
-            assert_relative_eq!(calibration.apply(1.1), 1.0);
-            assert_relative_eq!(calibration.apply(2.3), 2.0);
-        }
-
-        #[test]
-        fn when_sets_second_octave_too_close_it_fails() {
-            assert!(Calibration::try_new(1.1, 1.3).is_none());
-        }
-
-        #[test]
-        fn when_sets_second_octave_too_far_it_fails() {
-            assert!(Calibration::try_new(1.3, 3.3).is_none());
-        }
-    }
-
-    #[cfg(test)]
-    mod with_octave_2_below_octave_1 {
-        use super::*;
-
-        #[test]
-        fn when_sets_proper_octaves_it_sets_offset_and_scale_accordingly() {
-            let calibration = Calibration::try_new(2.3, 1.1).expect("Calibration failed");
-            assert_relative_eq!(calibration.apply(1.1), 1.0);
-            assert_relative_eq!(calibration.apply(2.3), 2.0);
-        }
-
-        #[test]
-        fn when_sets_second_octave_too_close_it_fails() {
-            assert!(Calibration::try_new(1.3, 1.1).is_none());
-        }
-
-        #[test]
-        fn when_sets_second_octave_too_far_it_fails() {
-            assert!(Calibration::try_new(3.3, 1.3).is_none());
         }
     }
 }
