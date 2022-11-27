@@ -39,6 +39,7 @@
 extern crate approx;
 
 mod buffer;
+mod clock;
 mod quantization;
 mod taper;
 
@@ -49,6 +50,7 @@ use kaseta_dsp::processor::{Attributes as ExternalDSPAttributes, Reaction as Ext
 use micromath::F32Ext;
 
 use crate::buffer::Buffer;
+use crate::clock::ClockDetector;
 use crate::quantization::{quantize, Quantization};
 
 // This is a temporary draft of the new control architecture.
@@ -146,8 +148,7 @@ struct Control {
     pub was_plugged: bool,
     pub was_unplugged: bool,
     buffer: Buffer<4>,
-    trigger_age: [u32; 3],
-    pub detected_tempo: Option<u32>,
+    clock_detector: ClockDetector,
 }
 
 type Switch = bool;
@@ -158,8 +159,7 @@ struct Button {
     pub pressed: bool,
     pub clicked: bool,
     pub held: u32,
-    clicks_age: [u32; 3],
-    pub detected_tempo: Option<u32>,
+    pub clock_detector: ClockDetector,
 }
 
 /// The current state of the control state machine.
@@ -501,7 +501,7 @@ impl Cache {
 
         match self.state {
             State::Normal => {
-                if let Some(detected_tempo) = self.inputs.button.detected_tempo {
+                if let Some(detected_tempo) = self.inputs.button.clock_detector.detected_tempo {
                     needs_save = true;
                     self.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
                 }
@@ -1057,36 +1057,15 @@ impl Control {
         self.was_plugged = !was_plugged && self.is_plugged;
         self.was_unplugged = was_plugged && !self.is_plugged;
 
-        for x in self.trigger_age.iter_mut() {
-            *x = x.saturating_add(1);
-        }
+        self.clock_detector.tick();
 
         if self.buffer.read_raw() < 0.45 {
-            self.trigger_age = [0, 0, 0];
+            self.clock_detector.reset();
         }
 
         let triggered = self.buffer.read_raw() > 0.9 && self.buffer.traveled() > 0.3;
         if triggered {
-            let minus_1 = self.trigger_age[2];
-            let minus_2 = self.trigger_age[1];
-            let minus_3 = self.trigger_age[0];
-
-            let distance = minus_1;
-            let tolerance = distance / 20;
-            if distance > 100
-                && (minus_2 - minus_1) > (distance - tolerance)
-                && (minus_2 - minus_1) < (distance + tolerance)
-                && (minus_3 - minus_2) > (distance - tolerance)
-                && (minus_3 - minus_2) < (distance + tolerance)
-            {
-                self.detected_tempo = Some(distance);
-            } else {
-                self.detected_tempo = None;
-            }
-
-            self.trigger_age[0] = self.trigger_age[1];
-            self.trigger_age[1] = self.trigger_age[2];
-            self.trigger_age[2] = 0;
+            self.clock_detector.trigger();
         }
     }
 
@@ -1106,31 +1085,9 @@ impl Button {
             0
         };
 
-        for x in self.clicks_age.iter_mut() {
-            *x = x.saturating_add(1);
-        }
-
+        self.clock_detector.tick();
         if self.clicked {
-            let minus_1 = self.clicks_age[2];
-            let minus_2 = self.clicks_age[1];
-            let minus_3 = self.clicks_age[0];
-
-            let distance = minus_1;
-            let tolerance = distance / 20;
-            if distance > 100
-                && (minus_2 - minus_1) > (distance - tolerance)
-                && (minus_2 - minus_1) < (distance + tolerance)
-                && (minus_3 - minus_2) > (distance - tolerance)
-                && (minus_3 - minus_2) < (distance + tolerance)
-            {
-                self.detected_tempo = Some(distance);
-            } else {
-                self.detected_tempo = None;
-            }
-
-            self.clicks_age[0] = self.clicks_age[1];
-            self.clicks_age[1] = self.clicks_age[2];
-            self.clicks_age[2] = 0;
+            self.clock_detector.trigger();
         }
     }
 }
@@ -2663,7 +2620,7 @@ mod control_tests {
             control.update(Some(0.5));
         }
         control.update(Some(1.0));
-        assert_eq!(control.detected_tempo.unwrap(), 2000);
+        assert_eq!(control.clock_detector.detected_tempo.unwrap(), 2000);
     }
 
     #[test]
@@ -2682,7 +2639,7 @@ mod control_tests {
             control.update(Some(0.5));
         }
         control.update(Some(1.0));
-        assert_eq!(control.detected_tempo.unwrap(), 2000);
+        assert_eq!(control.clock_detector.detected_tempo.unwrap(), 2000);
     }
 
     #[test]
@@ -2701,7 +2658,7 @@ mod control_tests {
             control.update(Some(0.5));
         }
         control.update(Some(1.0));
-        assert!(control.detected_tempo.is_none());
+        assert!(control.clock_detector.detected_tempo.is_none());
     }
 
     #[test]
@@ -2720,7 +2677,7 @@ mod control_tests {
             control.update(Some(0.1));
         }
         control.update(Some(1.0));
-        assert!(control.detected_tempo.is_none());
+        assert!(control.clock_detector.detected_tempo.is_none());
     }
 
     #[test]
@@ -2732,7 +2689,7 @@ mod control_tests {
             let attack = 3;
             for i in 0..=attack {
                 control.update(Some(0.5 + 0.5 * (i as f32 / attack as f32)));
-                detected |= control.detected_tempo.is_some();
+                detected |= control.clock_detector.detected_tempo.is_some();
             }
             assert_eq!(should_detect, detected, "{:?}", control);
         }
@@ -2740,7 +2697,7 @@ mod control_tests {
         fn silence(control: &mut Control) {
             for _ in 0..1999 {
                 control.update(Some(0.5));
-                assert!(control.detected_tempo.is_none());
+                assert!(control.clock_detector.detected_tempo.is_none());
             }
         }
 
@@ -2760,14 +2717,14 @@ mod control_tests {
         fn attack(control: &mut Control) {
             for i in 0..200 {
                 control.update(Some(0.5 + 0.5 * (i as f32 / 200.0)));
-                assert!(control.detected_tempo.is_none());
+                assert!(control.clock_detector.detected_tempo.is_none());
             }
         }
 
         fn silence(control: &mut Control) {
             for _ in 0..1999 {
                 control.update(Some(0.1));
-                assert!(control.detected_tempo.is_none());
+                assert!(control.clock_detector.detected_tempo.is_none());
             }
         }
 
@@ -2846,7 +2803,7 @@ mod button_test {
             }
             button.update(true);
         }
-        assert_eq!(button.detected_tempo, Some(2000));
+        assert_eq!(button.clock_detector.detected_tempo, Some(2000));
     }
 
     #[test]
@@ -2865,7 +2822,7 @@ mod button_test {
             button.update(false);
         }
         button.update(true);
-        assert_eq!(button.detected_tempo, Some(2000));
+        assert_eq!(button.clock_detector.detected_tempo, Some(2000));
     }
 
     #[test]
@@ -2877,7 +2834,7 @@ mod button_test {
             }
             button.update(true);
         }
-        assert_eq!(button.detected_tempo, None);
+        assert_eq!(button.clock_detector.detected_tempo, None);
     }
 
     #[test]
@@ -2896,7 +2853,7 @@ mod button_test {
             button.update(false);
         }
         button.update(true);
-        assert_eq!(button.detected_tempo, None);
+        assert_eq!(button.clock_detector.detected_tempo, None);
     }
 }
 
