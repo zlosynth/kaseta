@@ -1,6 +1,6 @@
 //! Manage button's state.
 
-use crate::clock::ClockDetector;
+use super::clock::ClockDetector;
 
 /// Use this to hold buttons state over time.
 ///

@@ -3,7 +3,7 @@
 #[allow(unused_imports)]
 use micromath::F32Ext;
 
-use crate::buffer::Buffer;
+use super::buffer::Buffer;
 
 /// Abstraction of a potentiometer.
 ///

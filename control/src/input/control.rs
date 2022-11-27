@@ -1,7 +1,7 @@
 //! Manage control input's state.
 
-use crate::buffer::Buffer;
-use crate::clock::ClockDetector;
+use super::buffer::Buffer;
+use super::clock::ClockDetector;
 
 /// Use this to hold control input's state over time.
 ///

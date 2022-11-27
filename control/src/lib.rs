@@ -38,12 +38,7 @@
 #[macro_use]
 extern crate approx;
 
-mod buffer;
-mod button;
-mod clock;
-mod control;
-mod led;
-mod pot;
+mod input;
 mod quantization;
 mod taper;
 
@@ -54,10 +49,10 @@ use heapless::Vec;
 // TODO: After moving DSP structs to DSP, this can be cleaned up
 use kaseta_dsp::processor::{Attributes as ExternalDSPAttributes, Reaction as ExternalDSPReaction};
 
-use crate::button::Button;
-use crate::control::Control;
-use crate::led::Led;
-use crate::pot::Pot;
+use crate::input::button::Button;
+use crate::input::control::Control;
+use crate::input::led::Led;
+use crate::input::pot::Pot;
 use crate::quantization::{quantize, Quantization};
 
 // This is a temporary draft of the new control architecture.
