@@ -11,6 +11,11 @@ backwards compatibility.
 * Implement stereo output and panning.
 * Introduce board peripherals abstraction.
 * Blink status LED.
+* Implement input calibration.
+* Allow mapping of the CV input to an arbitrary attribute.
+* Provide a configuration menu.
+* Detect tempo from tap on button or clock in CV.
+* Completelly rework control manipulation.
 
 ## 0.3.0
 
