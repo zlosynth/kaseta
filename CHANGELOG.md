@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+## 0.4.0
+
 * Design the PCB.
 * Initialize basic skeleton of firmware.
 * Implement stereo output and panning.
