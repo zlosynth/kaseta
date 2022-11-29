@@ -3,26 +3,6 @@
 //! It is mainly targetted to run in a firmware with multiple loops running in
 //! different frequencies, passing messages from one to another. However, parts
 //! of it may be useful in software as well.
-//!
-//! Following is an example of communication that may be used in an eurorack
-//! module:
-//! TODO: Fix this based on the new architecture.
-//!
-//! ```text
-//!                    [ DSPLoop ]
-//!                       A   |
-//!           (DSPAction) |   | (DSPReaction)
-//!                       |   V
-//!                 [ Reducer {Cache} ] <--------> {Store}
-//!                     A        |
-//!     (ControlAction) |        | (DisplayReaction)
-//!             +-------+        +--+
-//!             |                   |
-//!             |                   V
-//!    [ ControlLoop ]         [ DisplayLoop ]
-//!     |     |     |                 |
-//!   [CV] [Pots] [Buttons]         [LEDs]
-//! ```
 
 #![no_std]
 #![allow(clippy::items_after_statements)]
