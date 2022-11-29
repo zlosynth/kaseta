@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* Further refactoring of the control module.
+
 ## 0.4.0
 
 * Design the PCB.

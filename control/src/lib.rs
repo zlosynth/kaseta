@@ -43,6 +43,7 @@ mod input;
 mod led;
 mod quantization;
 mod taper;
+mod trigger;
 
 use heapless::Vec;
 // TODO: After moving DSP structs to DSP, this can be cleaned up
@@ -53,6 +54,7 @@ use crate::input::snapshot::Snapshot as InputSnapshot;
 use crate::input::store::Store as InputStore;
 use crate::led::Led;
 use crate::quantization::{quantize, Quantization};
+use crate::trigger::Trigger;
 
 // This is a temporary draft of the new control architecture.
 //
@@ -235,17 +237,12 @@ struct AttributesHead {
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Outputs {
-    impulse_trigger: TriggerOutput,
+    impulse_trigger: Trigger,
     impulse_led: Led,
     display: Display,
 }
 
 /// TODO docs
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct TriggerOutput {
-    since: u32,
-}
 
 /// State machine representing 8 display LEDs of the module.
 ///
@@ -971,20 +968,6 @@ impl Default for State {
 impl Default for Screen {
     fn default() -> Self {
         Screen::Heads([false; 4], [false; 4])
-    }
-}
-
-impl TriggerOutput {
-    fn trigger(&mut self) {
-        self.since = 0;
-    }
-
-    fn tick(&mut self) {
-        self.since = self.since.saturating_add(1);
-    }
-
-    fn triggered(&self) -> bool {
-        self.since < 10
     }
 }
 
