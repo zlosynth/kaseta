@@ -220,8 +220,6 @@ struct Outputs {
     display: Display,
 }
 
-/// TODO docs
-
 /// State machine representing 8 display LEDs of the module.
 ///
 /// This structure handles the prioritization of display modes, their
@@ -480,6 +478,35 @@ impl Cache {
         self.reconcile_speed();
         self.reconcile_heads();
 
+        self.outputs.display.prioritized[2] = Some(self.screen_for_heads());
+
+        if needs_save {
+            Some(self.save())
+        } else {
+            None
+        }
+    }
+
+    fn screen_for_heads(&self) -> Screen {
+        let ordered_heads = self.heads_ordered_by_position();
+
+        Screen::Heads(
+            [
+                ordered_heads[0].volume > 0.05,
+                ordered_heads[1].volume > 0.05,
+                ordered_heads[2].volume > 0.05,
+                ordered_heads[3].volume > 0.05,
+            ],
+            [
+                ordered_heads[0].feedback > 0.05,
+                ordered_heads[1].feedback > 0.05,
+                ordered_heads[2].feedback > 0.05,
+                ordered_heads[3].feedback > 0.05,
+            ],
+        )
+    }
+
+    fn heads_ordered_by_position(&self) -> [&AttributesHead; 4] {
         let mut ordered_heads = [
             &self.attributes.head[0],
             &self.attributes.head[1],
@@ -493,27 +520,7 @@ impl Cache {
                 }
             }
         }
-
-        self.outputs.display.prioritized[2] = Some(Screen::Heads(
-            [
-                ordered_heads[0].volume > 0.05,
-                ordered_heads[1].volume > 0.05,
-                ordered_heads[2].volume > 0.05,
-                ordered_heads[3].volume > 0.05,
-            ],
-            [
-                ordered_heads[0].feedback > 0.05,
-                ordered_heads[1].feedback > 0.05,
-                ordered_heads[2].feedback > 0.05,
-                ordered_heads[3].feedback > 0.05,
-            ],
-        ));
-
-        if needs_save {
-            Some(self.save())
-        } else {
-            None
-        }
+        ordered_heads
     }
 
     fn plugged_and_unplugged_controls(&self) -> (Vec<usize, 4>, Vec<usize, 4>) {
