@@ -58,38 +58,6 @@ use crate::mapping::{AttributeIdentifier, Mapping};
 use crate::quantization::{quantize, Quantization};
 use crate::trigger::Trigger;
 
-// This is a temporary draft of the new control architecture.
-//
-// - [X] Define stubs of all needed structs
-// - [X] Write documentation of these structs
-// - [X] Implement defmt display for all
-// - [X] Implement tests stub
-// - [X] Write initializer of cache
-// - [X] Implement raw input passing
-// - [X] Implement pot processing with smoothening
-// - [X] Implement control processing with plug-in
-// - [X] Implement translation to attributes
-// - [X] Implement passing of attributes to pseudo-DSP
-// - [X] Implement passing of config and options to pseudo-DSP
-// - [X] Implement impulse output
-// - [X] Implement display for impulse output
-// - [X] Implement control select
-// - [X] Implement calibration
-// - [X] Unify cv naming to Control
-// - [X] Unify control select naming to mapping
-// - [X] Implement display output for basic attributes
-// - [X] Implement display for calibration and mapping
-// - [X] Implement backup snapshoting (all data needed for restore)
-// - [X] Implement reset, connected controls must be reassigned
-// - [X] Implement saving, returned from Cache when a change to it was made
-// - [X] Implement Configuration passing
-// - [X] Detect 4 consecutive clicks setting a tempo and set it in attributes
-// - [X] Detect that control input is getting clock triggers and reflect that
-// - [X] Use this instead of the current lib binding, update automation
-// - [ ] Divide this into submodules
-// - [ ] List all the improvements introduced here in the changelog
-// - [ ] Remove this TODO list and release a new version
-
 /// The main store of peripheral abstraction and module configuration.
 ///
 /// This struct is the central piece of the control module. It takes
