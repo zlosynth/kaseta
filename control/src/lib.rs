@@ -27,8 +27,9 @@ mod taper;
 mod trigger;
 
 use heapless::Vec;
-// TODO: After moving DSP structs to DSP, this can be cleaned up
-use kaseta_dsp::processor::{Attributes as ExternalDSPAttributes, Reaction as ExternalDSPReaction};
+use kaseta_dsp::processor::{
+    Attributes as DSPAttributes, AttributesHead as DSPAttributesHead, Reaction as DSPReaction,
+};
 
 use crate::calibration::Calibration;
 use crate::input::snapshot::Snapshot as InputSnapshot;
@@ -212,45 +213,6 @@ pub struct DesiredOutput {
     pub display: [bool; 8],
     pub impulse_led: bool,
     pub impulse_trigger: bool,
-}
-
-/// TODO: Docs
-// TODO: Move this under DSP module
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct DSPAttributes {
-    pub pre_amp: f32,
-    pub drive: f32,
-    pub saturation: f32,
-    pub bias: f32,
-    pub dry_wet: f32,
-    pub wow: f32,
-    pub flutter: f32,
-    pub speed: f32,
-    pub tone: f32,
-    pub head: [DSPAttributesHead; 4],
-    pub rewind: bool,
-    // TODO
-    #[allow(dead_code)]
-    rewind_speed: [(f32, f32); 4],
-}
-
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct DSPAttributesHead {
-    pub position: f32,
-    pub volume: f32,
-    pub feedback: f32,
-    pub pan: f32,
-}
-
-/// TODO: Docs
-// TODO: Move this under DSP module
-#[derive(Debug, Default, Clone, Copy)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct DSPReaction {
-    pub impulse: bool,
-    pub clipping: bool,
 }
 
 /// TODO: Docs
@@ -737,7 +699,7 @@ impl Cache {
     }
 
     pub fn apply_dsp_reaction(&mut self, dsp_reaction: DSPReaction) {
-        if dsp_reaction.impulse {
+        if dsp_reaction.delay_impulse {
             self.outputs.impulse_trigger.trigger();
             self.outputs.impulse_led.trigger();
         }
@@ -1077,49 +1039,6 @@ impl Screen {
     }
 }
 
-impl From<ExternalDSPReaction> for DSPReaction {
-    fn from(reaction: ExternalDSPReaction) -> Self {
-        Self {
-            impulse: reaction.delay_impulse,
-            clipping: reaction.hysteresis_clipping,
-        }
-    }
-}
-
-impl From<DSPAttributes> for ExternalDSPAttributes {
-    fn from(attributes: DSPAttributes) -> Self {
-        Self {
-            pre_amp: attributes.pre_amp,
-            dry_wet: attributes.dry_wet,
-            drive: attributes.drive,
-            saturation: attributes.saturation,
-            width: 1.0 - attributes.bias,
-            wow_depth: attributes.wow,
-            flutter_depth: attributes.flutter,
-            delay_length: attributes.speed,
-            tone: attributes.tone,
-            delay_head_1_position: attributes.head[0].position,
-            delay_head_2_position: attributes.head[1].position,
-            delay_head_3_position: attributes.head[2].position,
-            delay_head_4_position: attributes.head[3].position,
-            delay_head_1_volume: attributes.head[0].volume,
-            delay_head_2_volume: attributes.head[1].volume,
-            delay_head_3_volume: attributes.head[2].volume,
-            delay_head_4_volume: attributes.head[3].volume,
-            delay_head_1_feedback: attributes.head[0].feedback,
-            delay_head_2_feedback: attributes.head[1].feedback,
-            delay_head_3_feedback: attributes.head[2].feedback,
-            delay_head_4_feedback: attributes.head[3].feedback,
-            delay_head_1_pan: attributes.head[0].pan,
-            delay_head_2_pan: attributes.head[1].pan,
-            delay_head_3_pan: attributes.head[2].pan,
-            delay_head_4_pan: attributes.head[3].pan,
-            delay_rewind_forward: attributes.rewind,
-            delay_rewind_backward: attributes.rewind,
-        }
-    }
-}
-
 #[cfg(test)]
 mod cache_tests {
     #![allow(clippy::field_reassign_with_default)]
@@ -1193,10 +1112,10 @@ mod cache_tests {
         let mut cache = Cache::new();
         let mut dsp_reaction = DSPReaction::default();
 
-        dsp_reaction.impulse = true;
+        dsp_reaction.delay_impulse = true;
         cache.apply_dsp_reaction(dsp_reaction);
 
-        dsp_reaction.impulse = false;
+        dsp_reaction.delay_impulse = false;
         cache.apply_dsp_reaction(dsp_reaction);
 
         let output = cache.tick();
@@ -1219,10 +1138,10 @@ mod cache_tests {
         let mut cache = Cache::new();
         let mut dsp_reaction = DSPReaction::default();
 
-        dsp_reaction.impulse = true;
+        dsp_reaction.delay_impulse = true;
         cache.apply_dsp_reaction(dsp_reaction);
 
-        dsp_reaction.impulse = false;
+        dsp_reaction.delay_impulse = false;
         cache.apply_dsp_reaction(dsp_reaction);
 
         let output = cache.tick();

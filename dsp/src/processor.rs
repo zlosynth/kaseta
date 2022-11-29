@@ -30,32 +30,28 @@ pub struct Processor {
 #[allow(clippy::struct_excessive_bools)]
 pub struct Attributes {
     pub pre_amp: f32,
-    pub dry_wet: f32,
     pub drive: f32,
     pub saturation: f32,
-    pub width: f32,
-    pub wow_depth: f32,
-    pub flutter_depth: f32,
-    pub delay_length: f32,
-    pub delay_rewind_forward: bool,
-    pub delay_rewind_backward: bool,
-    pub delay_head_1_position: f32,
-    pub delay_head_2_position: f32,
-    pub delay_head_3_position: f32,
-    pub delay_head_4_position: f32,
-    pub delay_head_1_feedback: f32,
-    pub delay_head_2_feedback: f32,
-    pub delay_head_3_feedback: f32,
-    pub delay_head_4_feedback: f32,
-    pub delay_head_1_volume: f32,
-    pub delay_head_2_volume: f32,
-    pub delay_head_3_volume: f32,
-    pub delay_head_4_volume: f32,
-    pub delay_head_1_pan: f32,
-    pub delay_head_2_pan: f32,
-    pub delay_head_3_pan: f32,
-    pub delay_head_4_pan: f32,
+    pub bias: f32,
+    pub dry_wet: f32,
+    pub wow: f32,
+    pub flutter: f32,
+    pub speed: f32,
     pub tone: f32,
+    pub head: [AttributesHead; 4],
+    pub rewind: bool,
+    // TODO
+    #[allow(dead_code)]
+    pub rewind_speed: [(f32, f32); 4],
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct AttributesHead {
+    pub position: f32,
+    pub volume: f32,
+    pub feedback: f32,
+    pub pan: f32,
 }
 
 // TODO: Just re-use and re-export component's attributes
@@ -138,7 +134,7 @@ impl From<Attributes> for HysteresisAttributes {
             dry_wet: other.dry_wet,
             drive: other.drive,
             saturation: other.saturation,
-            width: other.width,
+            width: 1.0 - other.bias,
         }
     }
 }
@@ -146,8 +142,8 @@ impl From<Attributes> for HysteresisAttributes {
 impl From<Attributes> for WowFlutterAttributes {
     fn from(other: Attributes) -> Self {
         Self {
-            wow_depth: other.wow_depth,
-            flutter_depth: other.flutter_depth,
+            wow_depth: other.wow,
+            flutter_depth: other.flutter,
         }
     }
 }
@@ -155,40 +151,40 @@ impl From<Attributes> for WowFlutterAttributes {
 impl From<Attributes> for DelayAttributes {
     fn from(other: Attributes) -> Self {
         Self {
-            length: other.delay_length,
+            length: other.speed,
             heads: [
                 DelayHeadAttributes {
-                    position: other.delay_head_1_position,
-                    volume: other.delay_head_1_volume,
-                    feedback: other.delay_head_1_feedback,
-                    pan: other.delay_head_1_pan,
-                    rewind_forward: other.delay_rewind_forward.then_some(-0.25),
-                    rewind_backward: other.delay_rewind_backward.then_some(0.25),
+                    position: other.head[0].position,
+                    volume: other.head[0].volume,
+                    feedback: other.head[0].feedback,
+                    pan: other.head[0].pan,
+                    rewind_forward: other.rewind.then_some(-0.25),
+                    rewind_backward: other.rewind.then_some(0.25),
                 },
                 DelayHeadAttributes {
-                    position: other.delay_head_2_position,
-                    volume: other.delay_head_2_volume,
-                    feedback: other.delay_head_2_feedback,
-                    pan: other.delay_head_2_pan,
+                    position: other.head[1].position,
+                    volume: other.head[1].volume,
+                    feedback: other.head[1].feedback,
+                    pan: other.head[1].pan,
                     // NOTE: Slightly detuned (not 0.125) to avoid ticking when crossing samples (?)
-                    rewind_forward: other.delay_rewind_forward.then_some(-0.124),
-                    rewind_backward: other.delay_rewind_backward.then_some(0.124),
+                    rewind_forward: other.rewind.then_some(-0.124),
+                    rewind_backward: other.rewind.then_some(0.124),
                 },
                 DelayHeadAttributes {
-                    position: other.delay_head_3_position,
-                    volume: other.delay_head_3_volume,
-                    feedback: other.delay_head_3_feedback,
-                    pan: other.delay_head_3_pan,
-                    rewind_forward: other.delay_rewind_forward.then_some(-1.0),
-                    rewind_backward: other.delay_rewind_backward.then_some(2.0),
+                    position: other.head[2].position,
+                    volume: other.head[2].volume,
+                    feedback: other.head[2].feedback,
+                    pan: other.head[2].pan,
+                    rewind_forward: other.rewind.then_some(-1.0),
+                    rewind_backward: other.rewind.then_some(2.0),
                 },
                 DelayHeadAttributes {
-                    position: other.delay_head_4_position,
-                    volume: other.delay_head_4_volume,
-                    feedback: other.delay_head_4_feedback,
-                    pan: other.delay_head_4_pan,
-                    rewind_forward: other.delay_rewind_forward.then_some(-0.124),
-                    rewind_backward: other.delay_rewind_backward.then_some(0.124),
+                    position: other.head[3].position,
+                    volume: other.head[3].volume,
+                    feedback: other.head[3].feedback,
+                    pan: other.head[3].pan,
+                    rewind_forward: other.rewind.then_some(-0.124),
+                    rewind_backward: other.rewind.then_some(0.124),
                 },
             ],
         }
