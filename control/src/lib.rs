@@ -41,6 +41,7 @@ extern crate approx;
 mod calibration;
 mod input;
 mod led;
+mod mapping;
 mod quantization;
 mod taper;
 mod trigger;
@@ -53,6 +54,7 @@ use crate::calibration::Calibration;
 use crate::input::snapshot::Snapshot as InputSnapshot;
 use crate::input::store::Store as InputStore;
 use crate::led::Led;
+use crate::mapping::{AttributeIdentifier, Mapping};
 use crate::quantization::{quantize, Quantization};
 use crate::trigger::Trigger;
 
@@ -145,30 +147,6 @@ struct Queue {
 enum ControlAction {
     Calibrate(usize),
     Map(usize),
-}
-
-/// Linking between universal control input and attributes controlled through pots.
-//
-/// This mapping is used to store mapping between control inputs and
-/// attributes. It also represents the state machine ordering controls that
-/// are yet to be mapped.
-type Mapping = [AttributeIdentifier; 4];
-
-#[derive(Debug, PartialEq, Clone, Copy)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-enum AttributeIdentifier {
-    PreAmp,
-    Drive,
-    Bias,
-    DryWet,
-    WowFlut,
-    Speed,
-    Tone,
-    Position(usize),
-    Volume(usize),
-    Feedback(usize),
-    Pan(usize),
-    None,
 }
 
 /// TODO Docs
