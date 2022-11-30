@@ -18,6 +18,7 @@
 #[macro_use]
 extern crate approx;
 
+mod action;
 mod calibration;
 mod input;
 mod led;
@@ -31,9 +32,10 @@ use kaseta_dsp::processor::{
     Attributes as DSPAttributes, AttributesHead as DSPAttributesHead, Reaction as DSPReaction,
 };
 
+use crate::action::{ControlAction, Queue};
 use crate::calibration::Calibration;
 use crate::input::snapshot::Snapshot as InputSnapshot;
-use crate::input::store::Store as InputStore;
+use crate::input::store::Store as Inputs;
 use crate::led::Led;
 use crate::mapping::{AttributeIdentifier, Mapping};
 use crate::quantization::{quantize, Quantization};
@@ -45,11 +47,10 @@ use crate::trigger::Trigger;
 /// `InputSnapshot` on its inputs, passes it to peripheral abstractions,
 /// interprets the current input into module configuration and manages
 /// the whole state machine of that.
-// TODO: Rename to store
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
-    inputs: InputStore,
+    inputs: Inputs,
     state: State,
     queue: Queue,
     mapping: Mapping,
@@ -79,23 +80,6 @@ pub(crate) enum State {
 pub(crate) enum CalibrationPhase {
     Octave1,
     Octave2(f32),
-}
-
-/// The queue of control inputs waiting for mapping or calibration.
-///
-/// This queue is used to sequentially process these operations without loosing
-/// new requests that may be added meanwhile.
-#[derive(Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Queue {
-    queue: Vec<ControlAction, 8>,
-}
-
-#[derive(Debug, PartialEq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-enum ControlAction {
-    Calibrate(usize),
-    Map(usize),
 }
 
 /// TODO Docs
@@ -231,7 +215,7 @@ impl Cache {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            inputs: InputStore::default(),
+            inputs: Inputs::default(),
             state: State::default(),
             queue: Queue::default(),
             mapping: Mapping::default(),
@@ -794,43 +778,6 @@ fn calculate(
     };
     let scaled = curved * (range.1 - range.0) + range.0;
     scaled
-}
-
-impl Default for Queue {
-    fn default() -> Self {
-        Queue { queue: Vec::new() }
-    }
-}
-
-impl Queue {
-    fn push(&mut self, action: ControlAction) {
-        // NOTE: The capacity is set to accomodate for all possible actions.
-        let _ = self.queue.push(action);
-    }
-
-    fn pop(&mut self) -> Option<ControlAction> {
-        if self.queue.is_empty() {
-            None
-        } else {
-            Some(self.queue.remove(0))
-        }
-    }
-
-    fn remove_control(&mut self, control_id: usize) {
-        self.queue.retain(|a| match a {
-            ControlAction::Map(id) | ControlAction::Calibrate(id) => *id != control_id,
-        });
-    }
-
-    #[cfg(test)]
-    fn len(&self) -> usize {
-        self.queue.len()
-    }
-
-    #[cfg(test)]
-    fn contains(&self, action: &ControlAction) -> bool {
-        self.queue.contains(action)
-    }
 }
 
 impl Default for AttributeIdentifier {
