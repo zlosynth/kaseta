@@ -47,6 +47,15 @@ impl Calibration {
     }
 }
 
+impl Default for Calibration {
+    fn default() -> Self {
+        Calibration {
+            offset: 0.0,
+            scaling: 1.0,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

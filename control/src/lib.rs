@@ -579,15 +579,6 @@ impl From<Save> for Cache {
     }
 }
 
-impl Default for Calibration {
-    fn default() -> Self {
-        Calibration {
-            offset: 0.0,
-            scaling: 1.0,
-        }
-    }
-}
-
 impl Default for State {
     fn default() -> Self {
         Self::Normal
