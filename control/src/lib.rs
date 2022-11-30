@@ -59,10 +59,17 @@ pub struct Store {
 #[derive(Debug, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) enum State {
-    Calibrating(usize, CalibrationPhase),
-    Mapping(usize),
-    Configuring(Configuration),
+    Calibrating(StateCalibrating),
+    Mapping(StateMapping),
+    Configuring(StateConfiguring),
     Normal,
+}
+
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub(crate) struct StateCalibrating {
+    input: usize,
+    phase: CalibrationPhase,
 }
 
 #[derive(Debug, PartialEq, Clone, Copy)]
@@ -70,6 +77,18 @@ pub(crate) enum State {
 pub(crate) enum CalibrationPhase {
     Octave1,
     Octave2(f32),
+}
+
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub(crate) struct StateMapping {
+    input: usize,
+}
+
+#[derive(Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub(crate) struct StateConfiguring {
+    draft: Configuration,
 }
 
 // NOTE: Inputs and outputs will be passed through queues
@@ -128,16 +147,21 @@ impl Store {
                 }
 
                 if self.input.button.held > 5_000 {
-                    self.state = State::Configuring(self.cache.configuration);
+                    self.state = State::Configuring(StateConfiguring {
+                        draft: self.cache.configuration,
+                    });
                     self.cache.display.prioritized[1] = Some(Screen::configuration());
                 } else if let Some(action) = self.queue.pop() {
                     match action {
                         ControlAction::Calibrate(i) => {
-                            self.state = State::Calibrating(i, CalibrationPhase::Octave1);
+                            self.state = State::Calibrating(StateCalibrating {
+                                input: i,
+                                phase: CalibrationPhase::Octave1,
+                            });
                             self.cache.display.prioritized[1] = Some(Screen::calibration_1(i));
                         }
                         ControlAction::Map(i) => {
-                            self.state = State::Mapping(i);
+                            self.state = State::Mapping(StateMapping { input: i });
                             self.cache.display.prioritized[1] = Some(Screen::mapping(i));
                         }
                     }
@@ -145,7 +169,7 @@ impl Store {
                     self.cache.display.prioritized[1] = None;
                 }
             }
-            State::Configuring(draft) => {
+            State::Configuring(StateConfiguring { draft }) => {
                 if self.input.button.clicked {
                     needs_save = true;
                     self.cache.configuration = draft;
@@ -155,25 +179,30 @@ impl Store {
                     if active_configuration_screen.is_some() {
                         self.cache.display.prioritized[1] = active_configuration_screen;
                     }
-                    self.state = State::Configuring(self.snapshot_configuration_from_pots(draft));
+                    self.state = State::Configuring(StateConfiguring {
+                        draft: self.snapshot_configuration_from_pots(draft),
+                    });
                 }
             }
-            State::Calibrating(i, phase) => {
-                if !self.input.control[i].is_plugged {
+            State::Calibrating(StateCalibrating { input, phase }) => {
+                if !self.input.control[input].is_plugged {
                     self.cache.display.prioritized[0] = Some(Screen::failure());
                     self.state = State::Normal;
                 } else if self.input.button.clicked {
                     match phase {
                         CalibrationPhase::Octave1 => {
-                            let octave_1 = self.input.control[i].value();
-                            self.state = State::Calibrating(i, CalibrationPhase::Octave2(octave_1));
-                            self.cache.display.prioritized[1] = Some(Screen::calibration_2(i));
+                            let octave_1 = self.input.control[input].value();
+                            self.state = State::Calibrating(StateCalibrating {
+                                input,
+                                phase: CalibrationPhase::Octave2(octave_1),
+                            });
+                            self.cache.display.prioritized[1] = Some(Screen::calibration_2(input));
                         }
                         CalibrationPhase::Octave2(octave_1) => {
-                            let octave_2 = self.input.control[i].value();
+                            let octave_2 = self.input.control[input].value();
                             if let Some(calibration) = Calibration::try_new(octave_1, octave_2) {
                                 needs_save = true;
-                                self.cache.calibrations[i] = calibration;
+                                self.cache.calibrations[input] = calibration;
                             } else {
                                 self.cache.display.prioritized[0] = Some(Screen::failure());
                             }
@@ -182,11 +211,11 @@ impl Store {
                     }
                 }
             }
-            State::Mapping(i) => {
+            State::Mapping(StateMapping { input }) => {
                 let destination = self.active_attribute();
                 if !destination.is_none() && !self.cache.mapping.contains(&destination) {
                     needs_save = true;
-                    self.cache.mapping[i] = destination;
+                    self.cache.mapping[input] = destination;
                     self.state = State::Normal;
                 }
             }
@@ -569,7 +598,7 @@ mod tests {
         let mut store = Store::from(save);
         store.apply_input_snapshot(input);
 
-        assert_eq!(store.state, State::Mapping(1));
+        assert_eq!(store.state, State::Mapping(StateMapping { input: 1 }));
     }
 
     #[test]
@@ -816,7 +845,10 @@ mod tests {
             let (_, save) = store.apply_input_snapshot(input);
 
             assert!(save.is_none());
-            assert!(matches!(store.state, State::Mapping(1)));
+            assert!(matches!(
+                store.state,
+                State::Mapping(StateMapping { input: 1 })
+            ));
             assert_animation(
                 &mut store,
                 &[9600, 0800, 0690, 0609, 9600, 0800, 0690, 0609],
@@ -839,7 +871,10 @@ mod tests {
             assert!(save.is_none());
             assert!(matches!(
                 store.state,
-                State::Calibrating(1, CalibrationPhase::Octave1)
+                State::Calibrating(StateCalibrating {
+                    input: 1,
+                    phase: CalibrationPhase::Octave1
+                })
             ));
             assert_animation(&mut store, &[9800, 0600, 9800, 0600]);
         }
@@ -858,7 +893,10 @@ mod tests {
             input.control[2] = Some(1.0);
             store.apply_input_snapshot(input);
 
-            assert!(matches!(store.state, State::Mapping(1)));
+            assert!(matches!(
+                store.state,
+                State::Mapping(StateMapping { input: 1 })
+            ));
             assert_eq!(store.queue.len(), 1);
         }
 
@@ -877,13 +915,19 @@ mod tests {
             input.control[3] = Some(1.0);
             store.apply_input_snapshot(input);
 
-            assert!(matches!(store.state, State::Mapping(1)));
+            assert!(matches!(
+                store.state,
+                State::Mapping(StateMapping { input: 1 })
+            ));
             assert_eq!(store.queue.len(), 2);
 
             input.control[2] = None;
             store.apply_input_snapshot(input);
 
-            assert!(matches!(store.state, State::Mapping(1)));
+            assert!(matches!(
+                store.state,
+                State::Mapping(StateMapping { input: 1 })
+            ));
             assert_eq!(store.queue.len(), 1);
         }
 
@@ -1142,7 +1186,7 @@ mod tests {
         #[test]
         fn when_last_pending_control_is_processed_then_state_changes_to_normal() {
             let (mut store, mut input) = init_store(1);
-            assert_eq!(store.state, State::Mapping(0));
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 0 }));
 
             input.drive = 0.1;
             apply_input_snapshot(&mut store, input);
@@ -1156,20 +1200,20 @@ mod tests {
 
             input.drive = 0.1;
             apply_input_snapshot(&mut store, input);
-            assert_eq!(store.state, State::Mapping(1));
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 1 }));
         }
 
         #[test]
         fn when_multiple_controls_are_plugged_then_they_are_all_added_to_queue() {
             let (mut store, mut input) = init_store(2);
-            assert_eq!(store.state, State::Mapping(0));
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 0 }));
             assert_eq!(store.queue.len(), 1);
             assert!(store.queue.contains(&ControlAction::Map(1)));
 
             input.control[2] = Some(1.0);
             input.control[3] = Some(1.0);
             store.apply_input_snapshot(input);
-            assert_eq!(store.state, State::Mapping(0));
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 0 }));
             assert_eq!(store.queue.len(), 3);
             assert!(store.queue.contains(&ControlAction::Map(1)));
             assert!(store.queue.contains(&ControlAction::Map(2)));
@@ -1179,14 +1223,14 @@ mod tests {
         #[test]
         fn when_control_is_unplugged_it_is_removed_from_queue() {
             let (mut store, mut input) = init_store(3);
-            assert_eq!(store.state, State::Mapping(0));
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 0 }));
             assert_eq!(store.queue.len(), 2);
             assert!(store.queue.contains(&ControlAction::Map(1)));
             assert!(store.queue.contains(&ControlAction::Map(2)));
 
             input.control[1] = None;
             store.apply_input_snapshot(input);
-            assert_eq!(store.state, State::Mapping(0));
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 0 }));
             assert_eq!(store.queue.len(), 1);
             assert!(store.queue.contains(&ControlAction::Map(2)));
         }
@@ -1198,12 +1242,12 @@ mod tests {
             input.drive = 0.4;
             apply_input_snapshot(&mut store, input);
             assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(store.state, State::Mapping(1));
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 1 }));
 
             input.control[0] = None;
             apply_input_snapshot(&mut store, input);
             assert_eq!(store.cache.mapping[0], AttributeIdentifier::None);
-            assert_eq!(store.state, State::Mapping(1));
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 1 }));
         }
 
         #[test]
@@ -1219,7 +1263,7 @@ mod tests {
             apply_input_snapshot(&mut store, input);
             assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
             assert_eq!(store.cache.mapping[1], AttributeIdentifier::None);
-            assert_eq!(store.state, State::Mapping(1));
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 1 }));
 
             assert_animation(&mut store, &[9600, 0800, 0690, 0609]);
         }
@@ -1273,7 +1317,10 @@ mod tests {
             let (mut store, mut input) = init_store(1);
             assert_eq!(
                 store.state,
-                State::Calibrating(0, CalibrationPhase::Octave1)
+                State::Calibrating(StateCalibrating {
+                    input: 0,
+                    phase: CalibrationPhase::Octave1
+                })
             );
             assert_animation(&mut store, &[8900, 6000, 8900, 6000]);
 
@@ -1282,7 +1329,10 @@ mod tests {
             click_button(&mut store, input);
             assert_eq!(
                 store.state,
-                State::Calibrating(0, CalibrationPhase::Octave2(1.3))
+                State::Calibrating(StateCalibrating {
+                    input: 0,
+                    phase: CalibrationPhase::Octave2(1.3)
+                })
             );
             assert_animation(&mut store, &[6099, 6000, 6099, 6000]);
 
@@ -1295,7 +1345,7 @@ mod tests {
             let store_calibration = store.cache.calibrations[0];
             assert_relative_ne!(store_calibration.offset, Calibration::default().offset);
             assert_relative_ne!(store_calibration.scaling, Calibration::default().scaling);
-            assert_eq!(store.state, State::Mapping(0));
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 0 }));
             assert_animation(&mut store, &[8000, 6900, 6090, 6009]);
         }
 
@@ -1305,7 +1355,10 @@ mod tests {
             let (mut store, mut input) = init_store(1);
             assert_eq!(
                 store.state,
-                State::Calibrating(0, CalibrationPhase::Octave1)
+                State::Calibrating(StateCalibrating {
+                    input: 0,
+                    phase: CalibrationPhase::Octave1
+                })
             );
             assert_animation(&mut store, &[8900, 6000, 8900, 6000]);
 
@@ -1314,7 +1367,10 @@ mod tests {
             click_button(&mut store, input);
             assert_eq!(
                 store.state,
-                State::Calibrating(0, CalibrationPhase::Octave2(1.3))
+                State::Calibrating(StateCalibrating {
+                    input: 0,
+                    phase: CalibrationPhase::Octave2(1.3)
+                })
             );
             assert_animation(&mut store, &[6099, 6000, 6099, 6000]);
 
@@ -1325,7 +1381,7 @@ mod tests {
             let store_calibration = store.cache.calibrations[0];
             assert_relative_eq!(store_calibration.offset, Calibration::default().offset);
             assert_relative_eq!(store_calibration.scaling, Calibration::default().scaling);
-            assert_eq!(store.state, State::Mapping(0));
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 0 }));
             assert_animation(&mut store, &[8888, 0000, 8888, 0000, 6090, 6009]);
         }
 
@@ -1334,7 +1390,10 @@ mod tests {
             let (mut store, mut input) = init_store(2);
             assert_eq!(
                 store.state,
-                State::Calibrating(0, CalibrationPhase::Octave1)
+                State::Calibrating(StateCalibrating {
+                    input: 0,
+                    phase: CalibrationPhase::Octave1
+                })
             );
             assert_eq!(store.queue.len(), 3);
             assert!(store.queue.contains(&ControlAction::Map(0)));
@@ -1346,7 +1405,10 @@ mod tests {
             store.apply_input_snapshot(input);
             assert_eq!(
                 store.state,
-                State::Calibrating(0, CalibrationPhase::Octave1)
+                State::Calibrating(StateCalibrating {
+                    input: 0,
+                    phase: CalibrationPhase::Octave1
+                })
             );
             assert_eq!(store.queue.len(), 5);
             assert!(store.queue.contains(&ControlAction::Map(0)));
@@ -1361,7 +1423,10 @@ mod tests {
             let (mut store, mut input) = init_store(3);
             assert_eq!(
                 store.state,
-                State::Calibrating(0, CalibrationPhase::Octave1)
+                State::Calibrating(StateCalibrating {
+                    input: 0,
+                    phase: CalibrationPhase::Octave1
+                })
             );
             assert_eq!(store.queue.len(), 5);
 
@@ -1369,7 +1434,10 @@ mod tests {
             store.apply_input_snapshot(input);
             assert_eq!(
                 store.state,
-                State::Calibrating(0, CalibrationPhase::Octave1)
+                State::Calibrating(StateCalibrating {
+                    input: 0,
+                    phase: CalibrationPhase::Octave1
+                })
             );
             assert_eq!(store.queue.len(), 3);
         }
@@ -1379,7 +1447,10 @@ mod tests {
             let (mut store, mut input) = init_store(1);
             assert_eq!(
                 store.state,
-                State::Calibrating(0, CalibrationPhase::Octave1)
+                State::Calibrating(StateCalibrating {
+                    input: 0,
+                    phase: CalibrationPhase::Octave1
+                })
             );
             assert_eq!(store.queue.len(), 1);
 
