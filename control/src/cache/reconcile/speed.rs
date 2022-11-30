@@ -1,6 +1,6 @@
 use super::calculate;
-use crate::mapping::AttributeIdentifier;
-use crate::taper;
+use super::taper;
+use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
 // TODO: Rename to speed and revert it 1/X

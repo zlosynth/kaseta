@@ -18,28 +18,19 @@
 #[macro_use]
 extern crate approx;
 
-mod action;
 mod cache;
-mod calibration;
-mod display;
 mod input;
-mod led;
-mod mapping;
-mod quantization;
-mod reconcile;
-mod taper;
-mod trigger;
 
 use heapless::Vec;
 use kaseta_dsp::processor::{Attributes as DSPAttributes, Reaction as DSPReaction};
 
-use crate::action::{ControlAction, Queue};
+use crate::cache::action::{ControlAction, Queue};
+use crate::cache::calibration::Calibration;
+use crate::cache::display::{ConfigurationScreen, Screen};
+use crate::cache::mapping::{AttributeIdentifier, Mapping};
 use crate::cache::{Cache, Calibrations, Configuration, TappedTempo};
-use crate::calibration::Calibration;
-use crate::display::{ConfigurationScreen, Screen};
 use crate::input::snapshot::Snapshot as InputSnapshot;
 use crate::input::store::Store as Input;
-use crate::mapping::{AttributeIdentifier, Mapping};
 
 /// The main store of peripheral abstraction and module configuration.
 ///

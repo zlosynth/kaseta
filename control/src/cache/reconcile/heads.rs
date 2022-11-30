@@ -1,6 +1,6 @@
 use super::calculate;
-use crate::mapping::AttributeIdentifier;
-use crate::quantization::{quantize, Quantization};
+use crate::cache::mapping::AttributeIdentifier;
+use crate::cache::quantization::{quantize, Quantization};
 use crate::Store;
 
 impl Store {

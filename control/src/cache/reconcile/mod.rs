@@ -2,6 +2,7 @@ mod heads;
 mod hysteresis;
 mod pre_amp;
 mod speed;
+mod taper;
 mod tone;
 mod wow_flutter;
 

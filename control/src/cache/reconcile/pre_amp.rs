@@ -1,6 +1,6 @@
 use super::calculate;
-use crate::mapping::AttributeIdentifier;
-use crate::taper;
+use super::taper;
+use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
 // Pre-amp scales between -20 to +28 dB.

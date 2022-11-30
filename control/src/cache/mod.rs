@@ -1,12 +1,21 @@
+pub mod action;
+pub mod calibration;
+pub mod display;
+mod led;
+pub mod mapping;
+mod quantization;
+mod reconcile;
+mod trigger;
+
 use kaseta_dsp::processor::{
     Attributes as DSPAttributes, AttributesHead as DSPAttributesHead, Reaction as DSPReaction,
 };
 
-use crate::calibration::Calibration;
-use crate::display::{Display, Screen};
-use crate::led::Led;
-use crate::mapping::Mapping;
-use crate::trigger::Trigger;
+use self::calibration::Calibration;
+use self::display::{Display, Screen};
+use self::led::Led;
+use self::mapping::Mapping;
+use self::trigger::Trigger;
 
 /// TODO docs
 #[derive(Debug, Default)]

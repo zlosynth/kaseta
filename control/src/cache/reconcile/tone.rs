@@ -1,5 +1,5 @@
 use super::calculate;
-use crate::mapping::AttributeIdentifier;
+use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
 impl Store {

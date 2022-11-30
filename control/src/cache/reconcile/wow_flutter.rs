@@ -1,5 +1,5 @@
 use super::calculate;
-use crate::mapping::AttributeIdentifier;
+use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
 const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 0.2);

@@ -1,6 +1,6 @@
 use super::calculate;
-use crate::mapping::AttributeIdentifier;
-use crate::taper;
+use super::taper;
+use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
 const DRY_WET_RANGE: (f32, f32) = (0.0, 1.0);
