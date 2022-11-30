@@ -20,6 +20,7 @@ extern crate approx;
 
 mod cache;
 mod input;
+mod save;
 
 use heapless::Vec;
 use kaseta_dsp::processor::{Attributes as DSPAttributes, Reaction as DSPReaction};
@@ -27,10 +28,11 @@ use kaseta_dsp::processor::{Attributes as DSPAttributes, Reaction as DSPReaction
 use crate::cache::action::{ControlAction, Queue};
 use crate::cache::calibration::Calibration;
 use crate::cache::display::{ConfigurationScreen, Screen};
-use crate::cache::mapping::{AttributeIdentifier, Mapping};
-use crate::cache::{Cache, Calibrations, Configuration, TappedTempo};
+use crate::cache::mapping::AttributeIdentifier;
+use crate::cache::{Cache, Configuration};
 use crate::input::snapshot::Snapshot as InputSnapshot;
 use crate::input::store::Store as Input;
+use crate::save::Save;
 
 /// The main store of peripheral abstraction and module configuration.
 ///
@@ -77,16 +79,6 @@ pub struct DesiredOutput {
     pub display: [bool; 8],
     pub impulse_led: bool,
     pub impulse_trigger: bool,
-}
-
-/// TODO: Docs
-#[derive(Debug, Clone, Copy)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Save {
-    mapping: Mapping,
-    calibrations: Calibrations,
-    configuration: Configuration,
-    tapped_tempo: TappedTempo,
 }
 
 // NOTE: Inputs and outputs will be passed through queues
@@ -210,7 +202,7 @@ impl Store {
         };
 
         if needs_save {
-            Some(self.save())
+            Some(self.cache.save())
         } else {
             None
         }
@@ -342,15 +334,6 @@ impl Store {
         output
     }
 
-    fn save(&self) -> Save {
-        Save {
-            mapping: self.cache.mapping,
-            calibrations: self.cache.calibrations,
-            configuration: self.cache.configuration,
-            tapped_tempo: self.cache.tapped_tempo,
-        }
-    }
-
     fn snapshot_configuration_from_pots(&self, mut configuration: Configuration) -> Configuration {
         // TODO: Unite this and the code figuring out the current screen
         for (i, rewind_speed) in configuration.rewind_speed.iter_mut().enumerate() {
@@ -409,7 +392,7 @@ impl Default for State {
 }
 
 #[cfg(test)]
-mod store_tests {
+mod tests {
     #![allow(clippy::field_reassign_with_default)]
     #![allow(clippy::manual_assert)]
     #![allow(clippy::zero_prefixed_literal)]
@@ -585,7 +568,7 @@ mod store_tests {
         input.drive = 0.1;
         store.apply_input_snapshot(input);
 
-        let save = store.save();
+        let save = store.cache.save();
         let mut store = Store::from(save);
         store.apply_input_snapshot(input);
 
@@ -597,7 +580,7 @@ mod store_tests {
     fn given_save_if_new_control_was_plugged_since_it_gets_to_the_queque() {
         let store = Store::new();
 
-        let save = store.save();
+        let save = store.cache.save();
 
         let mut input = InputSnapshot::default();
         input.control[1] = Some(1.0);
@@ -651,7 +634,7 @@ mod store_tests {
         let calibration = store.cache.calibrations[1];
         let mapping = store.cache.mapping[1];
 
-        let save = store.save();
+        let save = store.cache.save();
         let mut store = Store::from(save);
         store.apply_input_snapshot(input);
 
@@ -706,7 +689,7 @@ mod store_tests {
         let calibration = store.cache.calibrations[1];
         let mapping = store.cache.mapping[1];
 
-        let save = store.save();
+        let save = store.cache.save();
         let mut store = Store::from(save);
         store.apply_input_snapshot(input);
 

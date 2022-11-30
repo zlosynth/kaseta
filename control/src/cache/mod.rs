@@ -16,6 +16,7 @@ use self::display::{Display, Screen};
 use self::led::Led;
 use self::mapping::Mapping;
 use self::trigger::Trigger;
+use crate::save::Save;
 
 /// TODO docs
 #[derive(Debug, Default)]
@@ -178,5 +179,14 @@ impl Cache {
             }
         }
         ordered_heads
+    }
+
+    pub fn save(&self) -> Save {
+        Save {
+            mapping: self.mapping,
+            calibrations: self.calibrations,
+            configuration: self.configuration,
+            tapped_tempo: self.tapped_tempo,
+        }
     }
 }
