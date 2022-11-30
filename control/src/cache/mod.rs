@@ -16,6 +16,7 @@ use self::display::{Display, Screen};
 use self::led::Led;
 use self::mapping::Mapping;
 use self::trigger::Trigger;
+use crate::output::DesiredOutput;
 use crate::save::Save;
 
 /// TODO docs
@@ -188,5 +189,19 @@ impl Cache {
             configuration: self.configuration,
             tapped_tempo: self.tapped_tempo,
         }
+    }
+
+    pub fn tick(&mut self) -> DesiredOutput {
+        let output = DesiredOutput {
+            display: self.display.active_screen().leds(),
+            impulse_trigger: self.impulse_trigger.triggered(),
+            impulse_led: self.impulse_led.triggered(),
+        };
+
+        self.impulse_trigger.tick();
+        self.impulse_led.tick();
+        self.display.tick();
+
+        output
     }
 }

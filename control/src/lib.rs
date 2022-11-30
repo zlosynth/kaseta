@@ -20,6 +20,7 @@ extern crate approx;
 
 mod cache;
 mod input;
+mod output;
 mod save;
 
 use heapless::Vec;
@@ -32,6 +33,7 @@ use crate::cache::mapping::AttributeIdentifier;
 use crate::cache::{Cache, Configuration};
 use crate::input::snapshot::Snapshot as InputSnapshot;
 use crate::input::store::Store as Input;
+use crate::output::DesiredOutput;
 use crate::save::Save;
 
 /// The main store of peripheral abstraction and module configuration.
@@ -67,18 +69,6 @@ pub(crate) enum State {
 pub(crate) enum CalibrationPhase {
     Octave1,
     Octave2(f32),
-}
-
-/// Desired state of output peripherals with the exception of audio.
-///
-/// This structure transfers request to the module, asking to lit LEDs or
-/// set control output.
-#[derive(Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct DesiredOutput {
-    pub display: [bool; 8],
-    pub impulse_led: bool,
-    pub impulse_trigger: bool,
 }
 
 // NOTE: Inputs and outputs will be passed through queues
@@ -321,17 +311,7 @@ impl Store {
     }
 
     pub fn tick(&mut self) -> DesiredOutput {
-        let output = DesiredOutput {
-            display: self.cache.display.active_screen().leds(),
-            impulse_trigger: self.cache.impulse_trigger.triggered(),
-            impulse_led: self.cache.impulse_led.triggered(),
-        };
-
-        self.cache.impulse_trigger.tick();
-        self.cache.impulse_led.tick();
-        self.cache.display.tick();
-
-        output
+        self.cache.tick()
     }
 
     fn snapshot_configuration_from_pots(&self, mut configuration: Configuration) -> Configuration {
