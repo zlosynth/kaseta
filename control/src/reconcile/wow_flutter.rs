@@ -8,7 +8,7 @@ const FLUTTER_DEPTH_RANGE: (f32, f32) = (0.0, 0.0015);
 impl Store {
     pub fn reconcile_wow_flutter(&mut self) {
         let depth = calculate(
-            self.inputs.wow_flut.value(),
+            self.input.wow_flut.value(),
             self.control_for_attribute(AttributeIdentifier::WowFlut),
             (-1.0, 1.0),
             None,

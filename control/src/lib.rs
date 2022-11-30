@@ -38,7 +38,7 @@ use crate::action::{ControlAction, Queue};
 use crate::calibration::Calibration;
 use crate::display::{ConfigurationScreen, Display, Screen};
 use crate::input::snapshot::Snapshot as InputSnapshot;
-use crate::input::store::Store as Inputs;
+use crate::input::store::Store as Input;
 use crate::led::Led;
 use crate::mapping::{AttributeIdentifier, Mapping};
 use crate::trigger::Trigger;
@@ -52,7 +52,7 @@ use crate::trigger::Trigger;
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Store {
-    inputs: Inputs,
+    input: Input,
     state: State,
     queue: Queue,
     cache: Cache,
@@ -183,7 +183,7 @@ impl Store {
     #[must_use]
     pub fn new() -> Self {
         Self {
-            inputs: Inputs::default(),
+            input: Input::default(),
             state: State::default(),
             queue: Queue::default(),
             cache: Cache::default(),
@@ -191,14 +191,14 @@ impl Store {
     }
 
     pub fn warm_up(&mut self, snapshot: InputSnapshot) {
-        self.inputs.update(snapshot);
+        self.input.update(snapshot);
     }
 
     pub fn apply_input_snapshot(
         &mut self,
         snapshot: InputSnapshot,
     ) -> (DSPAttributes, Option<Save>) {
-        self.inputs.update(snapshot);
+        self.input.update(snapshot);
         let save = self.converge_internal_state();
         self.reconcile_attributes();
         let dsp_attributes = self.build_dsp_attributes();
@@ -217,7 +217,7 @@ impl Store {
 
         for i in &plugged_controls {
             self.queue.remove_control(*i);
-            if self.inputs.button.pressed {
+            if self.input.button.pressed {
                 self.queue.push(ControlAction::Calibrate(*i));
             }
             if self.cache.mapping[*i].is_none() {
@@ -227,12 +227,12 @@ impl Store {
 
         match self.state {
             State::Normal => {
-                if let Some(detected_tempo) = self.inputs.button.detected_tempo() {
+                if let Some(detected_tempo) = self.input.button.detected_tempo() {
                     needs_save = true;
                     self.cache.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
                 }
 
-                if self.inputs.button.held > 5_000 {
+                if self.input.button.held > 5_000 {
                     self.state = State::Configuring(self.cache.configuration);
                     self.cache.display.prioritized[1] = Some(Screen::configuration());
                 } else if let Some(action) = self.queue.pop() {
@@ -251,7 +251,7 @@ impl Store {
                 }
             }
             State::Configuring(draft) => {
-                if self.inputs.button.clicked {
+                if self.input.button.clicked {
                     needs_save = true;
                     self.cache.configuration = draft;
                     self.state = State::Normal;
@@ -264,18 +264,18 @@ impl Store {
                 }
             }
             State::Calibrating(i, phase) => {
-                if !self.inputs.control[i].is_plugged {
+                if !self.input.control[i].is_plugged {
                     self.cache.display.prioritized[0] = Some(Screen::failure());
                     self.state = State::Normal;
-                } else if self.inputs.button.clicked {
+                } else if self.input.button.clicked {
                     match phase {
                         CalibrationPhase::Octave1 => {
-                            let octave_1 = self.inputs.control[i].value();
+                            let octave_1 = self.input.control[i].value();
                             self.state = State::Calibrating(i, CalibrationPhase::Octave2(octave_1));
                             self.cache.display.prioritized[1] = Some(Screen::calibration_2(i));
                         }
                         CalibrationPhase::Octave2(octave_1) => {
-                            let octave_2 = self.inputs.control[i].value();
+                            let octave_2 = self.input.control[i].value();
                             if let Some(calibration) = Calibration::try_new(octave_1, octave_2) {
                                 needs_save = true;
                                 self.cache.calibrations[i] = calibration;
@@ -306,7 +306,7 @@ impl Store {
 
     fn active_configuration_screen(&mut self) -> Option<Screen> {
         let mut active_configuration_screen = None;
-        for head in self.inputs.head.iter() {
+        for head in self.input.head.iter() {
             if head.volume.active() || head.feedback.active() {
                 let volume = head.volume.value();
                 let rewind_index = if volume < 0.25 {
@@ -388,7 +388,7 @@ impl Store {
     fn plugged_and_unplugged_controls(&self) -> (Vec<usize, 4>, Vec<usize, 4>) {
         let mut plugged = Vec::new();
         let mut unplugged = Vec::new();
-        for (i, cv) in self.inputs.control.iter().enumerate() {
+        for (i, cv) in self.input.control.iter().enumerate() {
             if cv.was_plugged {
                 // NOTE: This is safe since the number of controls is equal to the
                 // size of the Vec.
@@ -404,20 +404,20 @@ impl Store {
 
     fn active_attribute(&self) -> AttributeIdentifier {
         for (pot, identifier) in [
-            (&self.inputs.pre_amp, AttributeIdentifier::PreAmp),
-            (&self.inputs.drive, AttributeIdentifier::Drive),
-            (&self.inputs.bias, AttributeIdentifier::Bias),
-            (&self.inputs.dry_wet, AttributeIdentifier::DryWet),
-            (&self.inputs.wow_flut, AttributeIdentifier::WowFlut),
-            (&self.inputs.speed, AttributeIdentifier::Speed),
-            (&self.inputs.tone, AttributeIdentifier::Tone),
+            (&self.input.pre_amp, AttributeIdentifier::PreAmp),
+            (&self.input.drive, AttributeIdentifier::Drive),
+            (&self.input.bias, AttributeIdentifier::Bias),
+            (&self.input.dry_wet, AttributeIdentifier::DryWet),
+            (&self.input.wow_flut, AttributeIdentifier::WowFlut),
+            (&self.input.speed, AttributeIdentifier::Speed),
+            (&self.input.tone, AttributeIdentifier::Tone),
         ] {
             if pot.active() {
                 return identifier;
             }
         }
 
-        for (i, head) in self.inputs.head.iter().enumerate() {
+        for (i, head) in self.input.head.iter().enumerate() {
             for (pot, identifier) in [
                 (&head.position, AttributeIdentifier::Position(i)),
                 (&head.volume, AttributeIdentifier::Volume(i)),
@@ -436,7 +436,7 @@ impl Store {
     fn control_for_attribute(&mut self, attribute: AttributeIdentifier) -> Option<f32> {
         let i = self.cache.mapping.iter().position(|a| *a == attribute);
         if let Some(i) = i {
-            let control = &self.inputs.control[i];
+            let control = &self.input.control[i];
             if control.is_plugged {
                 let calibration = self.cache.calibrations[i];
                 Some(calibration.apply(control.value()))
@@ -523,8 +523,8 @@ impl Store {
     fn snapshot_configuration_from_pots(&self, mut configuration: Configuration) -> Configuration {
         // TODO: Unite this and the code figuring out the current screen
         for (i, rewind_speed) in configuration.rewind_speed.iter_mut().enumerate() {
-            let fast_forward = if self.inputs.head[i].volume.active() {
-                let volume = self.inputs.head[i].volume.value();
+            let fast_forward = if self.input.head[i].volume.active() {
+                let volume = self.input.head[i].volume.value();
                 if volume < 0.25 {
                     1.0
                 } else if volume < 0.5 {
@@ -538,8 +538,8 @@ impl Store {
                 rewind_speed.1
             };
 
-            let rewind = if self.inputs.head[i].feedback.active() {
-                let feedback = self.inputs.head[i].feedback.value();
+            let rewind = if self.input.head[i].feedback.active() {
+                let feedback = self.input.head[i].feedback.value();
                 if feedback < 0.25 {
                     0.75
                 } else if feedback < 0.5 {

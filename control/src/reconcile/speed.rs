@@ -9,11 +9,11 @@ const LENGTH_SHORT_RANGE: (f32, f32) = (1.0 / 400.0, 1.0);
 
 impl Store {
     pub fn reconcile_speed(&mut self) {
-        if self.inputs.speed.active() {
+        if self.input.speed.active() {
             self.cache.tapped_tempo = None;
 
             self.cache.attributes.speed = calculate(
-                self.inputs.speed.value(),
+                self.input.speed.value(),
                 self.control_for_attribute(AttributeIdentifier::Speed),
                 if self.cache.options.short_delay_range {
                     LENGTH_SHORT_RANGE

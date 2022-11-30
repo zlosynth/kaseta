@@ -15,14 +15,14 @@ impl Store {
         const DRIVE_PORTION: f32 = 1.0 / 2.0;
 
         self.cache.attributes.dry_wet = calculate(
-            self.inputs.dry_wet.value(),
+            self.input.dry_wet.value(),
             self.control_for_attribute(AttributeIdentifier::DryWet),
             DRY_WET_RANGE,
             None,
         );
 
         let drive_input = calculate(
-            self.inputs.drive.value(),
+            self.input.drive.value(),
             self.control_for_attribute(AttributeIdentifier::Drive),
             (0.0, 1.0),
             None,
@@ -45,7 +45,7 @@ impl Store {
 
         let max_bias = max_bias_for_drive(drive).clamp(BIAS_RANGE.0, BIAS_RANGE.1);
         self.cache.attributes.bias = calculate(
-            self.inputs.bias.value(),
+            self.input.bias.value(),
             self.control_for_attribute(AttributeIdentifier::Bias),
             (0.01, max_bias),
             Some(taper::log),
