@@ -31,12 +31,10 @@ mod taper;
 mod trigger;
 
 use heapless::Vec;
-use kaseta_dsp::processor::{
-    Attributes as DSPAttributes, AttributesHead as DSPAttributesHead, Reaction as DSPReaction,
-};
+use kaseta_dsp::processor::{Attributes as DSPAttributes, Reaction as DSPReaction};
 
 use crate::action::{ControlAction, Queue};
-use crate::cache::{AttributesHead, Cache, Calibrations, Configuration, TappedTempo};
+use crate::cache::{Cache, Calibrations, Configuration, TappedTempo};
 use crate::calibration::Calibration;
 use crate::display::{ConfigurationScreen, Screen};
 use crate::input::snapshot::Snapshot as InputSnapshot;
@@ -124,7 +122,7 @@ impl Store {
         self.input.update(snapshot);
         let save = self.converge_internal_state();
         self.reconcile_attributes();
-        let dsp_attributes = self.build_dsp_attributes();
+        let dsp_attributes = self.cache.build_dsp_attributes();
         (dsp_attributes, save)
     }
 
@@ -269,43 +267,7 @@ impl Store {
         self.reconcile_speed();
         self.reconcile_heads();
 
-        self.cache.display.prioritized[2] = Some(self.screen_for_heads());
-    }
-
-    fn screen_for_heads(&self) -> Screen {
-        let ordered_heads = self.heads_ordered_by_position();
-
-        Screen::Heads(
-            [
-                ordered_heads[0].volume > 0.05,
-                ordered_heads[1].volume > 0.05,
-                ordered_heads[2].volume > 0.05,
-                ordered_heads[3].volume > 0.05,
-            ],
-            [
-                ordered_heads[0].feedback > 0.05,
-                ordered_heads[1].feedback > 0.05,
-                ordered_heads[2].feedback > 0.05,
-                ordered_heads[3].feedback > 0.05,
-            ],
-        )
-    }
-
-    fn heads_ordered_by_position(&self) -> [&AttributesHead; 4] {
-        let mut ordered_heads = [
-            &self.cache.attributes.head[0],
-            &self.cache.attributes.head[1],
-            &self.cache.attributes.head[2],
-            &self.cache.attributes.head[3],
-        ];
-        for i in 0..ordered_heads.len() {
-            for j in 0..ordered_heads.len() - 1 - i {
-                if ordered_heads[j].position > ordered_heads[j + 1].position {
-                    ordered_heads.swap(j, j + 1);
-                }
-            }
-        }
-        ordered_heads
+        self.cache.display.prioritized[2] = Some(self.cache.screen_for_heads());
     }
 
     fn plugged_and_unplugged_controls(&self) -> (Vec<usize, 4>, Vec<usize, 4>) {
@@ -371,53 +333,8 @@ impl Store {
         }
     }
 
-    fn build_dsp_attributes(&mut self) -> DSPAttributes {
-        DSPAttributes {
-            pre_amp: self.cache.attributes.pre_amp,
-            drive: self.cache.attributes.drive,
-            saturation: self.cache.attributes.saturation,
-            bias: self.cache.attributes.bias,
-            dry_wet: self.cache.attributes.dry_wet,
-            wow: self.cache.attributes.wow,
-            flutter: self.cache.attributes.flutter,
-            speed: self.cache.attributes.speed,
-            tone: self.cache.attributes.tone,
-            head: [
-                DSPAttributesHead {
-                    position: self.cache.attributes.head[0].position,
-                    volume: self.cache.attributes.head[0].volume,
-                    feedback: self.cache.attributes.head[0].feedback,
-                    pan: self.cache.attributes.head[0].pan,
-                },
-                DSPAttributesHead {
-                    position: self.cache.attributes.head[1].position,
-                    volume: self.cache.attributes.head[1].volume,
-                    feedback: self.cache.attributes.head[1].feedback,
-                    pan: self.cache.attributes.head[1].pan,
-                },
-                DSPAttributesHead {
-                    position: self.cache.attributes.head[2].position,
-                    volume: self.cache.attributes.head[2].volume,
-                    feedback: self.cache.attributes.head[2].feedback,
-                    pan: self.cache.attributes.head[2].pan,
-                },
-                DSPAttributesHead {
-                    position: self.cache.attributes.head[3].position,
-                    volume: self.cache.attributes.head[3].volume,
-                    feedback: self.cache.attributes.head[3].feedback,
-                    pan: self.cache.attributes.head[3].pan,
-                },
-            ],
-            rewind: self.cache.options.rewind,
-            rewind_speed: self.cache.configuration.rewind_speed,
-        }
-    }
-
     pub fn apply_dsp_reaction(&mut self, dsp_reaction: DSPReaction) {
-        if dsp_reaction.delay_impulse {
-            self.cache.impulse_trigger.trigger();
-            self.cache.impulse_led.trigger();
-        }
+        self.cache.apply_dsp_reaction(dsp_reaction);
     }
 
     pub fn tick(&mut self) -> DesiredOutput {

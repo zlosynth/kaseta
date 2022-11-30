@@ -1,5 +1,9 @@
+use kaseta_dsp::processor::{
+    Attributes as DSPAttributes, AttributesHead as DSPAttributesHead, Reaction as DSPReaction,
+};
+
 use crate::calibration::Calibration;
-use crate::display::Display;
+use crate::display::{Display, Screen};
 use crate::led::Led;
 use crate::mapping::Mapping;
 use crate::trigger::Trigger;
@@ -79,4 +83,91 @@ pub struct AttributesHead {
     pub volume: f32,
     pub feedback: f32,
     pub pan: f32,
+}
+
+impl Cache {
+    pub fn build_dsp_attributes(&mut self) -> DSPAttributes {
+        DSPAttributes {
+            pre_amp: self.attributes.pre_amp,
+            drive: self.attributes.drive,
+            saturation: self.attributes.saturation,
+            bias: self.attributes.bias,
+            dry_wet: self.attributes.dry_wet,
+            wow: self.attributes.wow,
+            flutter: self.attributes.flutter,
+            speed: self.attributes.speed,
+            tone: self.attributes.tone,
+            head: [
+                DSPAttributesHead {
+                    position: self.attributes.head[0].position,
+                    volume: self.attributes.head[0].volume,
+                    feedback: self.attributes.head[0].feedback,
+                    pan: self.attributes.head[0].pan,
+                },
+                DSPAttributesHead {
+                    position: self.attributes.head[1].position,
+                    volume: self.attributes.head[1].volume,
+                    feedback: self.attributes.head[1].feedback,
+                    pan: self.attributes.head[1].pan,
+                },
+                DSPAttributesHead {
+                    position: self.attributes.head[2].position,
+                    volume: self.attributes.head[2].volume,
+                    feedback: self.attributes.head[2].feedback,
+                    pan: self.attributes.head[2].pan,
+                },
+                DSPAttributesHead {
+                    position: self.attributes.head[3].position,
+                    volume: self.attributes.head[3].volume,
+                    feedback: self.attributes.head[3].feedback,
+                    pan: self.attributes.head[3].pan,
+                },
+            ],
+            rewind: self.options.rewind,
+            rewind_speed: self.configuration.rewind_speed,
+        }
+    }
+
+    pub fn apply_dsp_reaction(&mut self, dsp_reaction: DSPReaction) {
+        if dsp_reaction.delay_impulse {
+            self.impulse_trigger.trigger();
+            self.impulse_led.trigger();
+        }
+    }
+
+    pub fn screen_for_heads(&self) -> Screen {
+        let ordered_heads = self.heads_ordered_by_position();
+
+        Screen::Heads(
+            [
+                ordered_heads[0].volume > 0.05,
+                ordered_heads[1].volume > 0.05,
+                ordered_heads[2].volume > 0.05,
+                ordered_heads[3].volume > 0.05,
+            ],
+            [
+                ordered_heads[0].feedback > 0.05,
+                ordered_heads[1].feedback > 0.05,
+                ordered_heads[2].feedback > 0.05,
+                ordered_heads[3].feedback > 0.05,
+            ],
+        )
+    }
+
+    fn heads_ordered_by_position(&self) -> [&AttributesHead; 4] {
+        let mut ordered_heads = [
+            &self.attributes.head[0],
+            &self.attributes.head[1],
+            &self.attributes.head[2],
+            &self.attributes.head[3],
+        ];
+        for i in 0..ordered_heads.len() {
+            for j in 0..ordered_heads.len() - 1 - i {
+                if ordered_heads[j].position > ordered_heads[j + 1].position {
+                    ordered_heads.swap(j, j + 1);
+                }
+            }
+        }
+        ordered_heads
+    }
 }
