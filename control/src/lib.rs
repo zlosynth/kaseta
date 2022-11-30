@@ -243,8 +243,6 @@ impl Cache {
         (dsp_attributes, save)
     }
 
-    // TODO
-    #[allow(clippy::too_many_lines)]
     fn converge_internal_state(&mut self) -> Option<Save> {
         let mut needs_save = false;
 
@@ -296,39 +294,10 @@ impl Cache {
                     self.configuration = draft;
                     self.state = State::Normal;
                 } else {
-                    let mut active_configuration_screen = None;
-                    for head in self.inputs.head.iter() {
-                        if head.volume.active() || head.feedback.active() {
-                            let volume = head.volume.value();
-                            let rewind_index = if volume < 0.25 {
-                                0
-                            } else if volume < 0.5 {
-                                1
-                            } else if volume < 0.75 {
-                                2
-                            } else {
-                                3
-                            };
-                            let feedback = head.feedback.value();
-                            let fast_forward_index = if feedback < 0.25 {
-                                0
-                            } else if feedback < 0.5 {
-                                1
-                            } else if feedback < 0.75 {
-                                2
-                            } else {
-                                3
-                            };
-                            active_configuration_screen = Some(Screen::Configuration(
-                                ConfigurationScreen::Rewind((rewind_index, fast_forward_index)),
-                            ));
-                            break;
-                        }
-                    }
+                    let active_configuration_screen = self.active_configuration_screen();
                     if active_configuration_screen.is_some() {
                         self.outputs.display.prioritized[1] = active_configuration_screen;
                     }
-
                     self.state = State::Configuring(self.snapshot_configuration_from_pots(draft));
                 }
             }
@@ -371,6 +340,39 @@ impl Cache {
         } else {
             None
         }
+    }
+
+    fn active_configuration_screen(&mut self) -> Option<Screen> {
+        let mut active_configuration_screen = None;
+        for head in self.inputs.head.iter() {
+            if head.volume.active() || head.feedback.active() {
+                let volume = head.volume.value();
+                let rewind_index = if volume < 0.25 {
+                    0
+                } else if volume < 0.5 {
+                    1
+                } else if volume < 0.75 {
+                    2
+                } else {
+                    3
+                };
+                let feedback = head.feedback.value();
+                let fast_forward_index = if feedback < 0.25 {
+                    0
+                } else if feedback < 0.5 {
+                    1
+                } else if feedback < 0.75 {
+                    2
+                } else {
+                    3
+                };
+                active_configuration_screen = Some(Screen::Configuration(
+                    ConfigurationScreen::Rewind((rewind_index, fast_forward_index)),
+                ));
+                break;
+            }
+        }
+        active_configuration_screen
     }
 
     // TODO: Display should be handled elsewhere
