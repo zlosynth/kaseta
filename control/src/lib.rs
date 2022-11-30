@@ -19,6 +19,7 @@
 extern crate approx;
 
 mod action;
+mod cache;
 mod calibration;
 mod display;
 mod input;
@@ -35,13 +36,12 @@ use kaseta_dsp::processor::{
 };
 
 use crate::action::{ControlAction, Queue};
+use crate::cache::{AttributesHead, Cache, Calibrations, Configuration, TappedTempo};
 use crate::calibration::Calibration;
-use crate::display::{ConfigurationScreen, Display, Screen};
+use crate::display::{ConfigurationScreen, Screen};
 use crate::input::snapshot::Snapshot as InputSnapshot;
 use crate::input::store::Store as Input;
-use crate::led::Led;
 use crate::mapping::{AttributeIdentifier, Mapping};
-use crate::trigger::Trigger;
 
 /// The main store of peripheral abstraction and module configuration.
 ///
@@ -76,83 +76,6 @@ pub(crate) enum State {
 pub(crate) enum CalibrationPhase {
     Octave1,
     Octave2(f32),
-}
-
-/// TODO Docs
-// TODO: One per head, offset and amplification
-type Calibrations = [Calibration; 4];
-
-/// Easy to access modifications of the default module behavior.
-///
-/// Options are configured using the DIP switch on the front of the module.
-/// They are meant to provide a quick access to some common extended features
-/// such as quantization, rewind, etc.
-#[allow(clippy::struct_excessive_bools)]
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Options {
-    quantize_8: bool,
-    quantize_6: bool,
-    short_delay_range: bool,
-    rewind: bool,
-}
-
-/// Tweaking of the default module configuration.
-///
-/// This is mean to allow tweaking of some more niche configuration of the
-/// module. Unlike with `Options`, the parameters here may be continuous
-/// (float) or offer enumeration of variants. An examle of a configuration
-/// may be tweaking of head's rewind speed.
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub(crate) struct Configuration {
-    rewind_speed: [(f32, f32); 4],
-}
-
-/// TODO: doc
-type TappedTempo = Option<f32>;
-
-/// Interpreted attributes for the DSP.
-///
-/// This structure can be directly translated to DSP configuration, used
-/// to build the audio processor model.
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Attributes {
-    pre_amp: f32,
-    drive: f32,
-    saturation: f32,
-    bias: f32,
-    dry_wet: f32,
-    wow: f32,
-    flutter: f32,
-    speed: f32,
-    tone: f32,
-    head: [AttributesHead; 4],
-}
-
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct AttributesHead {
-    position: f32,
-    volume: f32,
-    feedback: f32,
-    pan: f32,
-}
-
-/// TODO docs
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Cache {
-    mapping: Mapping,
-    calibrations: Calibrations,
-    options: Options,
-    configuration: Configuration,
-    tapped_tempo: TappedTempo,
-    attributes: Attributes,
-    impulse_trigger: Trigger,
-    impulse_led: Led,
-    display: Display,
 }
 
 /// Desired state of output peripherals with the exception of audio.
