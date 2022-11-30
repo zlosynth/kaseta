@@ -1,11 +1,11 @@
 use super::calculate;
 use crate::mapping::AttributeIdentifier;
-use crate::Cache;
+use crate::Store;
 
 const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 0.2);
 const FLUTTER_DEPTH_RANGE: (f32, f32) = (0.0, 0.0015);
 
-impl Cache {
+impl Store {
     pub fn reconcile_wow_flutter(&mut self) {
         let depth = calculate(
             self.inputs.wow_flut.value(),

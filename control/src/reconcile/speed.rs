@@ -1,13 +1,13 @@
 use super::calculate;
 use crate::mapping::AttributeIdentifier;
 use crate::taper;
-use crate::Cache;
+use crate::Store;
 
 // TODO: Rename to speed and revert it 1/X
 const LENGTH_LONG_RANGE: (f32, f32) = (0.02, 2.0 * 60.0);
 const LENGTH_SHORT_RANGE: (f32, f32) = (1.0 / 400.0, 1.0);
 
-impl Cache {
+impl Store {
     pub fn reconcile_speed(&mut self) {
         if self.inputs.speed.active() {
             self.tapped_tempo = None;

@@ -1,14 +1,14 @@
 use super::calculate;
 use crate::mapping::AttributeIdentifier;
 use crate::taper;
-use crate::Cache;
+use crate::Store;
 
 const DRY_WET_RANGE: (f32, f32) = (0.0, 1.0);
 const DRIVE_RANGE: (f32, f32) = (0.1, 1.1);
 const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
 const BIAS_RANGE: (f32, f32) = (0.01, 1.0);
 
-impl Cache {
+impl Store {
     pub fn reconcile_hysteresis(&mut self) {
         // Maximum limit of how much place on the slider is occupied by drive. This
         // gets scaled down based on bias.

@@ -51,7 +51,7 @@ use crate::trigger::Trigger;
 /// the whole state machine of that.
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Cache {
+pub struct Store {
     inputs: Inputs,
     // TODO: cache
     // TODO: results
@@ -181,7 +181,7 @@ pub struct Save {
 
 // NOTE: Inputs and outputs will be passed through queues
 #[allow(clippy::new_without_default)]
-impl Cache {
+impl Store {
     #[must_use]
     pub fn new() -> Self {
         Self {
@@ -568,14 +568,14 @@ impl Cache {
     }
 }
 
-impl From<Save> for Cache {
+impl From<Save> for Store {
     fn from(save: Save) -> Self {
-        let mut cache = Self::new();
-        cache.mapping = save.mapping;
-        cache.calibrations = save.calibrations;
-        cache.configuration = save.configuration;
-        cache.tapped_tempo = save.tapped_tempo;
-        cache
+        let mut store = Self::new();
+        store.mapping = save.mapping;
+        store.calibrations = save.calibrations;
+        store.configuration = save.configuration;
+        store.tapped_tempo = save.tapped_tempo;
+        store
     }
 }
 
@@ -586,7 +586,7 @@ impl Default for State {
 }
 
 #[cfg(test)]
-mod cache_tests {
+mod store_tests {
     #![allow(clippy::field_reassign_with_default)]
     #![allow(clippy::manual_assert)]
     #![allow(clippy::zero_prefixed_literal)]
@@ -594,11 +594,11 @@ mod cache_tests {
     use super::*;
 
     #[test]
-    fn it_should_be_possible_to_initialize_cache() {
-        let _cache = Cache::new();
+    fn it_should_be_possible_to_initialize_store() {
+        let _store = Store::new();
     }
 
-    fn assert_animation(cache: &mut Cache, transitions: &[u32]) {
+    fn assert_animation(store: &mut Store, transitions: &[u32]) {
         fn u32_into_digits(mut x: u32) -> [u32; 4] {
             assert!(x < 10000);
 
@@ -640,7 +640,7 @@ mod cache_tests {
         let mut old_display = None;
         'transition: for transition in transitions {
             for _ in 0..10000 {
-                let display = cache.tick().display;
+                let display = store.tick().display;
                 let bools = transition_into_bools(*transition);
                 if display == bools {
                     old_display = Some(display);
@@ -655,22 +655,22 @@ mod cache_tests {
 
     #[test]
     fn when_dsp_returns_impulse_it_should_set_output_trigger_for_multiple_cycles() {
-        let mut cache = Cache::new();
+        let mut store = Store::new();
         let mut dsp_reaction = DSPReaction::default();
 
         dsp_reaction.delay_impulse = true;
-        cache.apply_dsp_reaction(dsp_reaction);
+        store.apply_dsp_reaction(dsp_reaction);
 
         dsp_reaction.delay_impulse = false;
-        cache.apply_dsp_reaction(dsp_reaction);
+        store.apply_dsp_reaction(dsp_reaction);
 
-        let output = cache.tick();
+        let output = store.tick();
         assert!(output.impulse_trigger);
-        let output = cache.tick();
+        let output = store.tick();
         assert!(output.impulse_trigger);
 
         for _ in 0..100 {
-            let output = cache.tick();
+            let output = store.tick();
             if !output.impulse_trigger {
                 return;
             }
@@ -681,22 +681,22 @@ mod cache_tests {
 
     #[test]
     fn when_dsp_returns_impulse_it_should_lit_impulse_led_for_multiple_cycles() {
-        let mut cache = Cache::new();
+        let mut store = Store::new();
         let mut dsp_reaction = DSPReaction::default();
 
         dsp_reaction.delay_impulse = true;
-        cache.apply_dsp_reaction(dsp_reaction);
+        store.apply_dsp_reaction(dsp_reaction);
 
         dsp_reaction.delay_impulse = false;
-        cache.apply_dsp_reaction(dsp_reaction);
+        store.apply_dsp_reaction(dsp_reaction);
 
-        let output = cache.tick();
+        let output = store.tick();
         assert!(output.impulse_led);
-        let output = cache.tick();
+        let output = store.tick();
         assert!(output.impulse_led);
 
         for _ in 0..100 {
-            let output = cache.tick();
+            let output = store.tick();
             if !output.impulse_led {
                 return;
             }
@@ -707,439 +707,439 @@ mod cache_tests {
 
     #[test]
     fn given_save_it_recovers_previously_set_tapped_tempo() {
-        let mut cache = Cache::new();
+        let mut store = Store::new();
         let mut input = InputSnapshot::default();
 
         input.button = true;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.button = false;
         for _ in 0..1999 {
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
 
         input.button = true;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.button = false;
         for _ in 0..1999 {
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
 
         input.button = true;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.button = false;
         for _ in 0..1999 {
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
 
         input.button = true;
-        let (_, save) = cache.apply_input_snapshot(input);
-        assert_relative_eq!(cache.attributes.speed, 2.0);
+        let (_, save) = store.apply_input_snapshot(input);
+        assert_relative_eq!(store.attributes.speed, 2.0);
 
-        let mut cache = Cache::from(save.unwrap());
+        let mut store = Store::from(save.unwrap());
         let mut input = InputSnapshot::default();
         input.speed = 0.5;
         for _ in 0..10 {
-            cache.warm_up(input);
+            store.warm_up(input);
         }
-        cache.apply_input_snapshot(input);
-        assert_relative_eq!(cache.attributes.speed, 2.0);
+        store.apply_input_snapshot(input);
+        assert_relative_eq!(store.attributes.speed, 2.0);
     }
 
     #[test]
     fn given_save_it_recovers_previously_set_mapping() {
-        let mut cache = Cache::new();
+        let mut store = Store::new();
         let mut input = InputSnapshot::default();
 
         input.control[1] = None;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.control[1] = Some(1.0);
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.drive = 0.1;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
-        let save = cache.save();
-        let mut cache = Cache::from(save);
-        cache.apply_input_snapshot(input);
+        let save = store.save();
+        let mut store = Store::from(save);
+        store.apply_input_snapshot(input);
 
-        assert_eq!(cache.mapping[1], AttributeIdentifier::Drive);
-        assert_eq!(cache.state, State::Normal);
+        assert_eq!(store.mapping[1], AttributeIdentifier::Drive);
+        assert_eq!(store.state, State::Normal);
     }
 
     #[test]
     fn given_save_if_new_control_was_plugged_since_it_gets_to_the_queque() {
-        let cache = Cache::new();
+        let store = Store::new();
 
-        let save = cache.save();
+        let save = store.save();
 
         let mut input = InputSnapshot::default();
         input.control[1] = Some(1.0);
 
-        let mut cache = Cache::from(save);
-        cache.apply_input_snapshot(input);
+        let mut store = Store::from(save);
+        store.apply_input_snapshot(input);
 
-        assert_eq!(cache.state, State::Mapping(1));
+        assert_eq!(store.state, State::Mapping(1));
     }
 
     #[test]
     fn given_save_it_recovers_previously_set_calibration_and_mapping() {
-        fn click_button(cache: &mut Cache, mut input: InputSnapshot) {
+        fn click_button(store: &mut Store, mut input: InputSnapshot) {
             input.button = true;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
             input.button = false;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
 
-        let mut cache = Cache::new();
+        let mut store = Store::new();
         let mut input = InputSnapshot::default();
 
         input.control[1] = None;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.button = true;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.control[1] = Some(1.0);
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.button = false;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.control[1] = Some(1.2);
         for _ in 0..10 {
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
-        click_button(&mut cache, input);
+        click_button(&mut store, input);
 
         input.control[1] = Some(2.3);
         for _ in 0..10 {
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
-        click_button(&mut cache, input);
+        click_button(&mut store, input);
 
         input.drive = 0.1;
-        cache.apply_input_snapshot(input);
-        assert_eq!(cache.state, State::Normal);
+        store.apply_input_snapshot(input);
+        assert_eq!(store.state, State::Normal);
 
-        let calibration = cache.calibrations[1];
-        let mapping = cache.mapping[1];
+        let calibration = store.calibrations[1];
+        let mapping = store.mapping[1];
 
-        let save = cache.save();
-        let mut cache = Cache::from(save);
-        cache.apply_input_snapshot(input);
+        let save = store.save();
+        let mut store = Store::from(save);
+        store.apply_input_snapshot(input);
 
-        assert_eq!(cache.calibrations[1], calibration);
-        assert_eq!(cache.mapping[1], mapping);
-        assert_eq!(cache.state, State::Normal);
+        assert_eq!(store.calibrations[1], calibration);
+        assert_eq!(store.mapping[1], mapping);
+        assert_eq!(store.state, State::Normal);
     }
 
     #[test]
     fn given_save_after_calibration_was_done_but_mapping_not_it_recovers_calibration_and_continues_mapping(
     ) {
-        // TODO: Single helper for all cache tests
-        fn click_button(cache: &mut Cache, mut input: InputSnapshot) {
+        // TODO: Single helper for all store tests
+        fn click_button(store: &mut Store, mut input: InputSnapshot) {
             input.button = true;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
             input.button = false;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
 
-        let mut cache = Cache::new();
+        let mut store = Store::new();
         let mut input = InputSnapshot::default();
 
         input.control[1] = None;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.button = true;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.control[1] = Some(1.0);
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.button = false;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         input.control[1] = Some(1.2);
         for _ in 0..10 {
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
-        click_button(&mut cache, input);
+        click_button(&mut store, input);
 
         input.control[1] = Some(2.3);
         for _ in 0..10 {
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
-        click_button(&mut cache, input);
+        click_button(&mut store, input);
 
         input.drive = 0.1;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
-        assert_eq!(cache.state, State::Normal);
+        assert_eq!(store.state, State::Normal);
 
-        let calibration = cache.calibrations[1];
-        let mapping = cache.mapping[1];
+        let calibration = store.calibrations[1];
+        let mapping = store.mapping[1];
 
-        let save = cache.save();
-        let mut cache = Cache::from(save);
-        cache.apply_input_snapshot(input);
+        let save = store.save();
+        let mut store = Store::from(save);
+        store.apply_input_snapshot(input);
 
-        assert_eq!(cache.calibrations[1], calibration);
-        assert_eq!(cache.mapping[1], mapping);
-        assert_eq!(cache.state, State::Normal);
+        assert_eq!(store.calibrations[1], calibration);
+        assert_eq!(store.mapping[1], mapping);
+        assert_eq!(store.state, State::Normal);
     }
 
     #[test]
     fn given_save_it_recovers_previously_set_configuration() {
-        let mut cache = Cache::new();
+        let mut store = Store::new();
         let mut input = InputSnapshot::default();
 
         // TODO: Define global helper for this
         input.button = true;
         for _ in 0..6 * 1000 {
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
         input.button = false;
-        cache.apply_input_snapshot(input);
+        store.apply_input_snapshot(input);
 
         for head in input.head.iter_mut() {
             head.volume = 1.0;
             head.feedback = 1.0;
         }
         for _ in 0..4 {
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
 
         input.button = true;
-        let (_, save) = cache.apply_input_snapshot(input);
+        let (_, save) = store.apply_input_snapshot(input);
 
         input.button = false;
 
-        let mut cache = Cache::from(save.unwrap());
-        cache.apply_input_snapshot(input);
+        let mut store = Store::from(save.unwrap());
+        store.apply_input_snapshot(input);
 
-        assert_eq!(cache.configuration.rewind_speed[0], (-4.0, 8.0));
-        assert_eq!(cache.configuration.rewind_speed[1], (-4.0, 8.0));
-        assert_eq!(cache.configuration.rewind_speed[2], (-4.0, 8.0));
-        assert_eq!(cache.configuration.rewind_speed[3], (-4.0, 8.0));
+        assert_eq!(store.configuration.rewind_speed[0], (-4.0, 8.0));
+        assert_eq!(store.configuration.rewind_speed[1], (-4.0, 8.0));
+        assert_eq!(store.configuration.rewind_speed[2], (-4.0, 8.0));
+        assert_eq!(store.configuration.rewind_speed[3], (-4.0, 8.0));
     }
 
     #[cfg(test)]
     mod given_normal_mode {
         use super::*;
 
-        fn init_cache() -> Cache {
-            Cache::new()
+        fn init_store() -> Store {
+            Store::new()
         }
 
         #[test]
         fn when_clicking_button_in_equal_intervals_it_sets_speed() {
-            let mut cache = init_cache();
+            let mut store = init_store();
             let mut input = InputSnapshot::default();
 
             input.button = true;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.button = false;
             for _ in 0..1999 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
 
             input.button = true;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.button = false;
             for _ in 0..1999 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
 
             input.button = true;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.button = false;
             for _ in 0..1999 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
 
             input.button = true;
-            let (_, save) = cache.apply_input_snapshot(input);
+            let (_, save) = store.apply_input_snapshot(input);
 
-            assert_relative_eq!(cache.attributes.speed, 2.0);
+            assert_relative_eq!(store.attributes.speed, 2.0);
             assert_relative_eq!(save.unwrap().tapped_tempo.unwrap(), 2.0);
         }
 
         #[test]
         fn when_tempo_is_tapped_in_it_is_overwritten_only_after_speed_pot_turning() {
-            let mut cache = init_cache();
+            let mut store = init_store();
             let mut input = InputSnapshot::default();
 
             input.button = true;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.button = false;
             for _ in 0..1999 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
 
             input.button = true;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.button = false;
             for _ in 0..1999 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
 
             input.button = true;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.button = false;
             for _ in 0..1999 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
 
             input.button = true;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
-            assert_relative_eq!(cache.attributes.speed, 2.0);
+            assert_relative_eq!(store.attributes.speed, 2.0);
 
             input.button = false;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.tone = 1.0;
-            cache.apply_input_snapshot(input);
-            assert_relative_eq!(cache.attributes.speed, 2.0);
+            store.apply_input_snapshot(input);
+            assert_relative_eq!(store.attributes.speed, 2.0);
 
             input.speed = 0.5;
-            cache.apply_input_snapshot(input);
-            assert!(cache.attributes.speed > 20.0);
+            store.apply_input_snapshot(input);
+            assert!(store.attributes.speed > 20.0);
         }
 
         #[test]
         fn when_control_is_plugged_then_state_changes_to_mapping() {
-            let mut cache = init_cache();
+            let mut store = init_store();
             let mut input = InputSnapshot::default();
 
             input.control[1] = None;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.control[1] = Some(1.0);
-            let (_, save) = cache.apply_input_snapshot(input);
+            let (_, save) = store.apply_input_snapshot(input);
 
             assert!(save.is_none());
-            assert!(matches!(cache.state, State::Mapping(1)));
+            assert!(matches!(store.state, State::Mapping(1)));
             assert_animation(
-                &mut cache,
+                &mut store,
                 &[9600, 0800, 0690, 0609, 9600, 0800, 0690, 0609],
             );
         }
 
         #[test]
         fn when_control_is_plugged_while_holding_button_then_state_changes_to_calibration() {
-            let mut cache = init_cache();
+            let mut store = init_store();
             let mut input = InputSnapshot::default();
 
             input.button = false;
             input.control[1] = None;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.button = true;
             input.control[1] = Some(1.0);
-            let (_, save) = cache.apply_input_snapshot(input);
+            let (_, save) = store.apply_input_snapshot(input);
 
             assert!(save.is_none());
             assert!(matches!(
-                cache.state,
+                store.state,
                 State::Calibrating(1, CalibrationPhase::Octave1)
             ));
-            assert_animation(&mut cache, &[9800, 0600, 9800, 0600]);
+            assert_animation(&mut store, &[9800, 0600, 9800, 0600]);
         }
 
         #[test]
         fn when_multiple_controls_are_plugged_then_are_all_added_to_queue() {
-            let mut cache = init_cache();
+            let mut store = init_store();
 
             let mut input = InputSnapshot::default();
             input.control[1] = None;
             input.control[2] = None;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             let mut input = InputSnapshot::default();
             input.control[1] = Some(1.0);
             input.control[2] = Some(1.0);
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
-            assert!(matches!(cache.state, State::Mapping(1)));
-            assert_eq!(cache.queue.len(), 1);
+            assert!(matches!(store.state, State::Mapping(1)));
+            assert_eq!(store.queue.len(), 1);
         }
 
         #[test]
         fn when_control_is_unplugged_it_is_removed_from_queue() {
-            let mut cache = init_cache();
+            let mut store = init_store();
             let mut input = InputSnapshot::default();
 
             input.control[1] = None;
             input.control[2] = None;
             input.control[3] = None;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.control[1] = Some(1.0);
             input.control[2] = Some(1.0);
             input.control[3] = Some(1.0);
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
-            assert!(matches!(cache.state, State::Mapping(1)));
-            assert_eq!(cache.queue.len(), 2);
+            assert!(matches!(store.state, State::Mapping(1)));
+            assert_eq!(store.queue.len(), 2);
 
             input.control[2] = None;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
-            assert!(matches!(cache.state, State::Mapping(1)));
-            assert_eq!(cache.queue.len(), 1);
+            assert!(matches!(store.state, State::Mapping(1)));
+            assert_eq!(store.queue.len(), 1);
         }
 
         #[test]
         fn when_button_is_held_for_5_seconds_it_enters_configuration_mode() {
-            let mut cache = init_cache();
+            let mut store = init_store();
             let mut input = InputSnapshot::default();
 
             input.button = true;
             for _ in 0..6 * 1000 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
             input.button = false;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
-            assert!(matches!(cache.state, State::Configuring(_)));
+            assert!(matches!(store.state, State::Configuring(_)));
         }
 
         #[test]
         fn when_mapped_control_in_unplugged_it_is_unmapped() {
-            let mut cache = init_cache();
+            let mut store = init_store();
             let mut input = InputSnapshot::default();
 
             input.control[0] = None;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.control[0] = Some(1.0);
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.drive = 0.4;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
-            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
 
             input.control[0] = None;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
-            assert_eq!(cache.mapping[0], AttributeIdentifier::None);
+            assert_eq!(store.mapping[0], AttributeIdentifier::None);
         }
 
         #[test]
         fn it_displays_enabled_volume_and_feedback_based_on_head_order() {
-            let mut cache = init_cache();
+            let mut store = init_store();
             let mut input = InputSnapshot::default();
 
             input.head[0].position = 1.0;
@@ -1159,10 +1159,10 @@ mod cache_tests {
             input.head[3].feedback = 0.0;
 
             for _ in 0..4 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
 
-            assert_animation(&mut cache, &[6098]);
+            assert_animation(&mut store, &[6098]);
         }
     }
 
@@ -1170,42 +1170,42 @@ mod cache_tests {
     mod given_configuration_mode {
         use super::*;
 
-        fn init_cache() -> (Cache, InputSnapshot) {
-            let mut cache = Cache::new();
+        fn init_store() -> (Store, InputSnapshot) {
+            let mut store = Store::new();
             let input = InputSnapshot::default();
 
-            hold_button(&mut cache, input);
+            hold_button(&mut store, input);
 
-            (cache, input)
+            (store, input)
         }
 
-        fn hold_button(cache: &mut Cache, mut input: InputSnapshot) {
+        fn hold_button(store: &mut Store, mut input: InputSnapshot) {
             input.button = true;
             for _ in 0..6 * 1000 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
             input.button = false;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
 
-        fn click_button(cache: &mut Cache, mut input: InputSnapshot) {
+        fn click_button(store: &mut Store, mut input: InputSnapshot) {
             input.button = true;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
             input.button = false;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
         }
 
-        fn apply_input_snapshot(cache: &mut Cache, input: InputSnapshot) {
+        fn apply_input_snapshot(store: &mut Store, input: InputSnapshot) {
             // NOTE: Applying it 4 times makes sure that pot smoothening is
             // not affecting following asserts.
             for _ in 0..4 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
         }
 
         #[test]
         fn when_clicks_button_it_saves_configuration_and_enters_normal_mode() {
-            let (mut cache, mut input) = init_cache();
+            let (mut store, mut input) = init_store();
 
             input.head[0].volume = 0.05;
             input.head[0].feedback = 0.05;
@@ -1215,71 +1215,71 @@ mod cache_tests {
             input.head[2].feedback = 0.7;
             input.head[3].volume = 1.0;
             input.head[3].feedback = 1.0;
-            apply_input_snapshot(&mut cache, input);
+            apply_input_snapshot(&mut store, input);
 
-            click_button(&mut cache, input);
+            click_button(&mut store, input);
 
-            assert_eq!(cache.configuration.rewind_speed[0], (0.75, 1.0));
-            assert_eq!(cache.configuration.rewind_speed[1], (0.5, 2.0));
-            assert_eq!(cache.configuration.rewind_speed[2], (-1.0, 4.0));
-            assert_eq!(cache.configuration.rewind_speed[3], (-4.0, 8.0));
+            assert_eq!(store.configuration.rewind_speed[0], (0.75, 1.0));
+            assert_eq!(store.configuration.rewind_speed[1], (0.5, 2.0));
+            assert_eq!(store.configuration.rewind_speed[2], (-1.0, 4.0));
+            assert_eq!(store.configuration.rewind_speed[3], (-4.0, 8.0));
         }
 
         #[test]
         fn when_turns_volume_and_feedback_the_rewind_speed_is_visualized_on_display() {
-            let (mut cache, mut input) = init_cache();
+            let (mut store, mut input) = init_store();
 
             input.head[0].volume = 0.05;
             input.head[0].feedback = 0.05;
-            apply_input_snapshot(&mut cache, input);
-            assert_animation(&mut cache, &[9006]);
+            apply_input_snapshot(&mut store, input);
+            assert_animation(&mut store, &[9006]);
 
             input.head[1].volume = 0.35;
             input.head[1].feedback = 0.35;
-            apply_input_snapshot(&mut cache, input);
-            assert_animation(&mut cache, &[9966]);
+            apply_input_snapshot(&mut store, input);
+            assert_animation(&mut store, &[9966]);
 
             input.head[2].volume = 0.7;
             input.head[2].feedback = 0.7;
-            apply_input_snapshot(&mut cache, input);
-            assert_animation(&mut cache, &[9886]);
+            apply_input_snapshot(&mut store, input);
+            assert_animation(&mut store, &[9886]);
 
             input.head[3].volume = 1.0;
             input.head[3].feedback = 1.0;
-            apply_input_snapshot(&mut cache, input);
-            assert_animation(&mut cache, &[8888]);
+            apply_input_snapshot(&mut store, input);
+            assert_animation(&mut store, &[8888]);
         }
 
         #[test]
         fn when_does_not_change_attribute_it_keeps_the_previously_set_value() {
-            let (mut cache, mut input) = init_cache();
+            let (mut store, mut input) = init_store();
 
             input.head[2].volume = 0.7;
             input.head[2].feedback = 0.7;
-            apply_input_snapshot(&mut cache, input);
-            click_button(&mut cache, input);
+            apply_input_snapshot(&mut store, input);
+            click_button(&mut store, input);
 
-            assert_eq!(cache.configuration.rewind_speed[2], (-1.0, 4.0));
+            assert_eq!(store.configuration.rewind_speed[2], (-1.0, 4.0));
 
             input.head[2].volume = 0.0;
             input.head[2].feedback = 0.0;
-            apply_input_snapshot(&mut cache, input);
+            apply_input_snapshot(&mut store, input);
 
-            hold_button(&mut cache, input);
+            hold_button(&mut store, input);
 
             input.head[1].volume = 0.35;
             input.head[1].feedback = 0.35;
-            apply_input_snapshot(&mut cache, input);
-            click_button(&mut cache, input);
+            apply_input_snapshot(&mut store, input);
+            click_button(&mut store, input);
 
-            assert_eq!(cache.configuration.rewind_speed[2], (-1.0, 4.0));
-            assert_eq!(cache.configuration.rewind_speed[1], (0.5, 2.0));
+            assert_eq!(store.configuration.rewind_speed[2], (-1.0, 4.0));
+            assert_eq!(store.configuration.rewind_speed[1], (0.5, 2.0));
         }
 
         #[test]
         fn when_no_attribute_was_changed_yet_it_shows_animation() {
-            let (mut cache, _) = init_cache();
-            assert_animation(&mut cache, &[9696, 6969]);
+            let (mut store, _) = init_store();
+            assert_animation(&mut store, &[9696, 6969]);
         }
     }
 
@@ -1287,154 +1287,154 @@ mod cache_tests {
     mod given_mapping_mode {
         use super::*;
 
-        fn init_cache(pending: usize) -> (Cache, InputSnapshot) {
-            let mut cache = Cache::new();
+        fn init_store(pending: usize) -> (Store, InputSnapshot) {
+            let mut store = Store::new();
             let mut input = InputSnapshot::default();
 
             for i in 0..pending {
                 input.control[i] = None;
             }
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             for i in 0..pending {
                 input.control[i] = Some(1.0);
             }
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
-            (cache, input)
+            (store, input)
         }
 
-        fn apply_input_snapshot(cache: &mut Cache, input: InputSnapshot) {
+        fn apply_input_snapshot(store: &mut Store, input: InputSnapshot) {
             // NOTE: Applying it 4 times makes sure that pot smoothening is
             // not affecting following asserts.
             for _ in 0..4 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
         }
 
         #[test]
         fn when_pot_is_active_it_gets_mapped_to_the_current_control_and_saved() {
-            let (mut cache, mut input) = init_cache(4);
+            let (mut store, mut input) = init_store(4);
 
             input.drive = 0.1;
-            let (_, save) = cache.apply_input_snapshot(input);
+            let (_, save) = store.apply_input_snapshot(input);
             assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
-            apply_input_snapshot(&mut cache, input); // Let the pot converge
+            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
+            apply_input_snapshot(&mut store, input); // Let the pot converge
 
             input.speed = 0.1;
-            let (_, save) = cache.apply_input_snapshot(input);
+            let (_, save) = store.apply_input_snapshot(input);
             assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
             assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
-            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(cache.mapping[1], AttributeIdentifier::Speed);
-            apply_input_snapshot(&mut cache, input); // Let the pot converge
+            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.mapping[1], AttributeIdentifier::Speed);
+            apply_input_snapshot(&mut store, input); // Let the pot converge
 
             input.dry_wet = 0.1;
-            let (_, save) = cache.apply_input_snapshot(input);
+            let (_, save) = store.apply_input_snapshot(input);
             assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
             assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
             assert_eq!(save.unwrap().mapping[2], AttributeIdentifier::DryWet);
-            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(cache.mapping[1], AttributeIdentifier::Speed);
-            assert_eq!(cache.mapping[2], AttributeIdentifier::DryWet);
-            apply_input_snapshot(&mut cache, input); // Let the pot converge
+            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.mapping[1], AttributeIdentifier::Speed);
+            assert_eq!(store.mapping[2], AttributeIdentifier::DryWet);
+            apply_input_snapshot(&mut store, input); // Let the pot converge
 
             input.bias = 0.1;
-            let (_, save) = cache.apply_input_snapshot(input);
+            let (_, save) = store.apply_input_snapshot(input);
             assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
             assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
             assert_eq!(save.unwrap().mapping[2], AttributeIdentifier::DryWet);
             assert_eq!(save.unwrap().mapping[3], AttributeIdentifier::Bias);
-            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(cache.mapping[1], AttributeIdentifier::Speed);
-            assert_eq!(cache.mapping[2], AttributeIdentifier::DryWet);
-            assert_eq!(cache.mapping[3], AttributeIdentifier::Bias);
+            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.mapping[1], AttributeIdentifier::Speed);
+            assert_eq!(store.mapping[2], AttributeIdentifier::DryWet);
+            assert_eq!(store.mapping[3], AttributeIdentifier::Bias);
         }
 
         #[test]
         fn when_last_pending_control_is_processed_then_state_changes_to_normal() {
-            let (mut cache, mut input) = init_cache(1);
-            assert_eq!(cache.state, State::Mapping(0));
+            let (mut store, mut input) = init_store(1);
+            assert_eq!(store.state, State::Mapping(0));
 
             input.drive = 0.1;
-            apply_input_snapshot(&mut cache, input);
-            assert_eq!(cache.state, State::Normal);
-            assert_animation(&mut cache, &[0000]);
+            apply_input_snapshot(&mut store, input);
+            assert_eq!(store.state, State::Normal);
+            assert_animation(&mut store, &[0000]);
         }
 
         #[test]
         fn when_second_last_pending_control_is_processed_it_moves_to_last() {
-            let (mut cache, mut input) = init_cache(2);
+            let (mut store, mut input) = init_store(2);
 
             input.drive = 0.1;
-            apply_input_snapshot(&mut cache, input);
-            assert_eq!(cache.state, State::Mapping(1));
+            apply_input_snapshot(&mut store, input);
+            assert_eq!(store.state, State::Mapping(1));
         }
 
         #[test]
         fn when_multiple_controls_are_plugged_then_they_are_all_added_to_queue() {
-            let (mut cache, mut input) = init_cache(2);
-            assert_eq!(cache.state, State::Mapping(0));
-            assert_eq!(cache.queue.len(), 1);
-            assert!(cache.queue.contains(&ControlAction::Map(1)));
+            let (mut store, mut input) = init_store(2);
+            assert_eq!(store.state, State::Mapping(0));
+            assert_eq!(store.queue.len(), 1);
+            assert!(store.queue.contains(&ControlAction::Map(1)));
 
             input.control[2] = Some(1.0);
             input.control[3] = Some(1.0);
-            cache.apply_input_snapshot(input);
-            assert_eq!(cache.state, State::Mapping(0));
-            assert_eq!(cache.queue.len(), 3);
-            assert!(cache.queue.contains(&ControlAction::Map(1)));
-            assert!(cache.queue.contains(&ControlAction::Map(2)));
-            assert!(cache.queue.contains(&ControlAction::Map(3)));
+            store.apply_input_snapshot(input);
+            assert_eq!(store.state, State::Mapping(0));
+            assert_eq!(store.queue.len(), 3);
+            assert!(store.queue.contains(&ControlAction::Map(1)));
+            assert!(store.queue.contains(&ControlAction::Map(2)));
+            assert!(store.queue.contains(&ControlAction::Map(3)));
         }
 
         #[test]
         fn when_control_is_unplugged_it_is_removed_from_queue() {
-            let (mut cache, mut input) = init_cache(3);
-            assert_eq!(cache.state, State::Mapping(0));
-            assert_eq!(cache.queue.len(), 2);
-            assert!(cache.queue.contains(&ControlAction::Map(1)));
-            assert!(cache.queue.contains(&ControlAction::Map(2)));
+            let (mut store, mut input) = init_store(3);
+            assert_eq!(store.state, State::Mapping(0));
+            assert_eq!(store.queue.len(), 2);
+            assert!(store.queue.contains(&ControlAction::Map(1)));
+            assert!(store.queue.contains(&ControlAction::Map(2)));
 
             input.control[1] = None;
-            cache.apply_input_snapshot(input);
-            assert_eq!(cache.state, State::Mapping(0));
-            assert_eq!(cache.queue.len(), 1);
-            assert!(cache.queue.contains(&ControlAction::Map(2)));
+            store.apply_input_snapshot(input);
+            assert_eq!(store.state, State::Mapping(0));
+            assert_eq!(store.queue.len(), 1);
+            assert!(store.queue.contains(&ControlAction::Map(2)));
         }
 
         #[test]
         fn when_mapped_control_in_unplugged_it_is_unmapped() {
-            let (mut cache, mut input) = init_cache(2);
+            let (mut store, mut input) = init_store(2);
 
             input.drive = 0.4;
-            apply_input_snapshot(&mut cache, input);
-            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(cache.state, State::Mapping(1));
+            apply_input_snapshot(&mut store, input);
+            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.state, State::Mapping(1));
 
             input.control[0] = None;
-            apply_input_snapshot(&mut cache, input);
-            assert_eq!(cache.mapping[0], AttributeIdentifier::None);
-            assert_eq!(cache.state, State::Mapping(1));
+            apply_input_snapshot(&mut store, input);
+            assert_eq!(store.mapping[0], AttributeIdentifier::None);
+            assert_eq!(store.state, State::Mapping(1));
         }
 
         #[test]
         fn when_active_pot_is_assigned_it_is_not_reassigned() {
-            let (mut cache, mut input) = init_cache(2);
+            let (mut store, mut input) = init_store(2);
 
             input.drive = 0.1;
-            apply_input_snapshot(&mut cache, input);
-            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(cache.mapping[1], AttributeIdentifier::None);
+            apply_input_snapshot(&mut store, input);
+            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.mapping[1], AttributeIdentifier::None);
 
             input.drive = 0.2;
-            apply_input_snapshot(&mut cache, input);
-            assert_eq!(cache.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(cache.mapping[1], AttributeIdentifier::None);
-            assert_eq!(cache.state, State::Mapping(1));
+            apply_input_snapshot(&mut store, input);
+            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.mapping[1], AttributeIdentifier::None);
+            assert_eq!(store.state, State::Mapping(1));
 
-            assert_animation(&mut cache, &[9600, 0800, 0690, 0609]);
+            assert_animation(&mut store, &[9600, 0800, 0690, 0609]);
         }
     }
 
@@ -1442,185 +1442,185 @@ mod cache_tests {
     mod given_calibrating_mode {
         use super::*;
 
-        fn init_cache(pending: usize) -> (Cache, InputSnapshot) {
-            let mut cache = Cache::new();
+        fn init_store(pending: usize) -> (Store, InputSnapshot) {
+            let mut store = Store::new();
             let mut input = InputSnapshot::default();
 
             for i in 0..pending {
                 input.control[i] = None;
             }
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.button = true;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             for i in 0..pending {
                 input.control[i] = Some(1.0);
             }
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
             input.button = false;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
 
-            (cache, input)
+            (store, input)
         }
 
-        fn apply_input_snapshot(cache: &mut Cache, input: InputSnapshot) {
+        fn apply_input_snapshot(store: &mut Store, input: InputSnapshot) {
             // NOTE: Applying it 4 times makes sure that control smoothening is
             // not affecting following asserts.
             for _ in 0..4 {
-                cache.apply_input_snapshot(input);
+                store.apply_input_snapshot(input);
             }
         }
 
-        fn click_button(cache: &mut Cache, mut input: InputSnapshot) -> Option<Save> {
+        fn click_button(store: &mut Store, mut input: InputSnapshot) -> Option<Save> {
             input.button = true;
-            let (_, save_1) = cache.apply_input_snapshot(input);
+            let (_, save_1) = store.apply_input_snapshot(input);
             input.button = false;
-            let (_, save_2) = cache.apply_input_snapshot(input);
+            let (_, save_2) = store.apply_input_snapshot(input);
             save_1.or(save_2)
         }
 
         #[test]
         fn when_correct_values_are_given_it_successfully_converges_turns_to_mapping_and_saves() {
-            let (mut cache, mut input) = init_cache(1);
+            let (mut store, mut input) = init_store(1);
             assert_eq!(
-                cache.state,
+                store.state,
                 State::Calibrating(0, CalibrationPhase::Octave1)
             );
-            assert_animation(&mut cache, &[8900, 6000, 8900, 6000]);
+            assert_animation(&mut store, &[8900, 6000, 8900, 6000]);
 
             input.control[0] = Some(1.3);
-            apply_input_snapshot(&mut cache, input);
-            click_button(&mut cache, input);
+            apply_input_snapshot(&mut store, input);
+            click_button(&mut store, input);
             assert_eq!(
-                cache.state,
+                store.state,
                 State::Calibrating(0, CalibrationPhase::Octave2(1.3))
             );
-            assert_animation(&mut cache, &[6099, 6000, 6099, 6000]);
+            assert_animation(&mut store, &[6099, 6000, 6099, 6000]);
 
             input.control[0] = Some(2.4);
-            cache.apply_input_snapshot(input);
-            let save = click_button(&mut cache, input);
+            store.apply_input_snapshot(input);
+            let save = click_button(&mut store, input);
             let saved_calibration = save.unwrap().calibrations[0];
             assert_relative_ne!(saved_calibration.offset, Calibration::default().offset);
             assert_relative_ne!(saved_calibration.scaling, Calibration::default().scaling);
-            let cache_calibration = cache.calibrations[0];
-            assert_relative_ne!(cache_calibration.offset, Calibration::default().offset);
-            assert_relative_ne!(cache_calibration.scaling, Calibration::default().scaling);
-            assert_eq!(cache.state, State::Mapping(0));
-            assert_animation(&mut cache, &[8000, 6900, 6090, 6009]);
+            let store_calibration = store.calibrations[0];
+            assert_relative_ne!(store_calibration.offset, Calibration::default().offset);
+            assert_relative_ne!(store_calibration.scaling, Calibration::default().scaling);
+            assert_eq!(store.state, State::Mapping(0));
+            assert_animation(&mut store, &[8000, 6900, 6090, 6009]);
         }
 
         #[test]
         fn when_incorrect_values_are_given_it_it_cancels_calibration_turns_to_mapping_and_does_not_save(
         ) {
-            let (mut cache, mut input) = init_cache(1);
+            let (mut store, mut input) = init_store(1);
             assert_eq!(
-                cache.state,
+                store.state,
                 State::Calibrating(0, CalibrationPhase::Octave1)
             );
-            assert_animation(&mut cache, &[8900, 6000, 8900, 6000]);
+            assert_animation(&mut store, &[8900, 6000, 8900, 6000]);
 
             input.control[0] = Some(1.3);
-            apply_input_snapshot(&mut cache, input);
-            click_button(&mut cache, input);
+            apply_input_snapshot(&mut store, input);
+            click_button(&mut store, input);
             assert_eq!(
-                cache.state,
+                store.state,
                 State::Calibrating(0, CalibrationPhase::Octave2(1.3))
             );
-            assert_animation(&mut cache, &[6099, 6000, 6099, 6000]);
+            assert_animation(&mut store, &[6099, 6000, 6099, 6000]);
 
             input.control[0] = Some(1.4);
-            cache.apply_input_snapshot(input);
-            let save = click_button(&mut cache, input);
+            store.apply_input_snapshot(input);
+            let save = click_button(&mut store, input);
             assert!(save.is_none());
-            let cache_calibration = cache.calibrations[0];
-            assert_relative_eq!(cache_calibration.offset, Calibration::default().offset);
-            assert_relative_eq!(cache_calibration.scaling, Calibration::default().scaling);
-            assert_eq!(cache.state, State::Mapping(0));
-            assert_animation(&mut cache, &[8888, 0000, 8888, 0000, 6090, 6009]);
+            let store_calibration = store.calibrations[0];
+            assert_relative_eq!(store_calibration.offset, Calibration::default().offset);
+            assert_relative_eq!(store_calibration.scaling, Calibration::default().scaling);
+            assert_eq!(store.state, State::Mapping(0));
+            assert_animation(&mut store, &[8888, 0000, 8888, 0000, 6090, 6009]);
         }
 
         #[test]
         fn when_multiple_controls_are_plugged_then_they_are_all_added_to_queue() {
-            let (mut cache, mut input) = init_cache(2);
+            let (mut store, mut input) = init_store(2);
             assert_eq!(
-                cache.state,
+                store.state,
                 State::Calibrating(0, CalibrationPhase::Octave1)
             );
-            assert_eq!(cache.queue.len(), 3);
-            assert!(cache.queue.contains(&ControlAction::Map(0)));
-            assert!(cache.queue.contains(&ControlAction::Calibrate(1)));
-            assert!(cache.queue.contains(&ControlAction::Map(1)));
+            assert_eq!(store.queue.len(), 3);
+            assert!(store.queue.contains(&ControlAction::Map(0)));
+            assert!(store.queue.contains(&ControlAction::Calibrate(1)));
+            assert!(store.queue.contains(&ControlAction::Map(1)));
 
             input.control[2] = Some(1.0);
             input.control[3] = Some(1.0);
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
             assert_eq!(
-                cache.state,
+                store.state,
                 State::Calibrating(0, CalibrationPhase::Octave1)
             );
-            assert_eq!(cache.queue.len(), 5);
-            assert!(cache.queue.contains(&ControlAction::Map(0)));
-            assert!(cache.queue.contains(&ControlAction::Calibrate(1)));
-            assert!(cache.queue.contains(&ControlAction::Map(1)));
-            assert!(cache.queue.contains(&ControlAction::Map(2)));
-            assert!(cache.queue.contains(&ControlAction::Map(3)));
+            assert_eq!(store.queue.len(), 5);
+            assert!(store.queue.contains(&ControlAction::Map(0)));
+            assert!(store.queue.contains(&ControlAction::Calibrate(1)));
+            assert!(store.queue.contains(&ControlAction::Map(1)));
+            assert!(store.queue.contains(&ControlAction::Map(2)));
+            assert!(store.queue.contains(&ControlAction::Map(3)));
         }
 
         #[test]
         fn when_control_is_unplugged_it_is_removed_from_queue() {
-            let (mut cache, mut input) = init_cache(3);
+            let (mut store, mut input) = init_store(3);
             assert_eq!(
-                cache.state,
+                store.state,
                 State::Calibrating(0, CalibrationPhase::Octave1)
             );
-            assert_eq!(cache.queue.len(), 5);
+            assert_eq!(store.queue.len(), 5);
 
             input.control[1] = None;
-            cache.apply_input_snapshot(input);
+            store.apply_input_snapshot(input);
             assert_eq!(
-                cache.state,
+                store.state,
                 State::Calibrating(0, CalibrationPhase::Octave1)
             );
-            assert_eq!(cache.queue.len(), 3);
+            assert_eq!(store.queue.len(), 3);
         }
 
         #[test]
         fn when_currently_mapping_control_is_unplugged_it_returns_to_normal() {
-            let (mut cache, mut input) = init_cache(1);
+            let (mut store, mut input) = init_store(1);
             assert_eq!(
-                cache.state,
+                store.state,
                 State::Calibrating(0, CalibrationPhase::Octave1)
             );
-            assert_eq!(cache.queue.len(), 1);
+            assert_eq!(store.queue.len(), 1);
 
             input.control[0] = None;
-            cache.apply_input_snapshot(input);
-            assert_eq!(cache.state, State::Normal);
-            assert_animation(&mut cache, &[8888, 0000, 8888, 0000]);
+            store.apply_input_snapshot(input);
+            assert_eq!(store.state, State::Normal);
+            assert_animation(&mut store, &[8888, 0000, 8888, 0000]);
         }
 
         #[test]
         fn when_calibrated_control_is_unplugged_it_retains_calibration() {
-            let (mut cache, mut input) = init_cache(1);
+            let (mut store, mut input) = init_store(1);
 
             input.control[0] = Some(1.3);
-            apply_input_snapshot(&mut cache, input);
-            click_button(&mut cache, input);
+            apply_input_snapshot(&mut store, input);
+            click_button(&mut store, input);
 
             input.control[0] = Some(2.4);
-            apply_input_snapshot(&mut cache, input);
-            click_button(&mut cache, input);
+            apply_input_snapshot(&mut store, input);
+            click_button(&mut store, input);
 
-            let original = cache.calibrations[0];
+            let original = store.calibrations[0];
 
             input.control[0] = None;
-            apply_input_snapshot(&mut cache, input);
+            apply_input_snapshot(&mut store, input);
 
-            assert_relative_eq!(cache.calibrations[0].offset, original.offset);
-            assert_relative_eq!(cache.calibrations[0].scaling, original.scaling);
+            assert_relative_eq!(store.calibrations[0].offset, original.offset);
+            assert_relative_eq!(store.calibrations[0].scaling, original.scaling);
         }
     }
 }

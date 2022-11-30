@@ -1,9 +1,9 @@
 use super::calculate;
 use crate::mapping::AttributeIdentifier;
 use crate::quantization::{quantize, Quantization};
-use crate::Cache;
+use crate::Store;
 
-impl Cache {
+impl Store {
     pub fn reconcile_heads(&mut self) {
         for i in 0..4 {
             self.reconcile_head(i);

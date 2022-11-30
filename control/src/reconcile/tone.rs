@@ -1,8 +1,8 @@
 use super::calculate;
 use crate::mapping::AttributeIdentifier;
-use crate::Cache;
+use crate::Store;
 
-impl Cache {
+impl Store {
     pub fn reconcile_tone(&mut self) {
         self.attributes.tone = calculate(
             self.inputs.tone.value(),
