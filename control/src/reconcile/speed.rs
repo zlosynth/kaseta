@@ -10,20 +10,20 @@ const LENGTH_SHORT_RANGE: (f32, f32) = (1.0 / 400.0, 1.0);
 impl Store {
     pub fn reconcile_speed(&mut self) {
         if self.inputs.speed.active() {
-            self.tapped_tempo = None;
+            self.cache.tapped_tempo = None;
 
-            self.attributes.speed = calculate(
+            self.cache.attributes.speed = calculate(
                 self.inputs.speed.value(),
                 self.control_for_attribute(AttributeIdentifier::Speed),
-                if self.options.short_delay_range {
+                if self.cache.options.short_delay_range {
                     LENGTH_SHORT_RANGE
                 } else {
                     LENGTH_LONG_RANGE
                 },
                 Some(taper::reverse_log),
             );
-        } else if let Some(tapped_tempo) = self.tapped_tempo {
-            self.attributes.speed = tapped_tempo;
+        } else if let Some(tapped_tempo) = self.cache.tapped_tempo {
+            self.cache.attributes.speed = tapped_tempo;
         }
     }
 }

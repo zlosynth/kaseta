@@ -14,7 +14,7 @@ impl Store {
             None,
         );
 
-        (self.attributes.wow, self.attributes.flutter) = if depth.is_sign_negative() {
+        (self.cache.attributes.wow, self.cache.attributes.flutter) = if depth.is_sign_negative() {
             (calculate(-depth, None, WOW_DEPTH_RANGE, None), 0.0)
         } else {
             (0.0, calculate(depth, None, FLUTTER_DEPTH_RANGE, None))

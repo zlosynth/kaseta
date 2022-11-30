@@ -53,17 +53,9 @@ use crate::trigger::Trigger;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Store {
     inputs: Inputs,
-    // TODO: cache
-    // TODO: results
     state: State,
     queue: Queue,
-    mapping: Mapping,
-    calibrations: Calibrations,
-    options: Options,
-    configuration: Configuration,
-    tapped_tempo: TappedTempo,
-    attributes: Attributes,
-    outputs: Outputs,
+    cache: Cache,
 }
 
 /// The current state of the control state machine.
@@ -151,7 +143,13 @@ struct AttributesHead {
 /// TODO docs
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Outputs {
+struct Cache {
+    mapping: Mapping,
+    calibrations: Calibrations,
+    options: Options,
+    configuration: Configuration,
+    tapped_tempo: TappedTempo,
+    attributes: Attributes,
     impulse_trigger: Trigger,
     impulse_led: Led,
     display: Display,
@@ -188,13 +186,7 @@ impl Store {
             inputs: Inputs::default(),
             state: State::default(),
             queue: Queue::default(),
-            mapping: Mapping::default(),
-            calibrations: Calibrations::default(),
-            options: Options::default(),
-            configuration: Configuration::default(),
-            tapped_tempo: TappedTempo::default(),
-            attributes: Attributes::default(),
-            outputs: Outputs::default(),
+            cache: Cache::default(),
         }
     }
 
@@ -220,7 +212,7 @@ impl Store {
 
         for i in &unplugged_controls {
             self.queue.remove_control(*i);
-            self.mapping[*i] = AttributeIdentifier::None;
+            self.cache.mapping[*i] = AttributeIdentifier::None;
         }
 
         for i in &plugged_controls {
@@ -228,7 +220,7 @@ impl Store {
             if self.inputs.button.pressed {
                 self.queue.push(ControlAction::Calibrate(*i));
             }
-            if self.mapping[*i].is_none() {
+            if self.cache.mapping[*i].is_none() {
                 self.queue.push(ControlAction::Map(*i));
             }
         }
@@ -237,58 +229,58 @@ impl Store {
             State::Normal => {
                 if let Some(detected_tempo) = self.inputs.button.detected_tempo() {
                     needs_save = true;
-                    self.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
+                    self.cache.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
                 }
 
                 if self.inputs.button.held > 5_000 {
-                    self.state = State::Configuring(self.configuration);
-                    self.outputs.display.prioritized[1] = Some(Screen::configuration());
+                    self.state = State::Configuring(self.cache.configuration);
+                    self.cache.display.prioritized[1] = Some(Screen::configuration());
                 } else if let Some(action) = self.queue.pop() {
                     match action {
                         ControlAction::Calibrate(i) => {
                             self.state = State::Calibrating(i, CalibrationPhase::Octave1);
-                            self.outputs.display.prioritized[1] = Some(Screen::calibration_1(i));
+                            self.cache.display.prioritized[1] = Some(Screen::calibration_1(i));
                         }
                         ControlAction::Map(i) => {
                             self.state = State::Mapping(i);
-                            self.outputs.display.prioritized[1] = Some(Screen::mapping(i));
+                            self.cache.display.prioritized[1] = Some(Screen::mapping(i));
                         }
                     }
                 } else {
-                    self.outputs.display.prioritized[1] = None;
+                    self.cache.display.prioritized[1] = None;
                 }
             }
             State::Configuring(draft) => {
                 if self.inputs.button.clicked {
                     needs_save = true;
-                    self.configuration = draft;
+                    self.cache.configuration = draft;
                     self.state = State::Normal;
                 } else {
                     let active_configuration_screen = self.active_configuration_screen();
                     if active_configuration_screen.is_some() {
-                        self.outputs.display.prioritized[1] = active_configuration_screen;
+                        self.cache.display.prioritized[1] = active_configuration_screen;
                     }
                     self.state = State::Configuring(self.snapshot_configuration_from_pots(draft));
                 }
             }
             State::Calibrating(i, phase) => {
                 if !self.inputs.control[i].is_plugged {
-                    self.outputs.display.prioritized[0] = Some(Screen::failure());
+                    self.cache.display.prioritized[0] = Some(Screen::failure());
                     self.state = State::Normal;
                 } else if self.inputs.button.clicked {
                     match phase {
                         CalibrationPhase::Octave1 => {
                             let octave_1 = self.inputs.control[i].value();
                             self.state = State::Calibrating(i, CalibrationPhase::Octave2(octave_1));
-                            self.outputs.display.prioritized[1] = Some(Screen::calibration_2(i));
+                            self.cache.display.prioritized[1] = Some(Screen::calibration_2(i));
                         }
                         CalibrationPhase::Octave2(octave_1) => {
                             let octave_2 = self.inputs.control[i].value();
                             if let Some(calibration) = Calibration::try_new(octave_1, octave_2) {
                                 needs_save = true;
-                                self.calibrations[i] = calibration;
+                                self.cache.calibrations[i] = calibration;
                             } else {
-                                self.outputs.display.prioritized[0] = Some(Screen::failure());
+                                self.cache.display.prioritized[0] = Some(Screen::failure());
                             }
                             self.state = State::Normal;
                         }
@@ -297,9 +289,9 @@ impl Store {
             }
             State::Mapping(i) => {
                 let destination = self.active_attribute();
-                if !destination.is_none() && !self.mapping.contains(&destination) {
+                if !destination.is_none() && !self.cache.mapping.contains(&destination) {
                     needs_save = true;
-                    self.mapping[i] = destination;
+                    self.cache.mapping[i] = destination;
                     self.state = State::Normal;
                 }
             }
@@ -354,7 +346,7 @@ impl Store {
         self.reconcile_speed();
         self.reconcile_heads();
 
-        self.outputs.display.prioritized[2] = Some(self.screen_for_heads());
+        self.cache.display.prioritized[2] = Some(self.screen_for_heads());
     }
 
     fn screen_for_heads(&self) -> Screen {
@@ -378,10 +370,10 @@ impl Store {
 
     fn heads_ordered_by_position(&self) -> [&AttributesHead; 4] {
         let mut ordered_heads = [
-            &self.attributes.head[0],
-            &self.attributes.head[1],
-            &self.attributes.head[2],
-            &self.attributes.head[3],
+            &self.cache.attributes.head[0],
+            &self.cache.attributes.head[1],
+            &self.cache.attributes.head[2],
+            &self.cache.attributes.head[3],
         ];
         for i in 0..ordered_heads.len() {
             for j in 0..ordered_heads.len() - 1 - i {
@@ -442,11 +434,11 @@ impl Store {
     }
 
     fn control_for_attribute(&mut self, attribute: AttributeIdentifier) -> Option<f32> {
-        let i = self.mapping.iter().position(|a| *a == attribute);
+        let i = self.cache.mapping.iter().position(|a| *a == attribute);
         if let Some(i) = i {
             let control = &self.inputs.control[i];
             if control.is_plugged {
-                let calibration = self.calibrations[i];
+                let calibration = self.cache.calibrations[i];
                 Some(calibration.apply(control.value()))
             } else {
                 None
@@ -458,73 +450,73 @@ impl Store {
 
     fn build_dsp_attributes(&mut self) -> DSPAttributes {
         DSPAttributes {
-            pre_amp: self.attributes.pre_amp,
-            drive: self.attributes.drive,
-            saturation: self.attributes.saturation,
-            bias: self.attributes.bias,
-            dry_wet: self.attributes.dry_wet,
-            wow: self.attributes.wow,
-            flutter: self.attributes.flutter,
-            speed: self.attributes.speed,
-            tone: self.attributes.tone,
+            pre_amp: self.cache.attributes.pre_amp,
+            drive: self.cache.attributes.drive,
+            saturation: self.cache.attributes.saturation,
+            bias: self.cache.attributes.bias,
+            dry_wet: self.cache.attributes.dry_wet,
+            wow: self.cache.attributes.wow,
+            flutter: self.cache.attributes.flutter,
+            speed: self.cache.attributes.speed,
+            tone: self.cache.attributes.tone,
             head: [
                 DSPAttributesHead {
-                    position: self.attributes.head[0].position,
-                    volume: self.attributes.head[0].volume,
-                    feedback: self.attributes.head[0].feedback,
-                    pan: self.attributes.head[0].pan,
+                    position: self.cache.attributes.head[0].position,
+                    volume: self.cache.attributes.head[0].volume,
+                    feedback: self.cache.attributes.head[0].feedback,
+                    pan: self.cache.attributes.head[0].pan,
                 },
                 DSPAttributesHead {
-                    position: self.attributes.head[1].position,
-                    volume: self.attributes.head[1].volume,
-                    feedback: self.attributes.head[1].feedback,
-                    pan: self.attributes.head[1].pan,
+                    position: self.cache.attributes.head[1].position,
+                    volume: self.cache.attributes.head[1].volume,
+                    feedback: self.cache.attributes.head[1].feedback,
+                    pan: self.cache.attributes.head[1].pan,
                 },
                 DSPAttributesHead {
-                    position: self.attributes.head[2].position,
-                    volume: self.attributes.head[2].volume,
-                    feedback: self.attributes.head[2].feedback,
-                    pan: self.attributes.head[2].pan,
+                    position: self.cache.attributes.head[2].position,
+                    volume: self.cache.attributes.head[2].volume,
+                    feedback: self.cache.attributes.head[2].feedback,
+                    pan: self.cache.attributes.head[2].pan,
                 },
                 DSPAttributesHead {
-                    position: self.attributes.head[3].position,
-                    volume: self.attributes.head[3].volume,
-                    feedback: self.attributes.head[3].feedback,
-                    pan: self.attributes.head[3].pan,
+                    position: self.cache.attributes.head[3].position,
+                    volume: self.cache.attributes.head[3].volume,
+                    feedback: self.cache.attributes.head[3].feedback,
+                    pan: self.cache.attributes.head[3].pan,
                 },
             ],
-            rewind: self.options.rewind,
-            rewind_speed: self.configuration.rewind_speed,
+            rewind: self.cache.options.rewind,
+            rewind_speed: self.cache.configuration.rewind_speed,
         }
     }
 
     pub fn apply_dsp_reaction(&mut self, dsp_reaction: DSPReaction) {
         if dsp_reaction.delay_impulse {
-            self.outputs.impulse_trigger.trigger();
-            self.outputs.impulse_led.trigger();
+            self.cache.impulse_trigger.trigger();
+            self.cache.impulse_led.trigger();
         }
     }
 
     pub fn tick(&mut self) -> DesiredOutput {
         let output = DesiredOutput {
-            display: self.outputs.display.active_screen().leds(),
-            impulse_trigger: self.outputs.impulse_trigger.triggered(),
-            impulse_led: self.outputs.impulse_led.triggered(),
+            display: self.cache.display.active_screen().leds(),
+            impulse_trigger: self.cache.impulse_trigger.triggered(),
+            impulse_led: self.cache.impulse_led.triggered(),
         };
 
-        self.outputs.impulse_trigger.tick();
-        self.outputs.impulse_led.tick();
-        self.outputs.display.tick();
+        self.cache.impulse_trigger.tick();
+        self.cache.impulse_led.tick();
+        self.cache.display.tick();
 
         output
     }
 
     fn save(&self) -> Save {
         Save {
-            mapping: self.mapping,
-            calibrations: self.calibrations,
-            configuration: self.configuration,
-            tapped_tempo: self.tapped_tempo,
+            mapping: self.cache.mapping,
+            calibrations: self.cache.calibrations,
+            configuration: self.cache.configuration,
+            tapped_tempo: self.cache.tapped_tempo,
         }
     }
 
@@ -571,10 +563,10 @@ impl Store {
 impl From<Save> for Store {
     fn from(save: Save) -> Self {
         let mut store = Self::new();
-        store.mapping = save.mapping;
-        store.calibrations = save.calibrations;
-        store.configuration = save.configuration;
-        store.tapped_tempo = save.tapped_tempo;
+        store.cache.mapping = save.mapping;
+        store.cache.calibrations = save.calibrations;
+        store.cache.configuration = save.configuration;
+        store.cache.tapped_tempo = save.tapped_tempo;
         store
     }
 }
@@ -736,7 +728,7 @@ mod store_tests {
 
         input.button = true;
         let (_, save) = store.apply_input_snapshot(input);
-        assert_relative_eq!(store.attributes.speed, 2.0);
+        assert_relative_eq!(store.cache.attributes.speed, 2.0);
 
         let mut store = Store::from(save.unwrap());
         let mut input = InputSnapshot::default();
@@ -745,7 +737,7 @@ mod store_tests {
             store.warm_up(input);
         }
         store.apply_input_snapshot(input);
-        assert_relative_eq!(store.attributes.speed, 2.0);
+        assert_relative_eq!(store.cache.attributes.speed, 2.0);
     }
 
     #[test]
@@ -766,7 +758,7 @@ mod store_tests {
         let mut store = Store::from(save);
         store.apply_input_snapshot(input);
 
-        assert_eq!(store.mapping[1], AttributeIdentifier::Drive);
+        assert_eq!(store.cache.mapping[1], AttributeIdentifier::Drive);
         assert_eq!(store.state, State::Normal);
     }
 
@@ -825,15 +817,15 @@ mod store_tests {
         store.apply_input_snapshot(input);
         assert_eq!(store.state, State::Normal);
 
-        let calibration = store.calibrations[1];
-        let mapping = store.mapping[1];
+        let calibration = store.cache.calibrations[1];
+        let mapping = store.cache.mapping[1];
 
         let save = store.save();
         let mut store = Store::from(save);
         store.apply_input_snapshot(input);
 
-        assert_eq!(store.calibrations[1], calibration);
-        assert_eq!(store.mapping[1], mapping);
+        assert_eq!(store.cache.calibrations[1], calibration);
+        assert_eq!(store.cache.mapping[1], mapping);
         assert_eq!(store.state, State::Normal);
     }
 
@@ -880,15 +872,15 @@ mod store_tests {
 
         assert_eq!(store.state, State::Normal);
 
-        let calibration = store.calibrations[1];
-        let mapping = store.mapping[1];
+        let calibration = store.cache.calibrations[1];
+        let mapping = store.cache.mapping[1];
 
         let save = store.save();
         let mut store = Store::from(save);
         store.apply_input_snapshot(input);
 
-        assert_eq!(store.calibrations[1], calibration);
-        assert_eq!(store.mapping[1], mapping);
+        assert_eq!(store.cache.calibrations[1], calibration);
+        assert_eq!(store.cache.mapping[1], mapping);
         assert_eq!(store.state, State::Normal);
     }
 
@@ -921,10 +913,10 @@ mod store_tests {
         let mut store = Store::from(save.unwrap());
         store.apply_input_snapshot(input);
 
-        assert_eq!(store.configuration.rewind_speed[0], (-4.0, 8.0));
-        assert_eq!(store.configuration.rewind_speed[1], (-4.0, 8.0));
-        assert_eq!(store.configuration.rewind_speed[2], (-4.0, 8.0));
-        assert_eq!(store.configuration.rewind_speed[3], (-4.0, 8.0));
+        assert_eq!(store.cache.configuration.rewind_speed[0], (-4.0, 8.0));
+        assert_eq!(store.cache.configuration.rewind_speed[1], (-4.0, 8.0));
+        assert_eq!(store.cache.configuration.rewind_speed[2], (-4.0, 8.0));
+        assert_eq!(store.cache.configuration.rewind_speed[3], (-4.0, 8.0));
     }
 
     #[cfg(test)]
@@ -967,7 +959,7 @@ mod store_tests {
             input.button = true;
             let (_, save) = store.apply_input_snapshot(input);
 
-            assert_relative_eq!(store.attributes.speed, 2.0);
+            assert_relative_eq!(store.cache.attributes.speed, 2.0);
             assert_relative_eq!(save.unwrap().tapped_tempo.unwrap(), 2.0);
         }
 
@@ -1003,18 +995,18 @@ mod store_tests {
             input.button = true;
             store.apply_input_snapshot(input);
 
-            assert_relative_eq!(store.attributes.speed, 2.0);
+            assert_relative_eq!(store.cache.attributes.speed, 2.0);
 
             input.button = false;
             store.apply_input_snapshot(input);
 
             input.tone = 1.0;
             store.apply_input_snapshot(input);
-            assert_relative_eq!(store.attributes.speed, 2.0);
+            assert_relative_eq!(store.cache.attributes.speed, 2.0);
 
             input.speed = 0.5;
             store.apply_input_snapshot(input);
-            assert!(store.attributes.speed > 20.0);
+            assert!(store.cache.attributes.speed > 20.0);
         }
 
         #[test]
@@ -1129,12 +1121,12 @@ mod store_tests {
             input.drive = 0.4;
             store.apply_input_snapshot(input);
 
-            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
 
             input.control[0] = None;
             store.apply_input_snapshot(input);
 
-            assert_eq!(store.mapping[0], AttributeIdentifier::None);
+            assert_eq!(store.cache.mapping[0], AttributeIdentifier::None);
         }
 
         #[test]
@@ -1219,10 +1211,10 @@ mod store_tests {
 
             click_button(&mut store, input);
 
-            assert_eq!(store.configuration.rewind_speed[0], (0.75, 1.0));
-            assert_eq!(store.configuration.rewind_speed[1], (0.5, 2.0));
-            assert_eq!(store.configuration.rewind_speed[2], (-1.0, 4.0));
-            assert_eq!(store.configuration.rewind_speed[3], (-4.0, 8.0));
+            assert_eq!(store.cache.configuration.rewind_speed[0], (0.75, 1.0));
+            assert_eq!(store.cache.configuration.rewind_speed[1], (0.5, 2.0));
+            assert_eq!(store.cache.configuration.rewind_speed[2], (-1.0, 4.0));
+            assert_eq!(store.cache.configuration.rewind_speed[3], (-4.0, 8.0));
         }
 
         #[test]
@@ -1259,7 +1251,7 @@ mod store_tests {
             apply_input_snapshot(&mut store, input);
             click_button(&mut store, input);
 
-            assert_eq!(store.configuration.rewind_speed[2], (-1.0, 4.0));
+            assert_eq!(store.cache.configuration.rewind_speed[2], (-1.0, 4.0));
 
             input.head[2].volume = 0.0;
             input.head[2].feedback = 0.0;
@@ -1272,8 +1264,8 @@ mod store_tests {
             apply_input_snapshot(&mut store, input);
             click_button(&mut store, input);
 
-            assert_eq!(store.configuration.rewind_speed[2], (-1.0, 4.0));
-            assert_eq!(store.configuration.rewind_speed[1], (0.5, 2.0));
+            assert_eq!(store.cache.configuration.rewind_speed[2], (-1.0, 4.0));
+            assert_eq!(store.cache.configuration.rewind_speed[1], (0.5, 2.0));
         }
 
         #[test]
@@ -1319,15 +1311,15 @@ mod store_tests {
             input.drive = 0.1;
             let (_, save) = store.apply_input_snapshot(input);
             assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
             apply_input_snapshot(&mut store, input); // Let the pot converge
 
             input.speed = 0.1;
             let (_, save) = store.apply_input_snapshot(input);
             assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
             assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
-            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(store.mapping[1], AttributeIdentifier::Speed);
+            assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.cache.mapping[1], AttributeIdentifier::Speed);
             apply_input_snapshot(&mut store, input); // Let the pot converge
 
             input.dry_wet = 0.1;
@@ -1335,9 +1327,9 @@ mod store_tests {
             assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
             assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
             assert_eq!(save.unwrap().mapping[2], AttributeIdentifier::DryWet);
-            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(store.mapping[1], AttributeIdentifier::Speed);
-            assert_eq!(store.mapping[2], AttributeIdentifier::DryWet);
+            assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.cache.mapping[1], AttributeIdentifier::Speed);
+            assert_eq!(store.cache.mapping[2], AttributeIdentifier::DryWet);
             apply_input_snapshot(&mut store, input); // Let the pot converge
 
             input.bias = 0.1;
@@ -1346,10 +1338,10 @@ mod store_tests {
             assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
             assert_eq!(save.unwrap().mapping[2], AttributeIdentifier::DryWet);
             assert_eq!(save.unwrap().mapping[3], AttributeIdentifier::Bias);
-            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(store.mapping[1], AttributeIdentifier::Speed);
-            assert_eq!(store.mapping[2], AttributeIdentifier::DryWet);
-            assert_eq!(store.mapping[3], AttributeIdentifier::Bias);
+            assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.cache.mapping[1], AttributeIdentifier::Speed);
+            assert_eq!(store.cache.mapping[2], AttributeIdentifier::DryWet);
+            assert_eq!(store.cache.mapping[3], AttributeIdentifier::Bias);
         }
 
         #[test]
@@ -1410,12 +1402,12 @@ mod store_tests {
 
             input.drive = 0.4;
             apply_input_snapshot(&mut store, input);
-            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
             assert_eq!(store.state, State::Mapping(1));
 
             input.control[0] = None;
             apply_input_snapshot(&mut store, input);
-            assert_eq!(store.mapping[0], AttributeIdentifier::None);
+            assert_eq!(store.cache.mapping[0], AttributeIdentifier::None);
             assert_eq!(store.state, State::Mapping(1));
         }
 
@@ -1425,13 +1417,13 @@ mod store_tests {
 
             input.drive = 0.1;
             apply_input_snapshot(&mut store, input);
-            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(store.mapping[1], AttributeIdentifier::None);
+            assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.cache.mapping[1], AttributeIdentifier::None);
 
             input.drive = 0.2;
             apply_input_snapshot(&mut store, input);
-            assert_eq!(store.mapping[0], AttributeIdentifier::Drive);
-            assert_eq!(store.mapping[1], AttributeIdentifier::None);
+            assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
+            assert_eq!(store.cache.mapping[1], AttributeIdentifier::None);
             assert_eq!(store.state, State::Mapping(1));
 
             assert_animation(&mut store, &[9600, 0800, 0690, 0609]);
@@ -1505,7 +1497,7 @@ mod store_tests {
             let saved_calibration = save.unwrap().calibrations[0];
             assert_relative_ne!(saved_calibration.offset, Calibration::default().offset);
             assert_relative_ne!(saved_calibration.scaling, Calibration::default().scaling);
-            let store_calibration = store.calibrations[0];
+            let store_calibration = store.cache.calibrations[0];
             assert_relative_ne!(store_calibration.offset, Calibration::default().offset);
             assert_relative_ne!(store_calibration.scaling, Calibration::default().scaling);
             assert_eq!(store.state, State::Mapping(0));
@@ -1535,7 +1527,7 @@ mod store_tests {
             store.apply_input_snapshot(input);
             let save = click_button(&mut store, input);
             assert!(save.is_none());
-            let store_calibration = store.calibrations[0];
+            let store_calibration = store.cache.calibrations[0];
             assert_relative_eq!(store_calibration.offset, Calibration::default().offset);
             assert_relative_eq!(store_calibration.scaling, Calibration::default().scaling);
             assert_eq!(store.state, State::Mapping(0));
@@ -1614,13 +1606,13 @@ mod store_tests {
             apply_input_snapshot(&mut store, input);
             click_button(&mut store, input);
 
-            let original = store.calibrations[0];
+            let original = store.cache.calibrations[0];
 
             input.control[0] = None;
             apply_input_snapshot(&mut store, input);
 
-            assert_relative_eq!(store.calibrations[0].offset, original.offset);
-            assert_relative_eq!(store.calibrations[0].scaling, original.scaling);
+            assert_relative_eq!(store.cache.calibrations[0].offset, original.offset);
+            assert_relative_eq!(store.cache.calibrations[0].scaling, original.scaling);
         }
     }
 }

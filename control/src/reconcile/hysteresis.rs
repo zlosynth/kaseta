@@ -14,7 +14,7 @@ impl Store {
         // gets scaled down based on bias.
         const DRIVE_PORTION: f32 = 1.0 / 2.0;
 
-        self.attributes.dry_wet = calculate(
+        self.cache.attributes.dry_wet = calculate(
             self.inputs.dry_wet.value(),
             self.control_for_attribute(AttributeIdentifier::DryWet),
             DRY_WET_RANGE,
@@ -34,9 +34,9 @@ impl Store {
             DRIVE_RANGE,
             None,
         );
-        self.attributes.drive = drive;
+        self.cache.attributes.drive = drive;
 
-        self.attributes.saturation = calculate(
+        self.cache.attributes.saturation = calculate(
             ((drive_input - DRIVE_PORTION) / (1.0 - DRIVE_PORTION)).clamp(0.0, 1.0),
             None,
             SATURATION_RANGE,
@@ -44,7 +44,7 @@ impl Store {
         );
 
         let max_bias = max_bias_for_drive(drive).clamp(BIAS_RANGE.0, BIAS_RANGE.1);
-        self.attributes.bias = calculate(
+        self.cache.attributes.bias = calculate(
             self.inputs.bias.value(),
             self.control_for_attribute(AttributeIdentifier::Bias),
             (0.01, max_bias),
