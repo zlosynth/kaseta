@@ -24,3 +24,15 @@ pub enum AttributeIdentifier {
     Pan(usize),
     None,
 }
+
+impl Default for AttributeIdentifier {
+    fn default() -> Self {
+        Self::None
+    }
+}
+
+impl AttributeIdentifier {
+    pub fn is_none(&self) -> bool {
+        matches!(self, Self::None)
+    }
+}

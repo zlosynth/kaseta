@@ -53,6 +53,8 @@ use crate::trigger::Trigger;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
     inputs: Inputs,
+    // TODO: cache
+    // TODO: results
     state: State,
     queue: Queue,
     mapping: Mapping,
@@ -574,18 +576,6 @@ impl From<Save> for Cache {
         cache.configuration = save.configuration;
         cache.tapped_tempo = save.tapped_tempo;
         cache
-    }
-}
-
-impl Default for AttributeIdentifier {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
-impl AttributeIdentifier {
-    fn is_none(&self) -> bool {
-        matches!(self, Self::None)
     }
 }
 
