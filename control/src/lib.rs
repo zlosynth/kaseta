@@ -237,14 +237,15 @@ impl Cache {
         snapshot: InputSnapshot,
     ) -> (DSPAttributes, Option<Save>) {
         self.inputs.update(snapshot);
-        let save = self.reconcile_changed_inputs();
+        let save = self.converge_internal_state();
+        self.reconcile_attributes();
         let dsp_attributes = self.build_dsp_attributes();
         (dsp_attributes, save)
     }
 
     // TODO
     #[allow(clippy::too_many_lines)]
-    fn reconcile_changed_inputs(&mut self) -> Option<Save> {
+    fn converge_internal_state(&mut self) -> Option<Save> {
         let mut needs_save = false;
 
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
@@ -365,6 +366,15 @@ impl Cache {
             }
         };
 
+        if needs_save {
+            Some(self.save())
+        } else {
+            None
+        }
+    }
+
+    // TODO: Display should be handled elsewhere
+    fn reconcile_attributes(&mut self) {
         self.reconcile_pre_amp();
         self.reconcile_hysteresis();
         self.reconcile_wow_flutter();
@@ -373,12 +383,6 @@ impl Cache {
         self.reconcile_heads();
 
         self.outputs.display.prioritized[2] = Some(self.screen_for_heads());
-
-        if needs_save {
-            Some(self.save())
-        } else {
-            None
-        }
     }
 
     fn screen_for_heads(&self) -> Screen {
