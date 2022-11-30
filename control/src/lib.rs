@@ -18,6 +18,7 @@
 #[macro_use]
 extern crate approx;
 
+mod action;
 mod cache;
 mod input;
 mod output;
@@ -26,7 +27,7 @@ mod save;
 use heapless::Vec;
 use kaseta_dsp::processor::{Attributes as DSPAttributes, Reaction as DSPReaction};
 
-use crate::cache::action::{ControlAction, Queue};
+use crate::action::{ControlAction, Queue};
 use crate::cache::calibration::Calibration;
 use crate::cache::display::{ConfigurationScreen, Screen};
 use crate::cache::mapping::AttributeIdentifier;
