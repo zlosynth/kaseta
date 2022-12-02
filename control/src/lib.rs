@@ -471,6 +471,23 @@ mod tests {
         let _store = Store::new();
     }
 
+    fn click_button(store: &mut Store, mut input: InputSnapshot) -> Option<Save> {
+        input.button = true;
+        let save_1 = store.apply_input_snapshot(input).save;
+        input.button = false;
+        let save_2 = store.apply_input_snapshot(input).save;
+        save_1.or(save_2)
+    }
+
+    fn hold_button(store: &mut Store, mut input: InputSnapshot) {
+        input.button = true;
+        for _ in 0..6 * 1000 {
+            store.apply_input_snapshot(input);
+        }
+        input.button = false;
+        store.apply_input_snapshot(input);
+    }
+
     fn assert_animation(store: &mut Store, transitions: &[u32]) {
         fn u32_into_digits(mut x: u32) -> [u32; 4] {
             assert!(x < 10000);
@@ -581,34 +598,24 @@ mod tests {
     #[test]
     fn given_save_it_recovers_previously_set_tapped_tempo() {
         let mut store = Store::new();
-        let mut input = InputSnapshot::default();
+        let input = InputSnapshot::default();
 
-        input.button = true;
-        store.apply_input_snapshot(input);
-
-        input.button = false;
-        for _ in 0..1999 {
+        click_button(&mut store, input);
+        for _ in 0..1998 {
             store.apply_input_snapshot(input);
         }
 
-        input.button = true;
-        store.apply_input_snapshot(input);
-
-        input.button = false;
-        for _ in 0..1999 {
+        click_button(&mut store, input);
+        for _ in 0..1998 {
             store.apply_input_snapshot(input);
         }
 
-        input.button = true;
-        store.apply_input_snapshot(input);
-
-        input.button = false;
-        for _ in 0..1999 {
+        click_button(&mut store, input);
+        for _ in 0..1998 {
             store.apply_input_snapshot(input);
         }
 
-        input.button = true;
-        let save = store.apply_input_snapshot(input).save;
+        let save = click_button(&mut store, input);
         assert_relative_eq!(store.cache.attributes.speed, 2.0);
 
         let mut store = Store::from(save.unwrap());
@@ -660,13 +667,6 @@ mod tests {
 
     #[test]
     fn given_save_it_recovers_previously_set_calibration_and_mapping() {
-        fn click_button(store: &mut Store, mut input: InputSnapshot) {
-            input.button = true;
-            store.apply_input_snapshot(input);
-            input.button = false;
-            store.apply_input_snapshot(input);
-        }
-
         let mut store = Store::new();
         let mut input = InputSnapshot::default();
 
@@ -713,14 +713,6 @@ mod tests {
     #[test]
     fn given_save_after_calibration_was_done_but_mapping_not_it_recovers_calibration_and_continues_mapping(
     ) {
-        // TODO: Single helper for all store tests
-        fn click_button(store: &mut Store, mut input: InputSnapshot) {
-            input.button = true;
-            store.apply_input_snapshot(input);
-            input.button = false;
-            store.apply_input_snapshot(input);
-        }
-
         let mut store = Store::new();
         let mut input = InputSnapshot::default();
 
@@ -770,13 +762,7 @@ mod tests {
         let mut store = Store::new();
         let mut input = InputSnapshot::default();
 
-        // TODO: Define global helper for this
-        input.button = true;
-        for _ in 0..6 * 1000 {
-            store.apply_input_snapshot(input);
-        }
-        input.button = false;
-        store.apply_input_snapshot(input);
+        hold_button(&mut store, input);
 
         input.head[0].volume = 1.0;
         input.head[0].feedback = 1.0;
@@ -799,10 +785,7 @@ mod tests {
             store.apply_input_snapshot(input);
         }
 
-        input.button = true;
-        let save = store.apply_input_snapshot(input).save;
-
-        input.button = false;
+        let save = click_button(&mut store, input);
 
         let mut store = Store::from(save.unwrap());
         store.apply_input_snapshot(input);
@@ -824,34 +807,24 @@ mod tests {
         #[test]
         fn when_clicking_button_in_equal_intervals_it_sets_speed() {
             let mut store = init_store();
-            let mut input = InputSnapshot::default();
+            let input = InputSnapshot::default();
 
-            input.button = true;
-            store.apply_input_snapshot(input);
-
-            input.button = false;
-            for _ in 0..1999 {
+            click_button(&mut store, input);
+            for _ in 0..1998 {
                 store.apply_input_snapshot(input);
             }
 
-            input.button = true;
-            store.apply_input_snapshot(input);
-
-            input.button = false;
-            for _ in 0..1999 {
+            click_button(&mut store, input);
+            for _ in 0..1998 {
                 store.apply_input_snapshot(input);
             }
 
-            input.button = true;
-            store.apply_input_snapshot(input);
-
-            input.button = false;
-            for _ in 0..1999 {
+            click_button(&mut store, input);
+            for _ in 0..1998 {
                 store.apply_input_snapshot(input);
             }
 
-            input.button = true;
-            let save = store.apply_input_snapshot(input).save;
+            let save = click_button(&mut store, input);
 
             assert_relative_eq!(store.cache.attributes.speed, 2.0);
             assert_relative_eq!(save.unwrap().tapped_tempo.unwrap(), 2.0);
@@ -862,27 +835,18 @@ mod tests {
             let mut store = init_store();
             let mut input = InputSnapshot::default();
 
-            input.button = true;
-            store.apply_input_snapshot(input);
-
-            input.button = false;
-            for _ in 0..1999 {
+            click_button(&mut store, input);
+            for _ in 0..1998 {
                 store.apply_input_snapshot(input);
             }
 
-            input.button = true;
-            store.apply_input_snapshot(input);
-
-            input.button = false;
-            for _ in 0..1999 {
+            click_button(&mut store, input);
+            for _ in 0..1998 {
                 store.apply_input_snapshot(input);
             }
 
-            input.button = true;
-            store.apply_input_snapshot(input);
-
-            input.button = false;
-            for _ in 0..1999 {
+            click_button(&mut store, input);
+            for _ in 0..1998 {
                 store.apply_input_snapshot(input);
             }
 
@@ -1004,14 +968,9 @@ mod tests {
         #[test]
         fn when_button_is_held_for_5_seconds_it_enters_configuration_mode() {
             let mut store = init_store();
-            let mut input = InputSnapshot::default();
+            let input = InputSnapshot::default();
 
-            input.button = true;
-            for _ in 0..6 * 1000 {
-                store.apply_input_snapshot(input);
-            }
-            input.button = false;
-            store.apply_input_snapshot(input);
+            hold_button(&mut store, input);
 
             assert!(matches!(store.state, State::Configuring(_)));
         }
@@ -1078,22 +1037,6 @@ mod tests {
             hold_button(&mut store, input);
 
             (store, input)
-        }
-
-        fn hold_button(store: &mut Store, mut input: InputSnapshot) {
-            input.button = true;
-            for _ in 0..6 * 1000 {
-                store.apply_input_snapshot(input);
-            }
-            input.button = false;
-            store.apply_input_snapshot(input);
-        }
-
-        fn click_button(store: &mut Store, mut input: InputSnapshot) {
-            input.button = true;
-            store.apply_input_snapshot(input);
-            input.button = false;
-            store.apply_input_snapshot(input);
         }
 
         fn apply_input_snapshot(store: &mut Store, input: InputSnapshot) {
@@ -1389,14 +1332,6 @@ mod tests {
             for _ in 0..4 {
                 store.apply_input_snapshot(input);
             }
-        }
-
-        fn click_button(store: &mut Store, mut input: InputSnapshot) -> Option<Save> {
-            input.button = true;
-            let save_1 = store.apply_input_snapshot(input).save;
-            input.button = false;
-            let save_2 = store.apply_input_snapshot(input).save;
-            save_1.or(save_2)
         }
 
         #[test]
