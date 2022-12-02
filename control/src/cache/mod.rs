@@ -19,7 +19,10 @@ use self::trigger::Trigger;
 use crate::output::DesiredOutput;
 use crate::save::Save;
 
-/// TODO docs
+/// Cache keeping internal attributes.
+///
+/// This information should be sufficient to build attributes for DSP
+/// and hold state for output peripherals.
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Cache {
@@ -34,8 +37,7 @@ pub struct Cache {
     pub display: Display,
 }
 
-/// TODO Docs
-// TODO: One per head, offset and amplification
+/// Storing calibration settings of all four inputs.
 pub type Calibrations = [Calibration; 4];
 
 /// Easy to access modifications of the default module behavior.
@@ -66,7 +68,7 @@ pub struct Configuration {
     pub rewind_speed: [(usize, usize); 4],
 }
 
-/// TODO: doc
+/// Storing tempo if it was tapped in using the button.
 pub type TappedTempo = Option<f32>;
 
 /// Interpreted attributes for the DSP.
