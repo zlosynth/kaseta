@@ -91,6 +91,17 @@ pub(crate) struct StateConfiguring {
     draft: Configuration,
 }
 
+/// Response of control store after processing new input snapshot.
+///
+/// This response should be evaluated by the caller and passed further to save
+/// and DSP processors.
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct ApplyInputSnapshotResult {
+    pub dsp_attributes: DSPAttributes,
+    pub save: Option<Save>,
+}
+
 #[allow(clippy::new_without_default)]
 impl Store {
     #[must_use]
@@ -107,14 +118,14 @@ impl Store {
         self.input.update(snapshot);
     }
 
-    pub fn apply_input_snapshot(
-        &mut self,
-        snapshot: InputSnapshot,
-    ) -> (DSPAttributes, Option<Save>) {
+    pub fn apply_input_snapshot(&mut self, snapshot: InputSnapshot) -> ApplyInputSnapshotResult {
         self.input.update(snapshot);
         let save = self.converge_internal_state();
         let dsp_attributes = self.cache.build_dsp_attributes();
-        (dsp_attributes, save)
+        ApplyInputSnapshotResult {
+            dsp_attributes,
+            save,
+        }
     }
 
     pub fn apply_dsp_reaction(&mut self, dsp_reaction: DSPReaction) {
@@ -597,7 +608,7 @@ mod tests {
         }
 
         input.button = true;
-        let (_, save) = store.apply_input_snapshot(input);
+        let save = store.apply_input_snapshot(input).save;
         assert_relative_eq!(store.cache.attributes.speed, 2.0);
 
         let mut store = Store::from(save.unwrap());
@@ -789,7 +800,7 @@ mod tests {
         }
 
         input.button = true;
-        let (_, save) = store.apply_input_snapshot(input);
+        let save = store.apply_input_snapshot(input).save;
 
         input.button = false;
 
@@ -840,7 +851,7 @@ mod tests {
             }
 
             input.button = true;
-            let (_, save) = store.apply_input_snapshot(input);
+            let save = store.apply_input_snapshot(input).save;
 
             assert_relative_eq!(store.cache.attributes.speed, 2.0);
             assert_relative_eq!(save.unwrap().tapped_tempo.unwrap(), 2.0);
@@ -901,7 +912,7 @@ mod tests {
             store.apply_input_snapshot(input);
 
             input.control[1] = Some(1.0);
-            let (_, save) = store.apply_input_snapshot(input);
+            let save = store.apply_input_snapshot(input).save;
 
             assert!(save.is_none());
             assert!(matches!(
@@ -925,7 +936,7 @@ mod tests {
 
             input.button = true;
             input.control[1] = Some(1.0);
-            let (_, save) = store.apply_input_snapshot(input);
+            let save = store.apply_input_snapshot(input).save;
 
             assert!(save.is_none());
             assert!(matches!(
@@ -1214,13 +1225,13 @@ mod tests {
             let (mut store, mut input) = init_store(4);
 
             input.drive = 0.1;
-            let (_, save) = store.apply_input_snapshot(input);
+            let save = store.apply_input_snapshot(input).save;
             assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
             assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
             apply_input_snapshot(&mut store, input); // Let the pot converge
 
             input.speed = 0.1;
-            let (_, save) = store.apply_input_snapshot(input);
+            let save = store.apply_input_snapshot(input).save;
             assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
             assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
             assert_eq!(store.cache.mapping[0], AttributeIdentifier::Drive);
@@ -1228,7 +1239,7 @@ mod tests {
             apply_input_snapshot(&mut store, input); // Let the pot converge
 
             input.dry_wet = 0.1;
-            let (_, save) = store.apply_input_snapshot(input);
+            let save = store.apply_input_snapshot(input).save;
             assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
             assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
             assert_eq!(save.unwrap().mapping[2], AttributeIdentifier::DryWet);
@@ -1238,7 +1249,7 @@ mod tests {
             apply_input_snapshot(&mut store, input); // Let the pot converge
 
             input.bias = 0.1;
-            let (_, save) = store.apply_input_snapshot(input);
+            let save = store.apply_input_snapshot(input).save;
             assert_eq!(save.unwrap().mapping[0], AttributeIdentifier::Drive);
             assert_eq!(save.unwrap().mapping[1], AttributeIdentifier::Speed);
             assert_eq!(save.unwrap().mapping[2], AttributeIdentifier::DryWet);
@@ -1382,9 +1393,9 @@ mod tests {
 
         fn click_button(store: &mut Store, mut input: InputSnapshot) -> Option<Save> {
             input.button = true;
-            let (_, save_1) = store.apply_input_snapshot(input);
+            let save_1 = store.apply_input_snapshot(input).save;
             input.button = false;
-            let (_, save_2) = store.apply_input_snapshot(input);
+            let save_2 = store.apply_input_snapshot(input).save;
             save_1.or(save_2)
         }
 
