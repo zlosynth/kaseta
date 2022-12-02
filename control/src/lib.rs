@@ -139,8 +139,8 @@ impl Store {
     fn converge_internal_state(&mut self) -> Option<Save> {
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
         self.cache.unmap_controls(&unplugged_controls);
-        self.dequeue_controls(unplugged_controls);
-        self.enqueue_controls(plugged_controls);
+        self.dequeue_controls(&unplugged_controls);
+        self.enqueue_controls(&plugged_controls);
 
         let mut needs_save = false;
 
@@ -185,14 +185,14 @@ impl Store {
         (plugged, unplugged)
     }
 
-    fn dequeue_controls(&mut self, unplugged_controls: Vec<usize, 4>) {
-        for i in &unplugged_controls {
+    fn dequeue_controls(&mut self, unplugged_controls: &Vec<usize, 4>) {
+        for i in unplugged_controls {
             self.queue.remove_control(*i);
         }
     }
 
-    fn enqueue_controls(&mut self, plugged_controls: Vec<usize, 4>) {
-        for i in &plugged_controls {
+    fn enqueue_controls(&mut self, plugged_controls: &Vec<usize, 4>) {
+        for i in plugged_controls {
             self.queue.remove_control(*i);
             if self.input.button.pressed {
                 self.queue.push(ControlAction::Calibrate(*i));
@@ -337,7 +337,7 @@ impl Store {
         mut draft: Configuration,
     ) -> (Configuration, Option<Screen>) {
         for (i, head) in self.input.head.iter().enumerate() {
-            let maybe_screen = update_rewind_configuration(&mut draft, i, &head);
+            let maybe_screen = update_rewind_configuration(&mut draft, i, head);
             if let Some(screen) = maybe_screen {
                 return (draft, Some(screen));
             }

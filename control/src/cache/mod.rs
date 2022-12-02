@@ -62,7 +62,7 @@ pub struct Options {
 /// (float) or offer enumeration of variants. An examle of a configuration
 /// may be tweaking of head's rewind speed.
 // TODO: Drop Copy
-#[derive(Debug, Default, Clone, Copy, PartialEq)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Configuration {
     pub rewind_speed: [(usize, usize); 4],
