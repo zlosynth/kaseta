@@ -91,7 +91,6 @@ pub(crate) struct StateConfiguring {
     draft: Configuration,
 }
 
-// NOTE: Inputs and outputs will be passed through queues
 #[allow(clippy::new_without_default)]
 impl Store {
     #[must_use]
@@ -120,24 +119,12 @@ impl Store {
     }
 
     fn converge_internal_state(&mut self) -> Option<Save> {
-        let mut needs_save = false;
-
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
+        self.unmap_controls(&unplugged_controls);
+        self.dequeue_controls(unplugged_controls);
+        self.enqueue_controls(plugged_controls);
 
-        for i in &unplugged_controls {
-            self.queue.remove_control(*i);
-            self.cache.mapping[*i] = AttributeIdentifier::None;
-        }
-
-        for i in &plugged_controls {
-            self.queue.remove_control(*i);
-            if self.input.button.pressed {
-                self.queue.push(ControlAction::Calibrate(*i));
-            }
-            if self.cache.mapping[*i].is_none() {
-                self.queue.push(ControlAction::Map(*i));
-            }
-        }
+        let mut needs_save = false;
 
         match self.state {
             State::Normal => {
@@ -225,6 +212,30 @@ impl Store {
             Some(self.cache.save())
         } else {
             None
+        }
+    }
+
+    fn unmap_controls(&mut self, unplugged_controls: &Vec<usize, 4>) {
+        for i in unplugged_controls {
+            self.cache.mapping[*i] = AttributeIdentifier::None;
+        }
+    }
+
+    fn enqueue_controls(&mut self, plugged_controls: Vec<usize, 4>) {
+        for i in &plugged_controls {
+            self.queue.remove_control(*i);
+            if self.input.button.pressed {
+                self.queue.push(ControlAction::Calibrate(*i));
+            }
+            if self.cache.mapping[*i].is_none() {
+                self.queue.push(ControlAction::Map(*i));
+            }
+        }
+    }
+
+    fn dequeue_controls(&mut self, unplugged_controls: Vec<usize, 4>) {
+        for i in &unplugged_controls {
+            self.queue.remove_control(*i);
         }
     }
 
