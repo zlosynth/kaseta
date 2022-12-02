@@ -53,6 +53,14 @@ impl Display {
             .find_map(Option::as_ref)
             .expect("The always is at least one active page.")
     }
+
+    pub fn set_screen(&mut self, priority: usize, screen: Screen) {
+        self.prioritized[priority] = Some(screen);
+    }
+
+    pub fn reset_screen(&mut self, priority: usize) {
+        self.prioritized[priority] = None;
+    }
 }
 
 impl Default for Screen {

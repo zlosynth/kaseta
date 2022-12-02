@@ -6,6 +6,7 @@ mod quantization;
 mod reconcile;
 mod trigger;
 
+use heapless::Vec;
 use kaseta_dsp::processor::{
     Attributes as DSPAttributes, AttributesHead as DSPAttributesHead, Reaction as DSPReaction,
 };
@@ -13,7 +14,7 @@ use kaseta_dsp::processor::{
 use self::calibration::Calibration;
 use self::display::{Display, Screen};
 use self::led::Led;
-use self::mapping::Mapping;
+use self::mapping::{AttributeIdentifier, Mapping};
 use self::trigger::Trigger;
 use crate::output::DesiredOutput;
 use crate::save::Save;
@@ -58,10 +59,11 @@ pub struct Options {
 /// module. Unlike with `Options`, the parameters here may be continuous
 /// (float) or offer enumeration of variants. An examle of a configuration
 /// may be tweaking of head's rewind speed.
+// TODO: Drop Copy
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Configuration {
-    pub rewind_speed: [(f32, f32); 4],
+    pub rewind_speed: [(usize, usize); 4],
 }
 
 /// TODO: doc
@@ -134,7 +136,7 @@ impl Cache {
                 },
             ],
             rewind: self.options.rewind,
-            rewind_speed: self.configuration.rewind_speed,
+            rewind_speed: rewind_indices_to_speeds(self.configuration.rewind_speed),
         }
     }
 
@@ -203,4 +205,27 @@ impl Cache {
 
         output
     }
+
+    pub fn unmap_controls(&mut self, unplugged_controls: &Vec<usize, 4>) {
+        for i in unplugged_controls {
+            self.mapping[*i] = AttributeIdentifier::None;
+        }
+    }
+}
+
+fn rewind_indices_to_speeds(x: [(usize, usize); 4]) -> [(f32, f32); 4] {
+    let mut speeds = [(0.0, 0.0); 4];
+    for (i, indices) in x.iter().enumerate() {
+        speeds[i].0 = rewind_index_to_speed(indices.0);
+        speeds[i].1 = fast_forward_index_to_speed(indices.1);
+    }
+    speeds
+}
+
+fn fast_forward_index_to_speed(i: usize) -> f32 {
+    [1.0, 2.0, 4.0, 8.0][i]
+}
+
+fn rewind_index_to_speed(i: usize) -> f32 {
+    [0.75, 0.5, -1.0, -4.0][i]
 }

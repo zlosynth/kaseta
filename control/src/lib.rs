@@ -33,7 +33,7 @@ use crate::cache::display::{ConfigurationScreen, Screen};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::cache::{Cache, Configuration};
 use crate::input::snapshot::Snapshot as InputSnapshot;
-use crate::input::store::Store as Input;
+use crate::input::store::{Store as Input, StoreHead as InputHead};
 use crate::output::DesiredOutput;
 use crate::save::Save;
 
@@ -65,7 +65,7 @@ pub(crate) enum State {
     Normal,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StateCalibrating {
     input: usize,
@@ -79,13 +79,13 @@ pub(crate) enum CalibrationPhase {
     Octave2(f32),
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StateMapping {
     input: usize,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub(crate) struct StateConfiguring {
     draft: Configuration,
@@ -113,14 +113,21 @@ impl Store {
     ) -> (DSPAttributes, Option<Save>) {
         self.input.update(snapshot);
         let save = self.converge_internal_state();
-        self.reconcile_attributes();
         let dsp_attributes = self.cache.build_dsp_attributes();
         (dsp_attributes, save)
     }
 
+    pub fn apply_dsp_reaction(&mut self, dsp_reaction: DSPReaction) {
+        self.cache.apply_dsp_reaction(dsp_reaction);
+    }
+
+    pub fn tick(&mut self) -> DesiredOutput {
+        self.cache.tick()
+    }
+
     fn converge_internal_state(&mut self) -> Option<Save> {
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
-        self.unmap_controls(&unplugged_controls);
+        self.cache.unmap_controls(&unplugged_controls);
         self.dequeue_controls(unplugged_controls);
         self.enqueue_controls(plugged_controls);
 
@@ -128,160 +135,26 @@ impl Store {
 
         match self.state {
             State::Normal => {
-                if let Some(detected_tempo) = self.input.button.detected_tempo() {
-                    needs_save = true;
-                    self.cache.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
-                }
-
-                if self.input.button.held > 5_000 {
-                    self.state = State::Configuring(StateConfiguring {
-                        draft: self.cache.configuration,
-                    });
-                    self.cache.display.prioritized[1] = Some(Screen::configuration());
-                } else if let Some(action) = self.queue.pop() {
-                    match action {
-                        ControlAction::Calibrate(i) => {
-                            self.state = State::Calibrating(StateCalibrating {
-                                input: i,
-                                phase: CalibrationPhase::Octave1,
-                            });
-                            self.cache.display.prioritized[1] = Some(Screen::calibration_1(i));
-                        }
-                        ControlAction::Map(i) => {
-                            self.state = State::Mapping(StateMapping { input: i });
-                            self.cache.display.prioritized[1] = Some(Screen::mapping(i));
-                        }
-                    }
-                } else {
-                    self.cache.display.prioritized[1] = None;
-                }
+                self.converge_from_normal_state(&mut needs_save);
             }
-            State::Configuring(StateConfiguring { draft }) => {
-                if self.input.button.clicked {
-                    needs_save = true;
-                    self.cache.configuration = draft;
-                    self.state = State::Normal;
-                } else {
-                    let active_configuration_screen = self.active_configuration_screen();
-                    if active_configuration_screen.is_some() {
-                        self.cache.display.prioritized[1] = active_configuration_screen;
-                    }
-                    self.state = State::Configuring(StateConfiguring {
-                        draft: self.snapshot_configuration_from_pots(draft),
-                    });
-                }
+            State::Configuring(configuring) => {
+                self.converge_from_configuring_state(configuring, &mut needs_save);
             }
-            State::Calibrating(StateCalibrating { input, phase }) => {
-                if !self.input.control[input].is_plugged {
-                    self.cache.display.prioritized[0] = Some(Screen::failure());
-                    self.state = State::Normal;
-                } else if self.input.button.clicked {
-                    match phase {
-                        CalibrationPhase::Octave1 => {
-                            let octave_1 = self.input.control[input].value();
-                            self.state = State::Calibrating(StateCalibrating {
-                                input,
-                                phase: CalibrationPhase::Octave2(octave_1),
-                            });
-                            self.cache.display.prioritized[1] = Some(Screen::calibration_2(input));
-                        }
-                        CalibrationPhase::Octave2(octave_1) => {
-                            let octave_2 = self.input.control[input].value();
-                            if let Some(calibration) = Calibration::try_new(octave_1, octave_2) {
-                                needs_save = true;
-                                self.cache.calibrations[input] = calibration;
-                            } else {
-                                self.cache.display.prioritized[0] = Some(Screen::failure());
-                            }
-                            self.state = State::Normal;
-                        }
-                    }
-                }
+            State::Calibrating(calibrating) => {
+                self.converge_from_calibrating_state(calibrating, &mut needs_save);
             }
-            State::Mapping(StateMapping { input }) => {
-                let destination = self.active_attribute();
-                if !destination.is_none() && !self.cache.mapping.contains(&destination) {
-                    needs_save = true;
-                    self.cache.mapping[input] = destination;
-                    self.state = State::Normal;
-                }
+            State::Mapping(mapping) => {
+                self.converge_from_mapping_state(mapping, &mut needs_save);
             }
         };
+
+        self.reconcile_attributes();
 
         if needs_save {
             Some(self.cache.save())
         } else {
             None
         }
-    }
-
-    fn unmap_controls(&mut self, unplugged_controls: &Vec<usize, 4>) {
-        for i in unplugged_controls {
-            self.cache.mapping[*i] = AttributeIdentifier::None;
-        }
-    }
-
-    fn enqueue_controls(&mut self, plugged_controls: Vec<usize, 4>) {
-        for i in &plugged_controls {
-            self.queue.remove_control(*i);
-            if self.input.button.pressed {
-                self.queue.push(ControlAction::Calibrate(*i));
-            }
-            if self.cache.mapping[*i].is_none() {
-                self.queue.push(ControlAction::Map(*i));
-            }
-        }
-    }
-
-    fn dequeue_controls(&mut self, unplugged_controls: Vec<usize, 4>) {
-        for i in &unplugged_controls {
-            self.queue.remove_control(*i);
-        }
-    }
-
-    fn active_configuration_screen(&mut self) -> Option<Screen> {
-        let mut active_configuration_screen = None;
-        for head in self.input.head.iter() {
-            if head.volume.active() || head.feedback.active() {
-                let volume = head.volume.value();
-                let rewind_index = if volume < 0.25 {
-                    0
-                } else if volume < 0.5 {
-                    1
-                } else if volume < 0.75 {
-                    2
-                } else {
-                    3
-                };
-                let feedback = head.feedback.value();
-                let fast_forward_index = if feedback < 0.25 {
-                    0
-                } else if feedback < 0.5 {
-                    1
-                } else if feedback < 0.75 {
-                    2
-                } else {
-                    3
-                };
-                active_configuration_screen = Some(Screen::Configuration(
-                    ConfigurationScreen::Rewind((rewind_index, fast_forward_index)),
-                ));
-                break;
-            }
-        }
-        active_configuration_screen
-    }
-
-    // TODO: Display should be handled elsewhere
-    fn reconcile_attributes(&mut self) {
-        self.reconcile_pre_amp();
-        self.reconcile_hysteresis();
-        self.reconcile_wow_flutter();
-        self.reconcile_tone();
-        self.reconcile_speed();
-        self.reconcile_heads();
-
-        self.cache.display.prioritized[2] = Some(self.cache.screen_for_heads());
     }
 
     fn plugged_and_unplugged_controls(&self) -> (Vec<usize, 4>, Vec<usize, 4>) {
@@ -299,6 +172,72 @@ impl Store {
             }
         }
         (plugged, unplugged)
+    }
+
+    fn dequeue_controls(&mut self, unplugged_controls: Vec<usize, 4>) {
+        for i in &unplugged_controls {
+            self.queue.remove_control(*i);
+        }
+    }
+
+    fn enqueue_controls(&mut self, plugged_controls: Vec<usize, 4>) {
+        for i in &plugged_controls {
+            self.queue.remove_control(*i);
+            if self.input.button.pressed {
+                self.queue.push(ControlAction::Calibrate(*i));
+            }
+            if self.cache.mapping[*i].is_none() {
+                self.queue.push(ControlAction::Map(*i));
+            }
+        }
+    }
+
+    fn converge_from_normal_state(&mut self, needs_save: &mut bool) {
+        self.detect_tapped_tempo(needs_save);
+        if self.button_is_long_held() {
+            self.state = State::configuring_from_draft(self.cache.configuration);
+            self.cache.display.set_screen(1, Screen::configuration());
+        } else if let Some(action) = self.queue.pop() {
+            match action {
+                ControlAction::Calibrate(i) => {
+                    self.state = State::calibrating_octave_1(i);
+                    self.cache.display.set_screen(1, Screen::calibration_1(i));
+                }
+                ControlAction::Map(i) => {
+                    self.state = State::mapping(i);
+                    self.cache.display.set_screen(1, Screen::mapping(i));
+                }
+            }
+        } else {
+            self.cache.display.reset_screen(1);
+        }
+    }
+
+    fn detect_tapped_tempo(&mut self, needs_save: &mut bool) {
+        if let Some(detected_tempo) = self.input.button.detected_tempo() {
+            *needs_save = true;
+            self.cache.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
+        }
+    }
+
+    fn button_is_long_held(&mut self) -> bool {
+        self.input.button.held > 5_000
+    }
+
+    fn converge_from_mapping_state(
+        &mut self,
+        StateMapping { input }: StateMapping,
+        needs_save: &mut bool,
+    ) {
+        let destination = self.active_attribute();
+        if !self.input.control[input].is_plugged {
+            self.cache.display.set_screen(0, Screen::failure());
+            self.state = State::Normal;
+        } else if !destination.is_none() && !self.cache.mapping.contains(&destination) {
+            *needs_save = true;
+            self.cache.mapping[input] = destination;
+            self.state = State::Normal;
+        }
     }
 
     fn active_attribute(&self) -> AttributeIdentifier {
@@ -332,7 +271,70 @@ impl Store {
         AttributeIdentifier::None
     }
 
-    fn control_for_attribute(&mut self, attribute: AttributeIdentifier) -> Option<f32> {
+    fn converge_from_calibrating_state(
+        &mut self,
+        StateCalibrating { input, phase }: StateCalibrating,
+        needs_save: &mut bool,
+    ) {
+        if !self.input.control[input].is_plugged {
+            self.cache.display.set_screen(0, Screen::failure());
+            self.state = State::Normal;
+        } else if self.input.button.clicked {
+            match phase {
+                CalibrationPhase::Octave1 => {
+                    let octave_1 = self.input.control[input].value();
+                    self.state = State::calibrating_octave_2(input, octave_1);
+                    self.cache
+                        .display
+                        .set_screen(1, Screen::calibration_2(input));
+                }
+                CalibrationPhase::Octave2(octave_1) => {
+                    let octave_2 = self.input.control[input].value();
+                    if let Some(calibration) = Calibration::try_new(octave_1, octave_2) {
+                        *needs_save = true;
+                        self.cache.calibrations[input] = calibration;
+                    } else {
+                        self.cache.display.set_screen(0, Screen::failure());
+                    }
+                    self.state = State::Normal;
+                }
+            }
+        }
+    }
+
+    fn converge_from_configuring_state(
+        &mut self,
+        configuring: StateConfiguring,
+        needs_save: &mut bool,
+    ) {
+        if self.input.button.clicked {
+            *needs_save = true;
+            self.cache.configuration = configuring.draft;
+            self.state = State::Normal;
+        } else {
+            let (draft, screen) = self.updated_configuration_draft(configuring.draft);
+            if let Some(screen) = screen {
+                self.cache.display.set_screen(1, screen);
+            }
+            self.state = State::Configuring(StateConfiguring { draft });
+        }
+    }
+
+    // TODO: Pass reference instead
+    fn updated_configuration_draft(
+        &self,
+        mut draft: Configuration,
+    ) -> (Configuration, Option<Screen>) {
+        for (i, head) in self.input.head.iter().enumerate() {
+            let maybe_screen = update_rewind_configuration(&mut draft, i, &head);
+            if let Some(screen) = maybe_screen {
+                return (draft, Some(screen));
+            }
+        }
+        (draft, None)
+    }
+
+    fn control_for_attribute(&self, attribute: AttributeIdentifier) -> Option<f32> {
         let i = self.cache.mapping.iter().position(|a| *a == attribute);
         if let Some(i) = i {
             let control = &self.input.control[i];
@@ -347,51 +349,60 @@ impl Store {
         }
     }
 
-    pub fn apply_dsp_reaction(&mut self, dsp_reaction: DSPReaction) {
-        self.cache.apply_dsp_reaction(dsp_reaction);
+    fn reconcile_attributes(&mut self) {
+        self.reconcile_pre_amp();
+        self.reconcile_hysteresis();
+        self.reconcile_wow_flutter();
+        self.reconcile_tone();
+        self.reconcile_speed();
+        self.reconcile_heads();
+
+        self.cache
+            .display
+            .set_screen(2, self.cache.screen_for_heads());
+    }
+}
+
+fn update_rewind_configuration(
+    draft: &mut Configuration,
+    i: usize,
+    head: &InputHead,
+) -> Option<Screen> {
+    let screen = None;
+
+    let volume_active = head.volume.active();
+    let feedback_active = head.feedback.active();
+
+    if !volume_active && !feedback_active {
+        return screen;
     }
 
-    pub fn tick(&mut self) -> DesiredOutput {
-        self.cache.tick()
-    }
+    let rewind_speed = if volume_active {
+        f32_to_index_of_4(head.volume.value())
+    } else {
+        draft.rewind_speed[i].0
+    };
 
-    fn snapshot_configuration_from_pots(&self, mut configuration: Configuration) -> Configuration {
-        // TODO: Unite this and the code figuring out the current screen
-        for (i, rewind_speed) in configuration.rewind_speed.iter_mut().enumerate() {
-            let fast_forward = if self.input.head[i].volume.active() {
-                let volume = self.input.head[i].volume.value();
-                if volume < 0.25 {
-                    1.0
-                } else if volume < 0.5 {
-                    2.0
-                } else if volume < 0.75 {
-                    4.0
-                } else {
-                    8.0
-                }
-            } else {
-                rewind_speed.1
-            };
+    let fast_forward_speed = if feedback_active {
+        f32_to_index_of_4(head.feedback.value())
+    } else {
+        draft.rewind_speed[i].1
+    };
 
-            let rewind = if self.input.head[i].feedback.active() {
-                let feedback = self.input.head[i].feedback.value();
-                if feedback < 0.25 {
-                    0.75
-                } else if feedback < 0.5 {
-                    0.5
-                } else if feedback < 0.75 {
-                    -1.0
-                } else {
-                    -4.0
-                }
-            } else {
-                rewind_speed.0
-            };
+    let tuple = (rewind_speed, fast_forward_speed);
+    draft.rewind_speed[i] = tuple;
+    Some(Screen::Configuration(ConfigurationScreen::Rewind(tuple)))
+}
 
-            *rewind_speed = (rewind, fast_forward);
-        }
-
-        configuration
+fn f32_to_index_of_4(x: f32) -> usize {
+    if x < 0.25 {
+        0
+    } else if x < 0.5 {
+        1
+    } else if x < 0.75 {
+        2
+    } else {
+        3
     }
 }
 
@@ -403,6 +414,30 @@ impl From<Save> for Store {
         store.cache.configuration = save.configuration;
         store.cache.tapped_tempo = save.tapped_tempo;
         store
+    }
+}
+
+impl State {
+    fn configuring_from_draft(draft: Configuration) -> Self {
+        State::Configuring(StateConfiguring { draft })
+    }
+
+    fn calibrating_octave_1(input: usize) -> Self {
+        State::Calibrating(StateCalibrating {
+            input,
+            phase: CalibrationPhase::Octave1,
+        })
+    }
+
+    fn calibrating_octave_2(input: usize, octave_1: f32) -> Self {
+        State::Calibrating(StateCalibrating {
+            input,
+            phase: CalibrationPhase::Octave2(octave_1),
+        })
+    }
+
+    fn mapping(input: usize) -> Self {
+        State::Mapping(StateMapping { input })
     }
 }
 
@@ -732,10 +767,23 @@ mod tests {
         input.button = false;
         store.apply_input_snapshot(input);
 
-        for head in input.head.iter_mut() {
-            head.volume = 1.0;
-            head.feedback = 1.0;
+        input.head[0].volume = 1.0;
+        input.head[0].feedback = 1.0;
+        for _ in 0..4 {
+            store.apply_input_snapshot(input);
         }
+        input.head[1].volume = 1.0;
+        input.head[1].feedback = 1.0;
+        for _ in 0..4 {
+            store.apply_input_snapshot(input);
+        }
+        input.head[2].volume = 1.0;
+        input.head[2].feedback = 1.0;
+        for _ in 0..4 {
+            store.apply_input_snapshot(input);
+        }
+        input.head[3].volume = 1.0;
+        input.head[3].feedback = 1.0;
         for _ in 0..4 {
             store.apply_input_snapshot(input);
         }
@@ -748,10 +796,10 @@ mod tests {
         let mut store = Store::from(save.unwrap());
         store.apply_input_snapshot(input);
 
-        assert_eq!(store.cache.configuration.rewind_speed[0], (-4.0, 8.0));
-        assert_eq!(store.cache.configuration.rewind_speed[1], (-4.0, 8.0));
-        assert_eq!(store.cache.configuration.rewind_speed[2], (-4.0, 8.0));
-        assert_eq!(store.cache.configuration.rewind_speed[3], (-4.0, 8.0));
+        assert_eq!(store.cache.configuration.rewind_speed[0], (3, 3));
+        assert_eq!(store.cache.configuration.rewind_speed[1], (3, 3));
+        assert_eq!(store.cache.configuration.rewind_speed[2], (3, 3));
+        assert_eq!(store.cache.configuration.rewind_speed[3], (3, 3));
     }
 
     #[cfg(test)]
@@ -1050,21 +1098,28 @@ mod tests {
             let (mut store, mut input) = init_store();
 
             input.head[0].volume = 0.05;
+            apply_input_snapshot(&mut store, input);
             input.head[0].feedback = 0.05;
+            apply_input_snapshot(&mut store, input);
             input.head[1].volume = 0.35;
+            apply_input_snapshot(&mut store, input);
             input.head[1].feedback = 0.35;
+            apply_input_snapshot(&mut store, input);
             input.head[2].volume = 0.7;
+            apply_input_snapshot(&mut store, input);
             input.head[2].feedback = 0.7;
+            apply_input_snapshot(&mut store, input);
             input.head[3].volume = 1.0;
+            apply_input_snapshot(&mut store, input);
             input.head[3].feedback = 1.0;
             apply_input_snapshot(&mut store, input);
 
             click_button(&mut store, input);
 
-            assert_eq!(store.cache.configuration.rewind_speed[0], (0.75, 1.0));
-            assert_eq!(store.cache.configuration.rewind_speed[1], (0.5, 2.0));
-            assert_eq!(store.cache.configuration.rewind_speed[2], (-1.0, 4.0));
-            assert_eq!(store.cache.configuration.rewind_speed[3], (-4.0, 8.0));
+            assert_eq!(store.cache.configuration.rewind_speed[0], (0, 0));
+            assert_eq!(store.cache.configuration.rewind_speed[1], (1, 1));
+            assert_eq!(store.cache.configuration.rewind_speed[2], (2, 2));
+            assert_eq!(store.cache.configuration.rewind_speed[3], (3, 3));
         }
 
         #[test]
@@ -1101,7 +1156,7 @@ mod tests {
             apply_input_snapshot(&mut store, input);
             click_button(&mut store, input);
 
-            assert_eq!(store.cache.configuration.rewind_speed[2], (-1.0, 4.0));
+            assert_eq!(store.cache.configuration.rewind_speed[2], (2, 2));
 
             input.head[2].volume = 0.0;
             input.head[2].feedback = 0.0;
@@ -1114,8 +1169,8 @@ mod tests {
             apply_input_snapshot(&mut store, input);
             click_button(&mut store, input);
 
-            assert_eq!(store.cache.configuration.rewind_speed[2], (-1.0, 4.0));
-            assert_eq!(store.cache.configuration.rewind_speed[1], (0.5, 2.0));
+            assert_eq!(store.cache.configuration.rewind_speed[2], (2, 2));
+            assert_eq!(store.cache.configuration.rewind_speed[1], (1, 1));
         }
 
         #[test]
@@ -1277,6 +1332,16 @@ mod tests {
             assert_eq!(store.state, State::Mapping(StateMapping { input: 1 }));
 
             assert_animation(&mut store, &[9600, 0800, 0690, 0609]);
+        }
+
+        #[test]
+        fn when_control_is_unplugged_it_returns_to_normal_mode() {
+            let (mut store, mut input) = init_store(1);
+            assert_eq!(store.state, State::Mapping(StateMapping { input: 0 }));
+
+            input.control[0] = None;
+            apply_input_snapshot(&mut store, input);
+            assert_eq!(store.state, State::Normal);
         }
     }
 
