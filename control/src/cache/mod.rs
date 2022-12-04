@@ -56,7 +56,7 @@ pub struct ClockDetector {
 
 impl ClockDetector {
     pub fn trigger(&mut self) {
-        self.detector.trigger()
+        self.detector.trigger();
     }
 
     pub fn tick(&mut self) {
@@ -82,7 +82,7 @@ pub struct TapDetector {
 
 impl TapDetector {
     pub fn trigger(&mut self) {
-        self.detector.trigger()
+        self.detector.trigger();
     }
 
     pub fn tick(&mut self) {

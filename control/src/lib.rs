@@ -13,6 +13,7 @@
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::explicit_iter_loop)]
+#![allow(clippy::redundant_closure_for_method_calls)]
 
 #[cfg(test)]
 #[macro_use]

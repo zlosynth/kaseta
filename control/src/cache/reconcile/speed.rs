@@ -12,8 +12,9 @@ impl Store {
         self.cache.options.short_delay_range = self.input.switch[0];
 
         let control_index = self.control_index_for_attribute(AttributeIdentifier::Speed);
-        let clock_detector = control_index.map(|i| &self.cache.clock_detectors[i]);
-        let clock_tempo = clock_detector.map(|d| d.detected_tempo()).flatten();
+        let clock_tempo = control_index
+            .map(|i| &self.cache.clock_detectors[i])
+            .and_then(|d| d.detected_tempo());
 
         if let Some(clock_tempo) = clock_tempo {
             let c_i = f32_to_usize_5(self.input.speed.value());
