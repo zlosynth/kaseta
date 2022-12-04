@@ -7,6 +7,7 @@ backwards compatibility.
 ## Unreleased
 
 * Further refactoring of the control module.
+* Control speed through clock signal or tap-in.
 
 ## 0.4.0
 

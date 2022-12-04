@@ -48,6 +48,11 @@ impl<const N: usize> Buffer<N> {
         self.buffer[newest]
     }
 
+    pub fn read_previous_raw(&self) -> f32 {
+        let previous = (self.pointer as i32 - 2).rem_euclid(N as i32) as usize;
+        self.buffer[previous]
+    }
+
     pub fn reset(&mut self) {
         self.buffer = [0.0; N];
     }

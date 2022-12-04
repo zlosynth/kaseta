@@ -1,5 +1,6 @@
 pub mod calibration;
 pub mod display;
+mod interval_detector;
 mod led;
 pub mod mapping;
 mod quantization;
@@ -13,6 +14,7 @@ use kaseta_dsp::processor::{
 
 use self::calibration::Calibration;
 use self::display::{Display, Screen};
+use self::interval_detector::IntervalDetector;
 use self::led::Led;
 use self::mapping::{AttributeIdentifier, Mapping};
 use self::trigger::Trigger;
@@ -30,6 +32,8 @@ pub struct Cache {
     pub calibrations: Calibrations,
     pub options: Options,
     pub configuration: Configuration,
+    pub clock_detectors: ClockDetectors,
+    pub tap_detector: TapDetector,
     pub tapped_tempo: TappedTempo,
     pub attributes: Attributes,
     pub impulse_trigger: Trigger,
@@ -39,6 +43,60 @@ pub struct Cache {
 
 /// Storing calibration settings of all four inputs.
 pub type Calibrations = [Calibration; 4];
+
+/// Clock signal detectors of each control input.
+pub type ClockDetectors = [ClockDetector; 4];
+
+/// TODO: Doc
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct ClockDetector {
+    detector: IntervalDetector,
+}
+
+impl ClockDetector {
+    pub fn trigger(&mut self) {
+        self.detector.trigger()
+    }
+
+    pub fn tick(&mut self) {
+        self.detector.tick();
+        self.detector.reset_if_inactive();
+    }
+
+    pub fn reset(&mut self) {
+        self.detector.reset();
+    }
+
+    pub fn detected_tempo(&self) -> Option<u32> {
+        self.detector.tempo
+    }
+}
+
+/// TODO: Doc
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct TapDetector {
+    detector: IntervalDetector,
+}
+
+impl TapDetector {
+    pub fn trigger(&mut self) {
+        self.detector.trigger()
+    }
+
+    pub fn tick(&mut self) {
+        self.detector.tick();
+    }
+
+    pub fn reset(&mut self) {
+        self.detector.reset();
+    }
+
+    pub fn detected_tempo(&self) -> Option<u32> {
+        self.detector.tempo
+    }
+}
 
 /// Easy to access modifications of the default module behavior.
 ///
@@ -204,6 +262,9 @@ impl Cache {
         self.impulse_trigger.tick();
         self.impulse_led.tick();
         self.display.tick();
+
+        self.tap_detector.tick();
+        self.clock_detectors.iter_mut().for_each(|d| d.tick());
 
         output
     }

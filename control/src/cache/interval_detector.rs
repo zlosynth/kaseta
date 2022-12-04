@@ -11,12 +11,12 @@ use core::ops::Range;
 /// If for any reason the detector should be invalidated, call `reset`.
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct ClockDetector {
+pub struct IntervalDetector {
     trigger_age: [u32; 3],
     pub tempo: Option<u32>,
 }
 
-impl ClockDetector {
+impl IntervalDetector {
     pub fn trigger(&mut self) {
         let minus_1 = self.trigger_age[2];
         let minus_2 = self.trigger_age[1];
@@ -40,6 +40,7 @@ impl ClockDetector {
 
     pub fn reset(&mut self) {
         self.trigger_age = [0, 0, 0];
+        self.tempo = None;
     }
 
     pub fn tick(&mut self) {
@@ -47,10 +48,19 @@ impl ClockDetector {
             *x = x.saturating_add(1);
         }
     }
+
+    pub fn reset_if_inactive(&mut self) {
+        if let Some(tempo) = self.tempo {
+            let max = tempo + tempo / 10;
+            if self.trigger_age[2] > max {
+                self.reset();
+            }
+        }
+    }
 }
 
 fn toleration(distance: u32) -> Range<u32> {
-    let tolerance = distance / 20;
+    let tolerance = distance / 10;
     distance - tolerance..distance + tolerance
 }
 
@@ -60,7 +70,7 @@ mod tests {
 
     #[test]
     fn when_triggered_in_exact_interval_it_detects_tempo() {
-        let mut detector = ClockDetector::default();
+        let mut detector = IntervalDetector::default();
         for _ in 0..4 {
             for _ in 0..2000 {
                 detector.tick();
@@ -72,7 +82,7 @@ mod tests {
 
     #[test]
     fn when_triggered_in_rough_interval_within_toleration_it_detects_tempo() {
-        let mut detector = ClockDetector::default();
+        let mut detector = IntervalDetector::default();
         detector.trigger();
         for _ in 0..1990 {
             detector.tick();
@@ -91,7 +101,7 @@ mod tests {
 
     #[test]
     fn when_triggered_too_fast_it_does_not_detect_tempo() {
-        let mut detector = ClockDetector::default();
+        let mut detector = IntervalDetector::default();
         for _ in 0..4 {
             for _ in 0..20 {
                 detector.tick();
@@ -103,7 +113,7 @@ mod tests {
 
     #[test]
     fn when_triggered_in_unequal_interval_it_does_not_detect_tempo() {
-        let mut detector = ClockDetector::default();
+        let mut detector = IntervalDetector::default();
         detector.trigger();
         for _ in 0..2000 {
             detector.tick();

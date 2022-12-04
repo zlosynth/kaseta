@@ -1,7 +1,6 @@
 //! Manage control input's state.
 
 use super::buffer::Buffer;
-use super::clock::ClockDetector;
 
 /// Use this to hold control input's state over time.
 ///
@@ -14,7 +13,6 @@ pub struct Control {
     pub was_plugged: bool,
     pub was_unplugged: bool,
     buffer: Buffer<4>,
-    clock_detector: ClockDetector,
 }
 
 impl Control {
@@ -29,27 +27,22 @@ impl Control {
         }
         self.was_plugged = !was_plugged && self.is_plugged;
         self.was_unplugged = was_plugged && !self.is_plugged;
-
-        self.clock_detector.tick();
-
-        if self.buffer.read_raw() < 0.45 {
-            self.clock_detector.reset();
-        }
-
-        let triggered = self.buffer.read_raw() > 0.9 && self.buffer.traveled() > 0.3;
-        if triggered {
-            self.clock_detector.trigger();
-        }
     }
 
     pub fn value(&self) -> f32 {
         self.buffer.read()
     }
 
-    // TODO: Use this to control speed
-    #[allow(dead_code)]
-    pub fn detected_tempo(&self) -> Option<u32> {
-        self.clock_detector.tempo
+    pub fn value_raw(&self) -> f32 {
+        self.buffer.read_raw()
+    }
+
+    pub fn previous_value_raw(&self) -> f32 {
+        self.buffer.read_previous_raw()
+    }
+
+    pub fn traveled(&self) -> f32 {
+        self.buffer.traveled()
     }
 }
 
@@ -91,139 +84,5 @@ mod tests {
         assert!(control.was_plugged);
         control.update(None);
         assert!(!control.was_plugged);
-    }
-
-    #[test]
-    fn when_steady_clock_passes_in_it_detects_tempo() {
-        let mut control = Control::default();
-        control.update(Some(1.0));
-        for _ in 0..1999 {
-            control.update(Some(0.5));
-        }
-        control.update(Some(1.0));
-        for _ in 0..1999 {
-            control.update(Some(0.5));
-        }
-        control.update(Some(1.0));
-        for _ in 0..1999 {
-            control.update(Some(0.5));
-        }
-        control.update(Some(1.0));
-        assert_eq!(control.detected_tempo().unwrap(), 2000);
-    }
-
-    #[test]
-    fn when_clock_within_toleration_passes_it_detects_tempo() {
-        let mut control = Control::default();
-        control.update(Some(1.0));
-        for _ in 0..1990 {
-            control.update(Some(0.5));
-        }
-        control.update(Some(1.0));
-        for _ in 0..2030 {
-            control.update(Some(0.5));
-        }
-        control.update(Some(1.0));
-        for _ in 0..1999 {
-            control.update(Some(0.5));
-        }
-        control.update(Some(1.0));
-        assert_eq!(control.detected_tempo().unwrap(), 2000);
-    }
-
-    #[test]
-    fn when_unevenly_spaced_triggers_are_given_it_is_not_recognized_as_tempo() {
-        let mut control = Control::default();
-        control.update(Some(1.0));
-        for _ in 0..1999 {
-            control.update(Some(0.5));
-        }
-        control.update(Some(1.0));
-        for _ in 0..930 {
-            control.update(Some(0.5));
-        }
-        control.update(Some(1.0));
-        for _ in 0..1999 {
-            control.update(Some(0.5));
-        }
-        control.update(Some(1.0));
-        assert!(control.detected_tempo().is_none());
-    }
-
-    #[test]
-    fn when_signal_goes_below_zero_it_is_not_recognized_as_clock() {
-        let mut control = Control::default();
-        control.update(Some(1.0));
-        for _ in 0..1999 {
-            control.update(Some(0.1));
-        }
-        control.update(Some(1.0));
-        for _ in 0..1999 {
-            control.update(Some(0.1));
-        }
-        control.update(Some(1.0));
-        for _ in 0..1999 {
-            control.update(Some(0.1));
-        }
-        control.update(Some(1.0));
-        assert!(control.detected_tempo().is_none());
-    }
-
-    #[test]
-    fn when_signal_has_fast_enough_attacks_it_is_recognized_as_clock() {
-        let mut control = Control::default();
-
-        fn attack(control: &mut Control, should_detect: bool) {
-            let mut detected = false;
-            let attack = 3;
-            for i in 0..=attack {
-                control.update(Some(0.5 + 0.5 * (i as f32 / attack as f32)));
-                detected |= control.detected_tempo().is_some();
-            }
-            assert_eq!(should_detect, detected, "{:?}", control);
-        }
-
-        fn silence(control: &mut Control) {
-            for _ in 0..1999 {
-                control.update(Some(0.5));
-                assert!(control.detected_tempo().is_none());
-            }
-        }
-
-        attack(&mut control, false);
-        silence(&mut control);
-        attack(&mut control, false);
-        silence(&mut control);
-        attack(&mut control, false);
-        silence(&mut control);
-        attack(&mut control, true);
-    }
-
-    #[test]
-    fn when_signal_does_not_have_fast_attacks_it_is_not_recognized_as_clock() {
-        let mut control = Control::default();
-
-        fn attack(control: &mut Control) {
-            for i in 0..200 {
-                control.update(Some(0.5 + 0.5 * (i as f32 / 200.0)));
-                assert!(control.detected_tempo().is_none());
-            }
-        }
-
-        fn silence(control: &mut Control) {
-            for _ in 0..1999 {
-                control.update(Some(0.1));
-                assert!(control.detected_tempo().is_none());
-            }
-        }
-
-        attack(&mut control);
-        silence(&mut control);
-        attack(&mut control);
-        silence(&mut control);
-        attack(&mut control);
-        silence(&mut control);
-        attack(&mut control);
-        silence(&mut control);
     }
 }

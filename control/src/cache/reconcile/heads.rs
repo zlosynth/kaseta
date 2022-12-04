@@ -14,7 +14,7 @@ impl Store {
         self.cache.attributes.head[i].position = quantize(
             calculate(
                 self.input.head[i].position.value(),
-                self.control_for_attribute(AttributeIdentifier::Position(i)),
+                self.control_value_for_attribute(AttributeIdentifier::Position(i)),
                 (0.0, 1.0),
                 None,
             ),
@@ -22,19 +22,19 @@ impl Store {
         );
         self.cache.attributes.head[i].volume = calculate(
             self.input.head[i].volume.value(),
-            self.control_for_attribute(AttributeIdentifier::Volume(i)),
+            self.control_value_for_attribute(AttributeIdentifier::Volume(i)),
             (0.0, 1.0),
             None,
         );
         self.cache.attributes.head[i].feedback = calculate(
             self.input.head[i].feedback.value(),
-            self.control_for_attribute(AttributeIdentifier::Feedback(i)),
+            self.control_value_for_attribute(AttributeIdentifier::Feedback(i)),
             (0.0, 1.0),
             None,
         );
         self.cache.attributes.head[i].pan = calculate(
             self.input.head[i].pan.value(),
-            self.control_for_attribute(AttributeIdentifier::Pan(i)),
+            self.control_value_for_attribute(AttributeIdentifier::Pan(i)),
             (0.0, 1.0),
             None,
         );

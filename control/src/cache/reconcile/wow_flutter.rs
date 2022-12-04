@@ -9,7 +9,7 @@ impl Store {
     pub fn reconcile_wow_flutter(&mut self) {
         let depth = calculate(
             self.input.wow_flut.value(),
-            self.control_for_attribute(AttributeIdentifier::WowFlut),
+            self.control_value_for_attribute(AttributeIdentifier::WowFlut),
             (-1.0, 1.0),
             None,
         );

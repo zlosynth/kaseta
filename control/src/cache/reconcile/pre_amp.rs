@@ -10,7 +10,7 @@ impl Store {
     pub fn reconcile_pre_amp(&mut self) {
         self.cache.attributes.pre_amp = calculate(
             self.input.pre_amp.value(),
-            self.control_for_attribute(AttributeIdentifier::PreAmp),
+            self.control_value_for_attribute(AttributeIdentifier::PreAmp),
             PRE_AMP_RANGE,
             Some(taper::log),
         );

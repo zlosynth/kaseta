@@ -6,4 +6,3 @@ pub mod store;
 pub mod switch;
 
 mod buffer;
-mod clock;

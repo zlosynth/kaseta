@@ -27,14 +27,15 @@ mod save;
 use heapless::Vec;
 use kaseta_dsp::processor::{Attributes as DSPAttributes, Reaction as DSPReaction};
 
+pub use crate::input::snapshot::Snapshot as InputSnapshot;
+pub use crate::output::DesiredOutput;
+
 use crate::action::{ControlAction, Queue};
 use crate::cache::calibration::Calibration;
 use crate::cache::display::{ConfigurationScreen, Screen};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::cache::{Cache, Configuration};
-use crate::input::snapshot::Snapshot as InputSnapshot;
 use crate::input::store::{Store as Input, StoreHead as InputHead};
-use crate::output::DesiredOutput;
 use crate::save::Save;
 
 /// The main store of peripheral abstraction and module configuration.
@@ -160,6 +161,11 @@ impl Store {
         };
 
         self.reconcile_attributes();
+        self.reconcile_detectors();
+
+        self.cache
+            .display
+            .set_screen(2, self.cache.screen_for_heads());
 
         if needs_save {
             Some(self.cache.save())
@@ -225,9 +231,14 @@ impl Store {
     }
 
     fn detect_tapped_tempo(&mut self, needs_save: &mut bool) {
-        if let Some(detected_tempo) = self.input.button.detected_tempo() {
-            *needs_save = true;
-            self.cache.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
+        if let Some(detected_tempo) = self.cache.tap_detector.detected_tempo() {
+            if self.input.speed.active() {
+                self.cache.tap_detector.reset();
+                self.cache.tapped_tempo = None;
+            } else {
+                *needs_save = true;
+                self.cache.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
+            }
         }
     }
 
@@ -345,8 +356,8 @@ impl Store {
         (draft, None)
     }
 
-    fn control_for_attribute(&self, attribute: AttributeIdentifier) -> Option<f32> {
-        let i = self.cache.mapping.iter().position(|a| *a == attribute);
+    fn control_value_for_attribute(&self, attribute: AttributeIdentifier) -> Option<f32> {
+        let i = self.control_index_for_attribute(attribute);
         if let Some(i) = i {
             let control = &self.input.control[i];
             if control.is_plugged {
@@ -360,6 +371,10 @@ impl Store {
         }
     }
 
+    fn control_index_for_attribute(&self, attribute: AttributeIdentifier) -> Option<usize> {
+        self.cache.mapping.iter().position(|a| *a == attribute)
+    }
+
     fn reconcile_attributes(&mut self) {
         self.reconcile_pre_amp();
         self.reconcile_hysteresis();
@@ -367,10 +382,25 @@ impl Store {
         self.reconcile_tone();
         self.reconcile_speed();
         self.reconcile_heads();
+    }
 
-        self.cache
-            .display
-            .set_screen(2, self.cache.screen_for_heads());
+    fn reconcile_detectors(&mut self) {
+        if self.input.button.clicked {
+            self.cache.tap_detector.trigger();
+        }
+
+        for (i, control) in self.input.control.iter().enumerate() {
+            if !control.is_plugged || control.value_raw() < 0.45 {
+                self.cache.clock_detectors[i].reset();
+            }
+
+            let triggered = control.previous_value_raw() <= 0.9
+                && control.value_raw() > 0.9
+                && control.traveled() > 0.3;
+            if triggered {
+                self.cache.clock_detectors[i].trigger();
+            }
+        }
     }
 }
 
@@ -474,8 +504,10 @@ mod tests {
     fn click_button(store: &mut Store, mut input: InputSnapshot) -> Option<Save> {
         input.button = true;
         let save_1 = store.apply_input_snapshot(input).save;
+        store.tick();
         input.button = false;
         let save_2 = store.apply_input_snapshot(input).save;
+        store.tick();
         save_1.or(save_2)
     }
 
@@ -483,9 +515,29 @@ mod tests {
         input.button = true;
         for _ in 0..6 * 1000 {
             store.apply_input_snapshot(input);
+            store.tick();
         }
         input.button = false;
         store.apply_input_snapshot(input);
+        store.tick();
+    }
+
+    fn clock_trigger(store: &mut Store, i: usize, mut input: InputSnapshot, time: usize) {
+        input.control[i] = Some(1.0);
+        store.apply_input_snapshot(input);
+        store.tick();
+        input.control[i] = Some(0.5);
+        store.apply_input_snapshot(input);
+        for _ in 0..time - 1 {
+            store.tick();
+        }
+    }
+
+    fn tap_button(store: &mut Store, input: InputSnapshot, time: usize) {
+        click_button(store, input);
+        for _ in 0..time - 2 {
+            store.tick();
+        }
     }
 
     fn assert_animation(store: &mut Store, transitions: &[u32]) {
@@ -600,20 +652,10 @@ mod tests {
         let mut store = Store::new();
         let input = InputSnapshot::default();
 
-        click_button(&mut store, input);
-        for _ in 0..1998 {
-            store.apply_input_snapshot(input);
-        }
-
-        click_button(&mut store, input);
-        for _ in 0..1998 {
-            store.apply_input_snapshot(input);
-        }
-
-        click_button(&mut store, input);
-        for _ in 0..1998 {
-            store.apply_input_snapshot(input);
-        }
+        tap_button(&mut store, input, 2000);
+        tap_button(&mut store, input, 2000);
+        tap_button(&mut store, input, 2000);
+        tap_button(&mut store, input, 2000);
 
         let save = click_button(&mut store, input);
         assert_relative_eq!(store.cache.attributes.speed, 2.0);
@@ -805,29 +847,56 @@ mod tests {
         }
 
         #[test]
-        fn when_clicking_button_in_equal_intervals_it_sets_speed() {
-            let mut store = init_store();
+        fn when_button_is_clicked_in_exact_interval_it_detects_tempo() {
+            let mut store = Store::new();
             let input = InputSnapshot::default();
 
-            click_button(&mut store, input);
-            for _ in 0..1998 {
-                store.apply_input_snapshot(input);
+            for _ in 0..4 {
+                tap_button(&mut store, input, 2000);
             }
 
-            click_button(&mut store, input);
-            for _ in 0..1998 {
-                store.apply_input_snapshot(input);
-            }
+            let attributes = store.apply_input_snapshot(input).dsp_attributes;
+            assert_relative_eq!(attributes.speed, 2.0);
+        }
 
-            click_button(&mut store, input);
-            for _ in 0..1998 {
-                store.apply_input_snapshot(input);
-            }
+        #[test]
+        fn when_button_is_clicked_in_rough_interval_within_toleration_it_detects_tempo() {
+            let mut store = Store::new();
+            let input = InputSnapshot::default();
 
-            let save = click_button(&mut store, input);
+            tap_button(&mut store, input, 1990);
+            tap_button(&mut store, input, 2050);
+            tap_button(&mut store, input, 2000);
+            tap_button(&mut store, input, 2);
 
-            assert_relative_eq!(store.cache.attributes.speed, 2.0);
-            assert_relative_eq!(save.unwrap().tapped_tempo.unwrap(), 2.0);
+            let attributes = store.apply_input_snapshot(input).dsp_attributes;
+            assert_relative_eq!(attributes.speed, 2.0);
+        }
+
+        #[test]
+        fn when_button_is_clicked_too_fast_it_does_not_detect_tempo() {
+            let mut store = Store::new();
+            let input = InputSnapshot::default();
+
+            tap_button(&mut store, input, 20);
+            tap_button(&mut store, input, 20);
+            tap_button(&mut store, input, 20);
+            tap_button(&mut store, input, 20);
+
+            assert!(store.cache.tapped_tempo.is_none());
+        }
+
+        #[test]
+        fn when_button_is_clicked_in_unequal_interval_it_does_not_detect_tempo() {
+            let mut store = Store::new();
+            let input = InputSnapshot::default();
+
+            tap_button(&mut store, input, 2000);
+            tap_button(&mut store, input, 1000);
+            tap_button(&mut store, input, 2000);
+            tap_button(&mut store, input, 2000);
+
+            assert!(store.cache.tapped_tempo.is_none());
         }
 
         #[test]
@@ -835,35 +904,23 @@ mod tests {
             let mut store = init_store();
             let mut input = InputSnapshot::default();
 
-            click_button(&mut store, input);
-            for _ in 0..1998 {
-                store.apply_input_snapshot(input);
-            }
-
-            click_button(&mut store, input);
-            for _ in 0..1998 {
-                store.apply_input_snapshot(input);
-            }
-
-            click_button(&mut store, input);
-            for _ in 0..1998 {
-                store.apply_input_snapshot(input);
-            }
-
-            input.button = true;
-            store.apply_input_snapshot(input);
+            tap_button(&mut store, input, 2000);
+            tap_button(&mut store, input, 2000);
+            tap_button(&mut store, input, 2000);
+            tap_button(&mut store, input, 2000);
 
             assert_relative_eq!(store.cache.attributes.speed, 2.0);
-
-            input.button = false;
-            store.apply_input_snapshot(input);
 
             input.tone = 1.0;
             store.apply_input_snapshot(input);
+            store.tick();
             assert_relative_eq!(store.cache.attributes.speed, 2.0);
 
             input.speed = 0.5;
-            store.apply_input_snapshot(input);
+            for _ in 0..4 {
+                store.apply_input_snapshot(input);
+                store.tick();
+            }
             assert!(store.cache.attributes.speed > 20.0);
         }
 
@@ -1503,6 +1560,251 @@ mod tests {
             assert_relative_eq!(store.cache.calibrations[0].scaling, original.scaling);
         }
     }
-}
 
-// TODO: Test that control tempo gets combined correctly with speed knob
+    #[test]
+    fn when_steady_clock_passes_in_it_detects_tempo() {
+        let mut store = Store::new();
+        let input = InputSnapshot::default();
+
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 1);
+
+        assert_eq!(
+            store.cache.clock_detectors[1].detected_tempo().unwrap(),
+            2000
+        );
+    }
+
+    #[test]
+    fn when_clock_within_toleration_passes_it_detects_tempo() {
+        let mut store = Store::new();
+        let input = InputSnapshot::default();
+
+        clock_trigger(&mut store, 1, input, 1995);
+        clock_trigger(&mut store, 1, input, 2030);
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 1);
+
+        assert_eq!(
+            store.cache.clock_detectors[1].detected_tempo().unwrap(),
+            2000
+        );
+    }
+
+    #[test]
+    fn when_unevenly_spaced_triggers_are_given_it_is_not_recognized_as_tempo() {
+        let mut store = Store::new();
+        let input = InputSnapshot::default();
+
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 999);
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 1);
+
+        assert!(store.cache.clock_detectors[1].detected_tempo().is_none());
+    }
+
+    #[test]
+    fn when_signal_goes_below_zero_it_is_not_recognized_as_clock() {
+        let mut store = Store::new();
+        let mut input = InputSnapshot::default();
+
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 2000);
+
+        input.control[1] = Some(1.0);
+        store.apply_input_snapshot(input);
+        store.tick();
+        input.control[1] = Some(0.1);
+        store.apply_input_snapshot(input);
+        for _ in 0..1999 {
+            store.tick();
+        }
+
+        clock_trigger(&mut store, 1, input, 1);
+
+        assert!(store.cache.clock_detectors[1].detected_tempo().is_none());
+    }
+
+    #[test]
+    fn when_signal_has_fast_enough_attacks_it_is_recognized_as_clock() {
+        let mut store = Store::new();
+        let input = InputSnapshot::default();
+
+        fn attack(store: &mut Store, mut input: InputSnapshot, should_detect: bool) {
+            let mut detected = false;
+            let attack = 3;
+            for i in 0..=attack {
+                input.control[1] = Some(0.5 + 0.5 * (i as f32 / attack as f32));
+                store.apply_input_snapshot(input);
+                store.tick();
+                detected |= store.cache.clock_detectors[1].detected_tempo().is_some();
+            }
+            assert_eq!(should_detect, detected);
+        }
+
+        fn silence(store: &mut Store, mut input: InputSnapshot) {
+            for _ in 0..1999 {
+                input.control[1] = Some(0.5);
+                store.apply_input_snapshot(input);
+                store.tick();
+                assert!(store.cache.clock_detectors[1].detected_tempo().is_none());
+            }
+        }
+
+        attack(&mut store, input, false);
+        silence(&mut store, input);
+        attack(&mut store, input, false);
+        silence(&mut store, input);
+        attack(&mut store, input, false);
+        silence(&mut store, input);
+        attack(&mut store, input, true);
+    }
+
+    #[test]
+    fn when_signal_does_not_have_fast_attacks_it_is_not_recognized_as_clock() {
+        let mut store = Store::new();
+        let input = InputSnapshot::default();
+
+        fn attack(store: &mut Store, mut input: InputSnapshot) {
+            let attack = 200;
+            for i in 0..=attack {
+                input.control[1] = Some(0.5 + 0.5 * (i as f32 / attack as f32));
+                store.apply_input_snapshot(input);
+                store.tick();
+                assert!(store.cache.clock_detectors[1].detected_tempo().is_none());
+            }
+        }
+
+        fn silence(store: &mut Store, mut input: InputSnapshot) {
+            for _ in 0..1999 {
+                input.control[1] = Some(0.5);
+                store.apply_input_snapshot(input);
+                store.tick();
+                assert!(store.cache.clock_detectors[1].detected_tempo().is_none());
+            }
+        }
+
+        attack(&mut store, input);
+        silence(&mut store, input);
+        attack(&mut store, input);
+        silence(&mut store, input);
+        attack(&mut store, input);
+        silence(&mut store, input);
+        attack(&mut store, input);
+    }
+
+    #[test]
+    fn when_control_is_mapped_to_speed_and_clock_passed_it_sets_it_accordingly() {
+        let mut store = Store::new();
+        let mut input = InputSnapshot::default();
+
+        // Initialize
+        input.control[1] = None;
+        store.apply_input_snapshot(input);
+
+        // Plug in
+        input.control[1] = Some(0.5);
+        store.apply_input_snapshot(input);
+
+        // Turn knob to map control
+        input.speed = 0.5;
+        for _ in 0..5 {
+            store.apply_input_snapshot(input);
+        }
+
+        // Send clock signal to control
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 1);
+
+        fn check(store: &mut Store, mut input: InputSnapshot, pot: f32, speed: f32) {
+            input.speed = pot;
+            for _ in 0..5 {
+                store.apply_input_snapshot(input);
+                // TODO: Here it gets reset?
+                store.tick();
+            }
+            let attributes = store.apply_input_snapshot(input).dsp_attributes;
+            assert_relative_eq!(attributes.speed, speed);
+        }
+
+        // Test all positions of speed
+        check(&mut store, input, 0.0 / 4.0, 8.0);
+        check(&mut store, input, 1.0 / 4.0, 4.0);
+        check(&mut store, input, 2.0 / 4.0, 2.0);
+        check(&mut store, input, 3.0 / 4.0, 1.0);
+        check(&mut store, input, 4.0 / 4.0, 0.5);
+    }
+
+    #[test]
+    fn when_clock_signal_changes_tempo_it_gets_reflected_on_speed() {
+        let mut store = Store::new();
+        let mut input = InputSnapshot::default();
+
+        // Initialize
+        input.control[1] = None;
+        store.apply_input_snapshot(input);
+
+        // Plug in
+        input.control[1] = Some(0.1);
+        store.apply_input_snapshot(input);
+
+        // Turn knob to map control, keep it in neutral position
+        input.speed = 0.5;
+        for _ in 0..5 {
+            store.apply_input_snapshot(input);
+        }
+
+        fn check(store: &mut Store, input: InputSnapshot, delay: usize, speed: f32) {
+            // Send clock signal to control
+            clock_trigger(store, 1, input, delay);
+            clock_trigger(store, 1, input, delay);
+            clock_trigger(store, 1, input, delay);
+            clock_trigger(store, 1, input, 1);
+            let attributes = store.apply_input_snapshot(input).dsp_attributes;
+            assert_relative_eq!(attributes.speed, speed);
+        }
+
+        // Send clock signal to control
+        check(&mut store, input, 2000, 2.0);
+        check(&mut store, input, 1000, 1.0);
+        check(&mut store, input, 500, 0.5);
+        check(&mut store, input, 4000, 4.0);
+    }
+
+    #[test]
+    fn when_clock_signal_stops_speed_gets_set_from_its_analog_signal_and_pot() {
+        let mut store = Store::new();
+        let mut input = InputSnapshot::default();
+
+        // Initialize
+        input.control[1] = None;
+        store.apply_input_snapshot(input);
+
+        // Plug in
+        input.control[1] = Some(0.5);
+        store.apply_input_snapshot(input);
+
+        // Turn knob to map control, keep it in neutral position
+        input.speed = 0.5;
+        for _ in 0..5 {
+            store.apply_input_snapshot(input);
+        }
+
+        let original_speed = store.apply_input_snapshot(input).dsp_attributes.speed;
+        assert_relative_ne!(original_speed, 2.0);
+
+        // Send clock signal to control, with last clock followed by major delay
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 2000);
+        clock_trigger(&mut store, 1, input, 20000);
+
+        let attributes = store.apply_input_snapshot(input).dsp_attributes;
+        assert_relative_eq!(attributes.speed, original_speed);
+    }
+}

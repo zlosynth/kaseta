@@ -16,14 +16,14 @@ impl Store {
 
         self.cache.attributes.dry_wet = calculate(
             self.input.dry_wet.value(),
-            self.control_for_attribute(AttributeIdentifier::DryWet),
+            self.control_value_for_attribute(AttributeIdentifier::DryWet),
             DRY_WET_RANGE,
             None,
         );
 
         let drive_input = calculate(
             self.input.drive.value(),
-            self.control_for_attribute(AttributeIdentifier::Drive),
+            self.control_value_for_attribute(AttributeIdentifier::Drive),
             (0.0, 1.0),
             None,
         );
@@ -46,7 +46,7 @@ impl Store {
         let max_bias = max_bias_for_drive(drive).clamp(BIAS_RANGE.0, BIAS_RANGE.1);
         self.cache.attributes.bias = calculate(
             self.input.bias.value(),
-            self.control_for_attribute(AttributeIdentifier::Bias),
+            self.control_value_for_attribute(AttributeIdentifier::Bias),
             (0.01, max_bias),
             Some(taper::log),
         );
