@@ -1,7 +1,10 @@
+pub mod audio;
 pub mod inputs;
 pub mod leds;
+pub mod randomizer;
 
 pub use daisy::hal;
+use daisy::sdram::SDRAM;
 
 use daisy::led::LedUser;
 use hal::adc::{AdcSampleTime, Resolution};
@@ -11,20 +14,25 @@ use hal::pac::Peripherals as DevicePeripherals;
 use hal::prelude::*;
 use systick_monotonic::Systick;
 
+use self::audio::Audio;
 use self::inputs::{
     CVsPins, Config as InputsConfig, Inputs, MultiplexerPins, PotsPins, SwitchesPins,
 };
-use self::leds::{LEDs, Pins as LEDsPins};
+use self::leds::{Leds, Pins as LEDsPins};
+use self::randomizer::Randomizer;
 
 pub struct System {
     pub mono: Systick<1000>,
     pub status_led: LedUser,
     pub inputs: Inputs,
-    pub leds: LEDs,
+    pub leds: Leds,
+    pub sdram: SDRAM,
+    pub audio: Audio,
+    pub randomizer: Randomizer,
 }
 
 impl System {
-    /// Initialize system abstraction
+    /// Initialize system abstraction.
     ///
     /// # Panics
     ///
@@ -36,6 +44,8 @@ impl System {
         let board = daisy::Board::take().unwrap();
         let ccdr = daisy::board_freeze_clocks!(board, dp);
         let pins = daisy::board_split_gpios!(board, ccdr, dp);
+        let sdram = daisy::board_split_sdram!(cp, dp, ccdr, pins);
+        let audio = Audio::init(daisy::board_split_audio!(ccdr, pins));
 
         let mut delay = DelayFromCountDownTimer::new(dp.TIM2.timer(
             100.Hz(),
@@ -87,7 +97,7 @@ impl System {
             adc_1,
             adc_2,
         });
-        let leds = LEDs::new(LEDsPins {
+        let leds = Leds::new(LEDsPins {
             display: (
                 pins.GPIO.PIN_D9.into_push_pull_output(),
                 pins.GPIO.PIN_D7.into_push_pull_output(),
@@ -100,12 +110,16 @@ impl System {
             ),
             impulse: pins.GPIO.PIN_D6.into_push_pull_output(),
         });
+        let randomizer = Randomizer::new(dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks));
 
         Self {
             mono,
             status_led,
             inputs,
             leds,
+            sdram,
+            audio,
+            randomizer,
         }
     }
 }

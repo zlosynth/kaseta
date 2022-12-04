@@ -1,6 +1,6 @@
 use crate::system::hal::gpio;
 
-pub struct LEDs {
+pub struct Leds {
     pins: Pins,
 }
 
@@ -30,7 +30,7 @@ type Display7Pin = gpio::gpioc::PC10<gpio::Output>;
 type Display8Pin = gpio::gpiob::PB4<gpio::Output>;
 type ImpulsePin = gpio::gpioc::PC12<gpio::Output>;
 
-impl LEDs {
+impl Leds {
     #[must_use]
     pub fn new(pins: Pins) -> Self {
         Self { pins }
