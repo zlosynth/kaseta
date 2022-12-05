@@ -1,6 +1,6 @@
 pub mod audio;
 pub mod inputs;
-pub mod leds;
+pub mod outputs;
 pub mod randomizer;
 
 pub use daisy::hal;
@@ -18,14 +18,14 @@ use self::audio::Audio;
 use self::inputs::{
     CVsPins, Config as InputsConfig, Inputs, MultiplexerPins, PotsPins, SwitchesPins,
 };
-use self::leds::{Leds, Pins as LEDsPins};
+use self::outputs::{Config as OutputsConfig, LedsPins, Outputs};
 use self::randomizer::Randomizer;
 
 pub struct System {
     pub mono: Systick<1000>,
     pub status_led: LedUser,
     pub inputs: Inputs,
-    pub leds: Leds,
+    pub outputs: Outputs,
     pub sdram: SDRAM,
     pub audio: Audio,
     pub randomizer: Randomizer,
@@ -97,18 +97,21 @@ impl System {
             adc_1,
             adc_2,
         });
-        let leds = Leds::new(LEDsPins {
-            display: (
-                pins.GPIO.PIN_D9.into_push_pull_output(),
-                pins.GPIO.PIN_D7.into_push_pull_output(),
-                pins.GPIO.PIN_D4.into_push_pull_output(),
-                pins.GPIO.PIN_D2.into_push_pull_output(),
-                pins.GPIO.PIN_D10.into_push_pull_output(),
-                pins.GPIO.PIN_D8.into_push_pull_output(),
-                pins.GPIO.PIN_D3.into_push_pull_output(),
-                pins.GPIO.PIN_D1.into_push_pull_output(),
-            ),
-            impulse: pins.GPIO.PIN_D6.into_push_pull_output(),
+        let outputs = Outputs::new(OutputsConfig {
+            leds: LedsPins {
+                display: (
+                    pins.GPIO.PIN_D9.into_push_pull_output(),
+                    pins.GPIO.PIN_D7.into_push_pull_output(),
+                    pins.GPIO.PIN_D4.into_push_pull_output(),
+                    pins.GPIO.PIN_D2.into_push_pull_output(),
+                    pins.GPIO.PIN_D10.into_push_pull_output(),
+                    pins.GPIO.PIN_D8.into_push_pull_output(),
+                    pins.GPIO.PIN_D3.into_push_pull_output(),
+                    pins.GPIO.PIN_D1.into_push_pull_output(),
+                ),
+                impulse: pins.GPIO.PIN_D6.into_push_pull_output(),
+            },
+            impulse: pins.GPIO.PIN_B5.into_push_pull_output(),
         });
         let randomizer = Randomizer::new(dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks));
 
@@ -116,7 +119,7 @@ impl System {
             mono,
             status_led,
             inputs,
-            leds,
+            outputs,
             sdram,
             audio,
             randomizer,

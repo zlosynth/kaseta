@@ -9,11 +9,17 @@ mod app {
 
     use daisy::led::{Led, LedUser};
     use fugit::ExtU64;
+    use heapless::spsc::{Consumer, Producer, Queue};
     use sirena::memory_manager::MemoryManager;
     use systick_monotonic::Systick;
 
-    use kaseta_dsp::processor::Processor;
+    use kaseta_control::{InputSnapshot, Store};
+    use kaseta_dsp::processor::{
+        Attributes as ProcessorAttributes, Processor, Reaction as ProcessorReaction,
+    };
     use kaseta_firmware::system::audio::{Audio, SAMPLE_RATE};
+    use kaseta_firmware::system::inputs::Inputs;
+    use kaseta_firmware::system::outputs::Outputs;
     use kaseta_firmware::system::randomizer::Randomizer;
     use kaseta_firmware::system::System;
 
@@ -31,11 +37,33 @@ mod app {
         processor: Processor,
         audio: Audio,
         randomizer: Randomizer,
+        inputs: Inputs,
+        outputs: Outputs,
+        control: Store,
+        input_snapshot_producer: Producer<'static, InputSnapshot, 6>,
+        input_snapshot_consumer: Consumer<'static, InputSnapshot, 6>,
+        processor_attributes_producer: Producer<'static, ProcessorAttributes, 6>,
+        processor_attributes_consumer: Consumer<'static, ProcessorAttributes, 6>,
+        processor_reaction_producer: Producer<'static, ProcessorReaction, 6>,
+        processor_reaction_consumer: Consumer<'static, ProcessorReaction, 6>,
     }
 
-    #[init]
+    #[init(
+        local = [
+            input_snapshot_queue: Queue<InputSnapshot, 6> = Queue::new(),
+            processor_attributes_queue: Queue<ProcessorAttributes, 6> = Queue::new(),
+            processor_reaction_queue: Queue<ProcessorReaction, 6> = Queue::new(),
+        ]
+    )]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
         defmt::info!("INIT");
+
+        let (input_snapshot_producer, input_snapshot_consumer) =
+            cx.local.input_snapshot_queue.split();
+        let (processor_attributes_producer, processor_attributes_consumer) =
+            cx.local.processor_attributes_queue.split();
+        let (processor_reaction_producer, processor_reaction_consumer) =
+            cx.local.processor_reaction_queue.split();
 
         let system = System::init(cx.core, cx.device);
         let mono = system.mono;
@@ -43,6 +71,8 @@ mod app {
         let sdram = system.sdram;
         let audio = system.audio;
         let randomizer = system.randomizer;
+        let mut inputs = system.inputs;
+        let outputs = system.outputs;
 
         #[allow(clippy::cast_precision_loss)]
         let processor = {
@@ -57,6 +87,13 @@ mod app {
             Processor::new(SAMPLE_RATE as f32, &mut memory_manager)
         };
 
+        let mut control = Store::new();
+
+        for _ in 0..20 {
+            inputs.sample();
+            control.warm_up(inputs.snapshot());
+        }
+
         blink::spawn(true, BLINKS).unwrap();
 
         (
@@ -66,20 +103,83 @@ mod app {
                 processor,
                 audio,
                 randomizer,
+                inputs,
+                outputs,
+                control,
+                input_snapshot_producer,
+                input_snapshot_consumer,
+                processor_attributes_producer,
+                processor_attributes_consumer,
+                processor_reaction_producer,
+                processor_reaction_consumer,
             },
             init::Monotonics(mono),
         )
     }
 
-    #[task(binds = DMA1_STR1, local = [processor, audio, randomizer], priority = 4)]
+    #[task(binds = DMA1_STR1, local = [processor, audio, randomizer, processor_attributes_consumer, processor_reaction_producer], priority = 4)]
     fn dsp(cx: dsp::Context) {
         let processor = cx.local.processor;
         let audio = cx.local.audio;
         let randomizer = cx.local.randomizer;
+        let processor_attributes_consumer = cx.local.processor_attributes_consumer;
+        let processor_reaction_producer = cx.local.processor_reaction_producer;
 
+        let mut last_attributes = None;
+        while let Some(attributes) = processor_attributes_consumer.dequeue() {
+            last_attributes = Some(attributes);
+        }
+        if let Some(attributes) = last_attributes {
+            processor.set_attributes(attributes);
+        }
+
+        let mut reaction = None;
         audio.update_buffer(|buffer| {
-            processor.process(buffer, randomizer);
+            reaction = Some(processor.process(buffer, randomizer));
         });
+
+        // TODO: In production code, this should not fail - let _ =
+        processor_reaction_producer
+            .enqueue(reaction.unwrap())
+            .ok()
+            .unwrap();
+    }
+
+    #[task(local = [inputs, input_snapshot_producer], priority = 2)]
+    fn input(cx: input::Context) {
+        let inputs = cx.local.inputs;
+        let input_snapshot_producer = cx.local.input_snapshot_producer;
+
+        inputs.sample();
+        let _ = input_snapshot_producer.enqueue(inputs.snapshot());
+    }
+
+    #[task(local = [control, outputs, input_snapshot_consumer, processor_attributes_producer, processor_reaction_consumer], priority = 3)]
+    fn control(cx: control::Context) {
+        let control = cx.local.control;
+        let outputs = cx.local.outputs;
+        let input_snapshot_consumer = cx.local.input_snapshot_consumer;
+        let processor_attributes_producer = cx.local.processor_attributes_producer;
+        let processor_reaction_consumer = cx.local.processor_reaction_consumer;
+
+        while let Some(reaction) = processor_reaction_consumer.dequeue() {
+            control.apply_dsp_reaction(reaction);
+        }
+
+        let mut last_snapshot = None;
+        while let Some(snapshot) = input_snapshot_consumer.dequeue() {
+            last_snapshot = Some(snapshot);
+        }
+        if let Some(snapshot) = last_snapshot {
+            let result = control.apply_input_snapshot(snapshot);
+            if let Some(_save) = result.save {
+                todo!();
+            }
+            let _ = processor_attributes_producer.enqueue(result.dsp_attributes);
+        }
+
+        let desired_output = control.tick();
+        outputs.set(&desired_output);
     }
 
     #[task(local = [status_led])]

@@ -28,7 +28,7 @@ mod save;
 use heapless::Vec;
 use kaseta_dsp::processor::{Attributes as DSPAttributes, Reaction as DSPReaction};
 
-pub use crate::input::snapshot::Snapshot as InputSnapshot;
+pub use crate::input::snapshot::{Snapshot as InputSnapshot, SnapshotHead as InputSnapshotHead};
 pub use crate::output::DesiredOutput;
 
 use crate::action::{ControlAction, Queue};
@@ -104,6 +104,7 @@ pub struct ApplyInputSnapshotResult {
     pub save: Option<Save>,
 }
 
+// TODO: Try to mark as many control methods as private as possible
 #[allow(clippy::new_without_default)]
 impl Store {
     #[must_use]

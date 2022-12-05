@@ -342,6 +342,7 @@ dependencies = [
  "defmt-rtt",
  "defmt-test",
  "fugit",
+ "heapless",
  "kaseta-control",
  "kaseta-dsp",
  "nb 1.0.0",

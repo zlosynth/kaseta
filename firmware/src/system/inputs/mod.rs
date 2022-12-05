@@ -14,6 +14,8 @@ pub mod pots;
 mod probe;
 mod switches;
 
+use kaseta_control::{InputSnapshot as Snapshot, InputSnapshotHead as SnapshotHead};
+
 use crate::system::hal::adc::{Adc, Enabled};
 use crate::system::hal::pac::{ADC1, ADC2};
 
@@ -75,5 +77,42 @@ impl Inputs {
         self.button.sample();
         self.cycle = if self.cycle == 8 { 0 } else { self.cycle + 1 };
         self.probe.tick();
+    }
+
+    #[must_use]
+    pub fn snapshot(&self) -> Snapshot {
+        let mut control = [None; 4];
+        for (i, cv) in self.cvs.cv.iter().enumerate() {
+            control[i] = cv.value;
+        }
+
+        let mut switches = [false; 10];
+        for (i, sw) in self.switches.switch.iter().enumerate() {
+            switches[i] = sw.value;
+        }
+
+        let mut heads = [SnapshotHead::default(); 4];
+        for (i, head) in self.pots.head.iter().enumerate() {
+            heads[i] = SnapshotHead {
+                position: head.position,
+                volume: head.volume,
+                feedback: head.feedback,
+                pan: head.pan,
+            };
+        }
+
+        Snapshot {
+            pre_amp: self.pots.pre_amp,
+            drive: self.pots.drive,
+            bias: self.pots.bias,
+            dry_wet: self.pots.dry_wet,
+            wow_flut: self.pots.wow_flut,
+            speed: self.pots.speed,
+            tone: self.pots.tone,
+            head: heads,
+            control,
+            switch: switches,
+            button: self.button.active,
+        }
     }
 }
