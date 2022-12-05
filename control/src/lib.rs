@@ -30,6 +30,7 @@ use kaseta_dsp::processor::{Attributes as DSPAttributes, Reaction as DSPReaction
 
 pub use crate::input::snapshot::{Snapshot as InputSnapshot, SnapshotHead as InputSnapshotHead};
 pub use crate::output::DesiredOutput;
+pub use crate::save::{Save, Store as SaveStore};
 
 use crate::action::{ControlAction, Queue};
 use crate::cache::calibration::Calibration;
@@ -37,7 +38,6 @@ use crate::cache::display::{ConfigurationScreen, Screen};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::cache::{Cache, Configuration};
 use crate::input::store::{Store as Input, StoreHead as InputHead};
-use crate::save::Save;
 
 /// The main store of peripheral abstraction and module configuration.
 ///

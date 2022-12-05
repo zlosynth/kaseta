@@ -23,4 +23,8 @@ impl Button {
     pub fn sample(&mut self) {
         self.active = self.debounced.update(self.pin.is_low());
     }
+
+    pub fn active_no_filter(&self) -> bool {
+        self.pin.is_low()
+    }
 }

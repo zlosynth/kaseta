@@ -9,6 +9,7 @@ backwards compatibility.
 * Further refactoring of the control module.
 * Control speed through clock signal or tap-in.
 * Implement firmware binding.
+* Recover configuration after restart.
 
 ## 0.4.0
 

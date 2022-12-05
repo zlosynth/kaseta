@@ -13,7 +13,7 @@ mod app {
     use sirena::memory_manager::MemoryManager;
     use systick_monotonic::Systick;
 
-    use kaseta_control::{InputSnapshot, Store};
+    use kaseta_control::{InputSnapshot, Save, Store};
     use kaseta_dsp::processor::{
         Attributes as ProcessorAttributes, Processor, Reaction as ProcessorReaction,
     };
@@ -21,6 +21,7 @@ mod app {
     use kaseta_firmware::system::inputs::Inputs;
     use kaseta_firmware::system::outputs::Outputs;
     use kaseta_firmware::system::randomizer::Randomizer;
+    use kaseta_firmware::system::storage::Storage;
     use kaseta_firmware::system::System;
 
     const BLINKS: u8 = 1;
@@ -40,6 +41,7 @@ mod app {
         inputs: Inputs,
         outputs: Outputs,
         control: Store,
+        storage: Storage,
         input_snapshot_producer: Producer<'static, InputSnapshot, 6>,
         input_snapshot_consumer: Consumer<'static, InputSnapshot, 6>,
         processor_attributes_producer: Producer<'static, ProcessorAttributes, 6>,
@@ -56,7 +58,7 @@ mod app {
         ]
     )]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
-        defmt::info!("INIT");
+        defmt::info!("START");
 
         let (input_snapshot_producer, input_snapshot_consumer) =
             cx.local.input_snapshot_queue.split();
@@ -72,6 +74,7 @@ mod app {
         let audio = system.audio;
         let randomizer = system.randomizer;
         let mut inputs = system.inputs;
+        let flash = system.flash;
         let outputs = system.outputs;
 
         #[allow(clippy::cast_precision_loss)]
@@ -87,14 +90,32 @@ mod app {
             Processor::new(SAMPLE_RATE as f32, &mut memory_manager)
         };
 
-        let mut control = Store::new();
+        let mut storage = Storage::new(flash);
 
-        for _ in 0..20 {
-            inputs.sample();
-            control.warm_up(inputs.snapshot());
-        }
+        let control = {
+            let save = if inputs.button.active_no_filter() {
+                defmt::info!("RESET");
+                let save = Save::default();
+                while inputs.button.active_no_filter() {}
+                save
+            } else {
+                storage.load_save()
+            };
+
+            defmt::info!("INITIALIZE WITH: {:?}", save);
+            let mut control = Store::from(save);
+
+            for _ in 0..20 {
+                inputs.sample();
+                control.warm_up(inputs.snapshot());
+            }
+
+            control
+        };
 
         blink::spawn(true, BLINKS).unwrap();
+        control::spawn().unwrap();
+        input::spawn().unwrap();
 
         (
             Shared {},
@@ -106,6 +127,7 @@ mod app {
                 inputs,
                 outputs,
                 control,
+                storage,
                 input_snapshot_producer,
                 input_snapshot_consumer,
                 processor_attributes_producer,
@@ -147,15 +169,24 @@ mod app {
 
     #[task(local = [inputs, input_snapshot_producer], priority = 2)]
     fn input(cx: input::Context) {
+        input::spawn_after(1.millis()).ok().unwrap();
+
         let inputs = cx.local.inputs;
         let input_snapshot_producer = cx.local.input_snapshot_producer;
 
         inputs.sample();
-        let _ = input_snapshot_producer.enqueue(inputs.snapshot());
+        // TODO: In production code, this should not fail - let _ =, or even use unchecked enqueue
+        input_snapshot_producer
+            .enqueue(inputs.snapshot())
+            .ok()
+            .unwrap();
     }
 
     #[task(local = [control, outputs, input_snapshot_consumer, processor_attributes_producer, processor_reaction_consumer], priority = 3)]
     fn control(cx: control::Context) {
+        // TODO: Make sure this is using accurate clock: https://rtic.rs/1/book/en/by-example/monotonic.html
+        control::spawn_after(1.millis()).ok().unwrap();
+
         let control = cx.local.control;
         let outputs = cx.local.outputs;
         let input_snapshot_consumer = cx.local.input_snapshot_consumer;
@@ -172,14 +203,25 @@ mod app {
         }
         if let Some(snapshot) = last_snapshot {
             let result = control.apply_input_snapshot(snapshot);
-            if let Some(_save) = result.save {
-                todo!();
+            if let Some(save) = result.save {
+                // TODO: In production code, this should not fail - let _ =
+                store::spawn(save).ok().unwrap();
             }
-            let _ = processor_attributes_producer.enqueue(result.dsp_attributes);
+            // TODO: In production code, this should not fail - let _ =, or even use unchecked enqueue
+            processor_attributes_producer
+                .enqueue(result.dsp_attributes)
+                .ok()
+                .unwrap();
         }
 
         let desired_output = control.tick();
         outputs.set(&desired_output);
+    }
+
+    #[task(local = [storage])]
+    fn store(cx: store::Context, save: Save) {
+        let storage = cx.local.storage;
+        storage.save_save(save);
     }
 
     #[task(local = [status_led])]

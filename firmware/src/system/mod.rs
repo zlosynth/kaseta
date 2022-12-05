@@ -2,10 +2,12 @@ pub mod audio;
 pub mod inputs;
 pub mod outputs;
 pub mod randomizer;
+pub mod storage;
 
 pub use daisy::hal;
 use daisy::sdram::SDRAM;
 
+use daisy::flash::Flash;
 use daisy::led::LedUser;
 use hal::adc::{AdcSampleTime, Resolution};
 use hal::delay::DelayFromCountDownTimer;
@@ -28,6 +30,7 @@ pub struct System {
     pub outputs: Outputs,
     pub sdram: SDRAM,
     pub audio: Audio,
+    pub flash: Flash,
     pub randomizer: Randomizer,
 }
 
@@ -113,6 +116,7 @@ impl System {
             },
             impulse: pins.GPIO.PIN_B5.into_push_pull_output(),
         });
+        let flash = daisy::board_split_flash!(ccdr, dp, pins);
         let randomizer = Randomizer::new(dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks));
 
         Self {
@@ -122,6 +126,7 @@ impl System {
             outputs,
             sdram,
             audio,
+            flash,
             randomizer,
         }
     }
