@@ -6,6 +6,7 @@ use crate::delay::{Attributes as DelayAttributes, Delay, HeadAttributes as Delay
 use crate::hysteresis::{
     Attributes as HysteresisAttributes, Hysteresis, Reaction as HysteresisReaction,
 };
+use crate::oscillator::{Attributes as OscillatorAttributes, Oscillator};
 use crate::oversampling::{Downsampler4, Upsampler4};
 use crate::pre_amp::{Attributes as PreAmpAttributes, PreAmp};
 use crate::random::Random;
@@ -18,13 +19,21 @@ pub struct Processor {
     upsampler: Upsampler4,
     downsampler: Downsampler4,
     pre_amp: PreAmp,
+    oscillator: Oscillator,
     hysteresis: Hysteresis,
     wow_flutter: WowFlutter,
     delay: Delay,
     tone: Tone,
+    first_stage: FirstStage,
 }
 
-// TODO: Just re-use and re-export component's attributes
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+enum FirstStage {
+    PreAmp,
+    Oscillator,
+}
+
 #[derive(Default, Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 #[allow(clippy::struct_excessive_bools)]
@@ -39,6 +48,7 @@ pub struct Attributes {
     pub speed: f32,
     pub tone: f32,
     pub head: [AttributesHead; 4],
+    pub enable_oscillator: bool,
     pub rewind: bool,
     // TODO
     #[allow(dead_code)]
@@ -70,10 +80,12 @@ impl Processor {
             upsampler: Upsampler4::new_4(memory_manager),
             downsampler: Downsampler4::new_4(memory_manager),
             pre_amp: PreAmp::new(),
+            oscillator: Oscillator::new(fs),
             hysteresis: Hysteresis::new(fs),
             wow_flutter: WowFlutter::new(fs as u32, memory_manager),
             delay: Delay::new(fs, memory_manager),
             tone: Tone::new(fs as u32),
+            first_stage: FirstStage::PreAmp,
         };
 
         uninitialized_processor.set_attributes(Attributes::default());
@@ -86,12 +98,19 @@ impl Processor {
         let mut reaction = Reaction::default();
 
         let mut buffer = [0.0; 32];
-        for (i, x) in block.iter_mut().enumerate() {
-            buffer[i] = x.0;
-        }
 
+        match self.first_stage {
+            FirstStage::PreAmp => {
+                for (i, x) in block.iter_mut().enumerate() {
+                    buffer[i] = x.0;
+                }
+                self.pre_amp.process(&mut buffer);
+            }
+            FirstStage::Oscillator => {
+                self.oscillator.populate(&mut buffer);
+            }
+        }
         self.wow_flutter.process(&mut buffer, random);
-        self.pre_amp.process(&mut buffer);
         let mut oversampled_block = [0.0; 32 * 4];
         self.upsampler.process(&buffer, &mut oversampled_block);
         self.hysteresis
@@ -106,7 +125,14 @@ impl Processor {
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
+        self.first_stage = if attributes.enable_oscillator {
+            FirstStage::Oscillator
+        } else {
+            FirstStage::PreAmp
+        };
+
         self.pre_amp.set_attributes(attributes.into());
+        self.oscillator.set_attributes(&attributes.into());
         self.hysteresis.set_attributes(attributes.into());
         self.wow_flutter.set_attributes(attributes.into());
         self.delay.set_attributes(attributes.into());
@@ -118,6 +144,14 @@ impl From<Attributes> for PreAmpAttributes {
     fn from(other: Attributes) -> Self {
         Self {
             gain: other.pre_amp,
+        }
+    }
+}
+
+impl From<Attributes> for OscillatorAttributes {
+    fn from(other: Attributes) -> Self {
+        Self {
+            frequency: other.pre_amp,
         }
     }
 }

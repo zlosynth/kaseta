@@ -111,6 +111,7 @@ pub struct Options {
     pub quantize_6: bool,
     pub short_delay_range: bool,
     pub rewind: bool,
+    pub enable_oscillator: bool,
 }
 
 /// Tweaking of the default module configuration.
@@ -196,6 +197,7 @@ impl Cache {
                 },
             ],
             rewind: self.options.rewind,
+            enable_oscillator: self.options.enable_oscillator,
             rewind_speed: rewind_indices_to_speeds(self.configuration.rewind_speed),
         }
     }

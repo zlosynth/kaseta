@@ -10,6 +10,7 @@ backwards compatibility.
 * Control speed through clock signal or tap-in.
 * Implement firmware binding.
 * Recover configuration after restart.
+* Introduce internal oscillator.
 
 ## 0.4.0
 

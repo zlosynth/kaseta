@@ -23,6 +23,7 @@ pub mod hysteresis;
 pub mod oversampling;
 
 mod math;
+mod oscillator;
 mod pre_amp;
 mod ring_buffer;
 mod state_variable_filter;

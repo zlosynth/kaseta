@@ -9,7 +9,7 @@ const LENGTH_SHORT_RANGE: (f32, f32) = (1.0 / 400.0, 1.0);
 
 impl Store {
     pub fn reconcile_speed(&mut self) {
-        self.cache.options.short_delay_range = self.input.switch[0];
+        self.cache.options.short_delay_range = self.input.switch[1];
 
         let control_index = self.control_index_for_attribute(AttributeIdentifier::Speed);
         let clock_tempo = control_index

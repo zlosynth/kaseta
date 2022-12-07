@@ -8,6 +8,7 @@ const PRE_AMP_RANGE: (f32, f32) = (0.0, 25.0);
 
 impl Store {
     pub fn reconcile_pre_amp(&mut self) {
+        self.cache.options.enable_oscillator = self.input.switch[0];
         self.cache.attributes.pre_amp = calculate(
             self.input.pre_amp.value(),
             self.control_value_for_attribute(AttributeIdentifier::PreAmp),
