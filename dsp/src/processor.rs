@@ -50,6 +50,7 @@ pub struct Attributes {
     pub head: [AttributesHead; 4],
     pub enable_oscillator: bool,
     pub rewind: bool,
+    pub reset_impulse: bool,
     // TODO
     #[allow(dead_code)]
     pub rewind_speed: [(f32, f32); 4],
@@ -221,6 +222,7 @@ impl From<Attributes> for DelayAttributes {
                     rewind_backward: other.rewind.then_some(0.124),
                 },
             ],
+            reset_impulse: other.reset_impulse,
         }
     }
 }

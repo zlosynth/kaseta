@@ -99,6 +99,7 @@ fn main() -> ! {
                         rewind_forward: Some(RELATIVE_SPEED / 2.0),
                     },
                 ],
+                reset_impulse: false,
             });
             let input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
             let mut output: [(f32, f32); BUFFER_SIZE] = [(0.0, 0.0); BUFFER_SIZE];

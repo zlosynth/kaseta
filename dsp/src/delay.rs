@@ -31,6 +31,7 @@ struct Head {
 pub struct Attributes {
     pub length: f32,
     pub heads: [HeadAttributes; 4],
+    pub reset_impulse: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -133,6 +134,10 @@ impl Delay {
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
+        if attributes.reset_impulse {
+            self.impulse_cursor = 0.0;
+        }
+
         self.length = attributes.length;
         for (i, head) in self.heads.iter_mut().enumerate() {
             head.feedback = attributes.heads[i].feedback;

@@ -12,13 +12,16 @@ impl Store {
         self.cache.options.short_delay_range = self.input.switch[1];
 
         let control_index = self.control_index_for_attribute(AttributeIdentifier::Speed);
-        let clock_tempo = control_index
-            .map(|i| &self.cache.clock_detectors[i])
-            .and_then(|d| d.detected_tempo());
+        let clock_detector = control_index.map(|i| &self.cache.clock_detectors[i]);
+        let clock_tempo = clock_detector.and_then(|d| d.detected_tempo());
+
+        let just_triggered_clock = clock_detector.map_or(false, |c| c.just_detected());
+        let just_triggered_tap = self.cache.tap_detector.just_detected();
+        self.cache.attributes.reset_impulse = just_triggered_clock || just_triggered_tap;
 
         if let Some(clock_tempo) = clock_tempo {
             let c_i = f32_to_usize_5(self.input.speed.value());
-            let coefficient = [4.0, 2.0, 1.0, 0.5, 0.25][c_i];
+            let coefficient = [1.0, 1.0 / 2.0, 1.0 / 4.0, 1.0 / 8.0, 1.0 / 16.0][c_i];
             self.cache.attributes.speed = (clock_tempo as f32 / 1000.0) * coefficient;
         } else if let Some(tapped_tempo) = self.cache.tapped_tempo {
             self.cache.attributes.speed = tapped_tempo;

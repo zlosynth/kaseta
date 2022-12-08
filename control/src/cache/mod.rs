@@ -59,6 +59,10 @@ impl ClockDetector {
         self.detector.trigger();
     }
 
+    pub fn just_detected(&self) -> bool {
+        self.detector.just_detected
+    }
+
     pub fn tick(&mut self) {
         self.detector.tick();
         self.detector.reset_if_inactive();
@@ -83,6 +87,10 @@ pub struct TapDetector {
 impl TapDetector {
     pub fn trigger(&mut self) {
         self.detector.trigger();
+    }
+
+    pub fn just_detected(&self) -> bool {
+        self.detector.just_detected
     }
 
     pub fn tick(&mut self) {
@@ -147,6 +155,7 @@ pub struct Attributes {
     pub speed: f32,
     pub tone: f32,
     pub head: [AttributesHead; 4],
+    pub reset_impulse: bool,
 }
 
 #[derive(Debug, Default)]
@@ -199,6 +208,7 @@ impl Cache {
             rewind: self.options.rewind,
             enable_oscillator: self.options.enable_oscillator,
             rewind_speed: rewind_indices_to_speeds(self.configuration.rewind_speed),
+            reset_impulse: self.attributes.reset_impulse,
         }
     }
 

@@ -140,8 +140,8 @@ impl Store {
             }
         };
 
-        self.reconcile_attributes();
         self.reconcile_detectors();
+        self.reconcile_attributes();
 
         self.cache
             .display
@@ -513,8 +513,8 @@ mod tests {
         store.apply_input_snapshot(input);
         store.tick();
         input.control[i] = Some(0.5);
-        store.apply_input_snapshot(input);
         for _ in 0..time - 1 {
+            store.apply_input_snapshot(input);
             store.tick();
         }
     }
@@ -522,6 +522,7 @@ mod tests {
     fn tap_button(store: &mut Store, input: InputSnapshot, time: usize) {
         click_button(store, input);
         for _ in 0..time - 2 {
+            store.apply_input_snapshot(input);
             store.tick();
         }
     }
@@ -1697,9 +1698,7 @@ mod tests {
 
         // Turn knob to map control
         input.speed = 0.5;
-        for _ in 0..5 {
-            store.apply_input_snapshot(input);
-        }
+        store.apply_input_snapshot(input);
 
         // Send clock signal to control
         clock_trigger(&mut store, 1, input, 2000);
@@ -1711,7 +1710,6 @@ mod tests {
             input.speed = pot;
             for _ in 0..5 {
                 store.apply_input_snapshot(input);
-                // TODO: Here it gets reset?
                 store.tick();
             }
             let attributes = store.apply_input_snapshot(input).dsp_attributes;
@@ -1719,11 +1717,11 @@ mod tests {
         }
 
         // Test all positions of speed
-        check(&mut store, input, 0.0 / 4.0, 8.0);
-        check(&mut store, input, 1.0 / 4.0, 4.0);
-        check(&mut store, input, 2.0 / 4.0, 2.0);
-        check(&mut store, input, 3.0 / 4.0, 1.0);
-        check(&mut store, input, 4.0 / 4.0, 0.5);
+        check(&mut store, input, 0.0 / 4.0, 2.0);
+        check(&mut store, input, 1.0 / 4.0, 1.0);
+        check(&mut store, input, 2.0 / 4.0, 0.5);
+        check(&mut store, input, 3.0 / 4.0, 0.25);
+        check(&mut store, input, 4.0 / 4.0, 0.125);
     }
 
     #[test]
@@ -1736,11 +1734,15 @@ mod tests {
         store.apply_input_snapshot(input);
 
         // Plug in
-        input.control[1] = Some(0.1);
+        input.control[1] = Some(0.5);
         store.apply_input_snapshot(input);
 
-        // Turn knob to map control, keep it in neutral position
+        // Turn knob to map control
         input.speed = 0.5;
+        store.apply_input_snapshot(input);
+
+        // Move it to neutral position
+        input.speed = 0.0;
         for _ in 0..5 {
             store.apply_input_snapshot(input);
         }
@@ -1775,8 +1777,12 @@ mod tests {
         input.control[1] = Some(0.5);
         store.apply_input_snapshot(input);
 
-        // Turn knob to map control, keep it in neutral position
+        // Turn knob to map control
         input.speed = 0.5;
+        store.apply_input_snapshot(input);
+
+        // Move it to neutral position
+        input.speed = 0.0;
         for _ in 0..5 {
             store.apply_input_snapshot(input);
         }

@@ -14,6 +14,7 @@ use core::ops::Range;
 pub struct IntervalDetector {
     trigger_age: [u32; 3],
     pub tempo: Option<u32>,
+    pub just_detected: bool,
 }
 
 impl IntervalDetector {
@@ -29,6 +30,7 @@ impl IntervalDetector {
             && allowed_range.contains(&(minus_3 - minus_2))
         {
             self.tempo = Some(distance);
+            self.just_detected = true;
         } else {
             self.tempo = None;
         }
@@ -41,12 +43,14 @@ impl IntervalDetector {
     pub fn reset(&mut self) {
         self.trigger_age = [0, 0, 0];
         self.tempo = None;
+        self.just_detected = false;
     }
 
     pub fn tick(&mut self) {
         for x in self.trigger_age.iter_mut() {
             *x = x.saturating_add(1);
         }
+        self.just_detected = false;
     }
 
     pub fn reset_if_inactive(&mut self) {
