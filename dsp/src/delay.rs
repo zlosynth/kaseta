@@ -168,7 +168,7 @@ impl Delay {
 }
 
 fn dice_to_bool(random: f32, chance: f32) -> bool {
-    random + chance > 1.0
+    random + chance > 0.99
 }
 
 #[derive(Debug, Default)]
