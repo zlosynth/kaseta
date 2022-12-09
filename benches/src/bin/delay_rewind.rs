@@ -23,6 +23,15 @@ use daisy::hal::prelude::_stm32h7xx_hal_rng_RngExt;
 use sirena::memory_manager::MemoryManager;
 
 use kaseta_dsp::delay::{Attributes, Delay, HeadAttributes};
+use kaseta_dsp::random::Random;
+
+struct RandomStub;
+
+impl Random for RandomStub {
+    fn normal(&mut self) -> f32 {
+        1.0
+    }
+}
 
 #[cortex_m_rt::entry]
 fn main() -> ! {
@@ -100,10 +109,11 @@ fn main() -> ! {
                     },
                 ],
                 reset_impulse: false,
+                random_impulse: false,
             });
             let input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
             let mut output: [(f32, f32); BUFFER_SIZE] = [(0.0, 0.0); BUFFER_SIZE];
-            delay.process(&input, &mut output);
+            delay.process(&input, &mut output, &mut RandomStub);
         }
     });
 

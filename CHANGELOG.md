@@ -11,6 +11,7 @@ backwards compatibility.
 * Implement firmware binding.
 * Recover configuration after restart.
 * Introduce internal oscillator.
+* Trigger impulse by a chance set through volume.
 
 ## 0.4.0
 

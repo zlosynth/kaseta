@@ -51,6 +51,7 @@ pub struct Attributes {
     pub enable_oscillator: bool,
     pub rewind: bool,
     pub reset_impulse: bool,
+    pub random_impulse: bool,
     // TODO
     #[allow(dead_code)]
     pub rewind_speed: [(f32, f32); 4],
@@ -120,7 +121,7 @@ impl Processor {
         self.downsampler
             .process(&oversampled_block, &mut buffer[..]);
         self.tone.process(&mut buffer[..]);
-        reaction.delay_impulse = self.delay.process(&buffer[..], &mut block[..]);
+        reaction.delay_impulse = self.delay.process(&buffer[..], &mut block[..], random);
 
         reaction
     }
@@ -223,6 +224,7 @@ impl From<Attributes> for DelayAttributes {
                 },
             ],
             reset_impulse: other.reset_impulse,
+            random_impulse: other.random_impulse,
         }
     }
 }

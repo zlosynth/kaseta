@@ -2,6 +2,7 @@
 use micromath::F32Ext as _;
 
 use crate::math;
+use crate::random::Random;
 use crate::ring_buffer::RingBuffer;
 use sirena::memory_manager::MemoryManager;
 
@@ -15,6 +16,7 @@ pub struct Delay {
     heads: [Head; 4],
     length: f32,
     impulse_cursor: f32,
+    random_impulse: bool,
 }
 
 #[derive(Default, Debug)]
@@ -32,6 +34,7 @@ pub struct Attributes {
     pub length: f32,
     pub heads: [HeadAttributes; 4],
     pub reset_impulse: bool,
+    pub random_impulse: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -68,6 +71,7 @@ impl Delay {
             ],
             length: 0.0,
             impulse_cursor: 0.0,
+            random_impulse: false,
         }
     }
 
@@ -80,7 +84,12 @@ impl Delay {
     // +---+-----+------+---+
     // |
     // OUT                    (4) mix all read samples together and play them back
-    pub fn process(&mut self, input_buffer: &[f32], output_buffer: &mut [(f32, f32)]) -> bool {
+    pub fn process(
+        &mut self,
+        input_buffer: &[f32],
+        output_buffer: &mut [(f32, f32)],
+        random: &mut impl Random,
+    ) -> bool {
         for x in input_buffer.iter() {
             self.buffer.write(*x);
         }
@@ -122,13 +131,17 @@ impl Delay {
                 continue;
             }
             let impulse_position = head.reader.impulse_position() / self.sample_rate;
-            if initial_impulse_cursor > self.impulse_cursor {
-                impulse |= impulse_position >= initial_impulse_cursor
-                    || impulse_position < self.impulse_cursor;
+            let head_impulse = if initial_impulse_cursor > self.impulse_cursor {
+                impulse_position >= initial_impulse_cursor || impulse_position < self.impulse_cursor
             } else {
-                impulse |= initial_impulse_cursor <= impulse_position
-                    && impulse_position < self.impulse_cursor;
-            }
+                initial_impulse_cursor <= impulse_position && impulse_position < self.impulse_cursor
+            };
+            let chance = if self.random_impulse {
+                dice_to_bool(random.normal(), head.volume)
+            } else {
+                true
+            };
+            impulse |= head_impulse && chance;
         }
         impulse
     }
@@ -137,6 +150,7 @@ impl Delay {
         if attributes.reset_impulse {
             self.impulse_cursor = 0.0;
         }
+        self.random_impulse = attributes.random_impulse;
 
         self.length = attributes.length;
         for (i, head) in self.heads.iter_mut().enumerate() {
@@ -151,6 +165,10 @@ impl Delay {
             });
         }
     }
+}
+
+fn dice_to_bool(random: f32, chance: f32) -> bool {
+    random + chance > 1.0
 }
 
 #[derive(Debug, Default)]

@@ -120,6 +120,7 @@ pub struct Options {
     pub short_delay_range: bool,
     pub rewind: bool,
     pub enable_oscillator: bool,
+    pub random_impulse: bool,
 }
 
 /// Tweaking of the default module configuration.
@@ -209,6 +210,7 @@ impl Cache {
             enable_oscillator: self.options.enable_oscillator,
             rewind_speed: rewind_indices_to_speeds(self.configuration.rewind_speed),
             reset_impulse: self.attributes.reset_impulse,
+            random_impulse: self.options.random_impulse,
         }
     }
 
