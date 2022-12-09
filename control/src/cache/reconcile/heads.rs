@@ -5,6 +5,10 @@ use crate::Store;
 
 impl Store {
     pub fn reconcile_heads(&mut self) {
+        self.cache.options.rewind = self.input.switch[2];
+        self.cache.options.quantize_8 = self.input.switch[3];
+        self.cache.options.quantize_6 = self.input.switch[4];
+
         for i in 0..4 {
             self.reconcile_head(i);
         }
