@@ -12,6 +12,7 @@ backwards compatibility.
 * Recover configuration after restart.
 * Introduce internal oscillator.
 * Trigger impulse by a chance set through volume.
+* Optionally apply tone only on feedback.
 
 ## 0.4.0
 

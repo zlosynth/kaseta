@@ -2,7 +2,10 @@
 
 use sirena::memory_manager::MemoryManager;
 
-use crate::delay::{Attributes as DelayAttributes, Delay, HeadAttributes as DelayHeadAttributes};
+use crate::delay::{
+    Attributes as DelayAttributes, Delay, HeadAttributes as DelayHeadAttributes,
+    Reaction as DelayReaction,
+};
 use crate::hysteresis::{
     Attributes as HysteresisAttributes, Hysteresis, Reaction as HysteresisReaction,
 };
@@ -52,6 +55,7 @@ pub struct Attributes {
     pub rewind: bool,
     pub reset_impulse: bool,
     pub random_impulse: bool,
+    pub filter_feedback: bool,
     // TODO
     #[allow(dead_code)]
     pub rewind_speed: [(f32, f32); 4],
@@ -120,8 +124,9 @@ impl Processor {
             .notify(&mut reaction);
         self.downsampler
             .process(&oversampled_block, &mut buffer[..]);
-        self.tone.process(&mut buffer[..]);
-        reaction.delay_impulse = self.delay.process(&buffer[..], &mut block[..], random);
+        self.delay
+            .process(&mut buffer[..], &mut block[..], &mut self.tone, random)
+            .notify(&mut reaction);
 
         reaction
     }
@@ -225,6 +230,7 @@ impl From<Attributes> for DelayAttributes {
             ],
             reset_impulse: other.reset_impulse,
             random_impulse: other.random_impulse,
+            filter_feedback: other.filter_feedback,
         }
     }
 }
@@ -232,5 +238,11 @@ impl From<Attributes> for DelayAttributes {
 impl HysteresisReaction {
     fn notify(&mut self, reaction: &mut Reaction) {
         reaction.hysteresis_clipping = self.clipping;
+    }
+}
+
+impl DelayReaction {
+    fn notify(&mut self, reaction: &mut Reaction) {
+        reaction.delay_impulse = self.impulse;
     }
 }

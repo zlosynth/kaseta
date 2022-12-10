@@ -4,6 +4,7 @@ use micromath::F32Ext as _;
 use crate::math;
 use crate::random::Random;
 use crate::ring_buffer::RingBuffer;
+use crate::tone::Tone;
 use sirena::memory_manager::MemoryManager;
 
 const MAX_LENGTH: f32 = 2.0 * 60.0;
@@ -17,6 +18,7 @@ pub struct Delay {
     length: f32,
     impulse_cursor: f32,
     random_impulse: bool,
+    filter_feedback: bool,
 }
 
 #[derive(Default, Debug)]
@@ -35,6 +37,7 @@ pub struct Attributes {
     pub heads: [HeadAttributes; 4],
     pub reset_impulse: bool,
     pub random_impulse: bool,
+    pub filter_feedback: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -46,6 +49,12 @@ pub struct HeadAttributes {
     pub pan: f32,
     pub rewind_forward: Option<f32>,
     pub rewind_backward: Option<f32>,
+}
+
+#[derive(Default, Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct Reaction {
+    pub impulse: bool,
 }
 
 impl Delay {
@@ -72,6 +81,7 @@ impl Delay {
             length: 0.0,
             impulse_cursor: 0.0,
             random_impulse: false,
+            filter_feedback: false,
         }
     }
 
@@ -86,10 +96,15 @@ impl Delay {
     // OUT                    (4) mix all read samples together and play them back
     pub fn process(
         &mut self,
-        input_buffer: &[f32],
+        input_buffer: &mut [f32],
         output_buffer: &mut [(f32, f32)],
+        tone: &mut Tone,
         random: &mut impl Random,
-    ) -> bool {
+    ) -> Reaction {
+        if !self.filter_feedback {
+            tone.process(input_buffer);
+        }
+
         for x in input_buffer.iter() {
             self.buffer.write(*x);
         }
@@ -99,11 +114,14 @@ impl Delay {
             // NOTE: Must read from back, so heads can move from old to new
             let age = buffer_len - i;
 
-            let feedback: f32 = self
+            let mut feedback: f32 = self
                 .heads
                 .iter_mut()
                 .map(|head| head.reader.read(&self.buffer, age) * head.feedback)
                 .sum();
+            if self.filter_feedback {
+                feedback = tone.tick(feedback);
+            }
             *self.buffer.peek_mut(age) += feedback;
 
             // NOTE: Must read again now when feedback was written back
@@ -143,7 +161,8 @@ impl Delay {
             };
             impulse |= head_impulse && chance;
         }
-        impulse
+
+        Reaction { impulse }
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
@@ -151,6 +170,7 @@ impl Delay {
             self.impulse_cursor = 0.0;
         }
         self.random_impulse = attributes.random_impulse;
+        self.filter_feedback = attributes.filter_feedback;
 
         self.length = attributes.length;
         for (i, head) in self.heads.iter_mut().enumerate() {

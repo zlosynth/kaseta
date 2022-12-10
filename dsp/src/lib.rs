@@ -21,11 +21,11 @@ pub mod random;
 pub mod delay;
 pub mod hysteresis;
 pub mod oversampling;
+pub mod tone;
 
 mod math;
 mod oscillator;
 mod pre_amp;
 mod ring_buffer;
 mod state_variable_filter;
-mod tone;
 mod wow_flutter;

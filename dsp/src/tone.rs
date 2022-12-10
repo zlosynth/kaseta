@@ -17,6 +17,11 @@ pub struct Tone {
 }
 
 impl Tone {
+    /// # Panics
+    ///
+    /// Sample rate must be higher than 500, otherwise the filter becomes
+    /// unstable and the initialization will panic.
+    #[must_use]
     pub fn new(sample_rate: u32) -> Self {
         assert!(
             sample_rate > 500,
@@ -28,19 +33,20 @@ impl Tone {
         }
     }
 
-    pub fn process(&mut self, buffer: &mut [f32]) {
+    pub fn tick(&mut self, x: f32) -> f32 {
         if self.position < 0.4 {
-            for x in buffer.iter_mut() {
-                *x = self.filter.tick(*x).low_pass;
-            }
+            self.filter.tick(x).low_pass
         } else if self.position > 0.6 {
-            for x in buffer.iter_mut() {
-                *x = self.filter.tick(*x).high_pass;
-            }
+            self.filter.tick(x).high_pass
         } else {
-            for x in buffer.iter_mut() {
-                self.filter.tick(*x);
-            }
+            self.filter.tick(x);
+            x
+        }
+    }
+
+    pub fn process(&mut self, buffer: &mut [f32]) {
+        for x in buffer.iter_mut() {
+            *x = self.tick(*x);
         }
     }
 
@@ -83,7 +89,7 @@ const LOG: [f32; 22] = [
     1.0,
 ];
 
-pub fn log(position: f32) -> f32 {
+fn log(position: f32) -> f32 {
     if position < 0.0 {
         return 0.0;
     } else if position > 1.0 {

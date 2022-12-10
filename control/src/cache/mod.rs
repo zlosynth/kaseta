@@ -121,6 +121,7 @@ pub struct Options {
     pub rewind: bool,
     pub enable_oscillator: bool,
     pub random_impulse: bool,
+    pub filter_feedback: bool,
 }
 
 /// Tweaking of the default module configuration.
@@ -211,6 +212,7 @@ impl Cache {
             rewind_speed: rewind_indices_to_speeds(self.configuration.rewind_speed),
             reset_impulse: self.attributes.reset_impulse,
             random_impulse: self.options.random_impulse,
+            filter_feedback: self.options.filter_feedback,
         }
     }
 

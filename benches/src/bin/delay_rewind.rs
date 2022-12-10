@@ -24,6 +24,7 @@ use sirena::memory_manager::MemoryManager;
 
 use kaseta_dsp::delay::{Attributes, Delay, HeadAttributes};
 use kaseta_dsp::random::Random;
+use kaseta_dsp::tone::Tone;
 
 struct RandomStub;
 
@@ -67,6 +68,7 @@ fn main() -> ! {
 
     let mut randomizer = dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks);
     let mut delay = Delay::new(SAMPLE_RATE, &mut memory_manager);
+    let mut tone = Tone::new(SAMPLE_RATE as u32);
 
     let cycles = op_cyccnt_diff!(cp, {
         for _ in 0..BUFFERS {
@@ -110,10 +112,11 @@ fn main() -> ! {
                 ],
                 reset_impulse: false,
                 random_impulse: false,
+                filter_feedback: false,
             });
-            let input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
+            let mut input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
             let mut output: [(f32, f32); BUFFER_SIZE] = [(0.0, 0.0); BUFFER_SIZE];
-            delay.process(&input, &mut output, &mut RandomStub);
+            delay.process(&mut input, &mut output, &mut tone, &mut RandomStub);
         }
     });
 
