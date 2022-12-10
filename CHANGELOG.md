@@ -13,6 +13,7 @@ backwards compatibility.
 * Introduce internal oscillator.
 * Trigger impulse by a chance set through volume.
 * Optionally apply tone only on feedback.
+* Apply DC blocking filter on output.
 
 ## 0.4.0
 

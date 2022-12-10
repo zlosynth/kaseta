@@ -23,6 +23,7 @@ pub mod hysteresis;
 pub mod oversampling;
 pub mod tone;
 
+mod dc_blocker;
 mod math;
 mod oscillator;
 mod pre_amp;

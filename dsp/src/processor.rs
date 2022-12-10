@@ -2,6 +2,7 @@
 
 use sirena::memory_manager::MemoryManager;
 
+use crate::dc_blocker::DCBlocker;
 use crate::delay::{
     Attributes as DelayAttributes, Delay, HeadAttributes as DelayHeadAttributes,
     Reaction as DelayReaction,
@@ -27,6 +28,7 @@ pub struct Processor {
     wow_flutter: WowFlutter,
     delay: Delay,
     tone: Tone,
+    dc_blocker: DCBlocker,
     first_stage: FirstStage,
 }
 
@@ -91,6 +93,7 @@ impl Processor {
             wow_flutter: WowFlutter::new(fs as u32, memory_manager),
             delay: Delay::new(fs, memory_manager),
             tone: Tone::new(fs as u32),
+            dc_blocker: DCBlocker::default(),
             first_stage: FirstStage::PreAmp,
         };
 
@@ -127,6 +130,7 @@ impl Processor {
         self.delay
             .process(&mut buffer[..], &mut block[..], &mut self.tone, random)
             .notify(&mut reaction);
+        self.dc_blocker.process(&mut block[..]);
 
         reaction
     }
