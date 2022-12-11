@@ -8,7 +8,7 @@
   (title_block
     (title "Kaseta")
     (date "2022-11-26")
-    (rev "v0.4.0")
+    (rev "v0.5.0")
     (company "Zlosynth Instruments")
     (comment 1 "CC BY-SA")
     (comment 2 "petr@zlosyth.com")
@@ -5140,7 +5140,7 @@
   (gr_text "Petr Horáček <petr@zlosynth.com>, 2022, CC BY-SA" (at 144.62 88.23 90) (layer "F.SilkS") (tstamp 5b73e008-8b50-4a5f-be74-938da27a0b47)
     (effects (font (size 1 1) (thickness 0.15)))
   )
-  (gr_text "board v0.4.0" (at 144.61 127.68 90) (layer "F.SilkS") (tstamp 9309129b-3558-4565-bc76-77229a2c13f8)
+  (gr_text "board v0.5.0" (at 144.61 127.68 90) (layer "F.SilkS") (tstamp 9309129b-3558-4565-bc76-77229a2c13f8)
     (effects (font (size 1 1) (thickness 0.15)))
   )
   (gr_text "SM" (at 123.5 130.86) (layer "F.SilkS") (tstamp b0f56010-f63d-474f-86a5-cf6144c6464d)

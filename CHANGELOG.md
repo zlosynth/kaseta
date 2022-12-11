@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+## 0.5.0
+
 * Further refactoring of the control module.
 * Control speed through clock signal or tap-in.
 * Implement firmware binding.
