@@ -6,6 +6,7 @@
 \usepackage{microtype} % better text justification
 \usepackage{graphicx} % allow including pictures
 \usepackage{color} % colors for pictures
+\usepackage{textcomp} % for textminus
 \usepackage{xcolor}
 \usepackage{lipsum}
 \usepackage{pagecolor}
@@ -61,10 +62,11 @@ What it is. Inspired by tape machines. Achordion allows you to do many things, b
 \begin{tabular}{@{}rl@{}}
   Width & 20 HP \\
   Depth & 28 mm \\
-  Power & +12 V (85 mA), -12 V (7 mA) \\
+  % TODO: Needs to be re-measured
+  Power & +12 V (85 mA), \textminus12 V (7 mA) \\
   Input impedance & 100 kΩ \\
-  CV inputs & 16-bit, 2 kHz \\
-  Gate output & 5 V \\
+  CV inputs & \textminus5 to +5 V, 16-bit, 2 kHz \\
+  Trigger output & 0 to +5 V, 10 ms \\
   Audio & 24-bit, 48 kHz
 \end{tabular}
 \end{minipage}
