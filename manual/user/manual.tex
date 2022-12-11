@@ -7,14 +7,13 @@
 \usepackage{graphicx} % allow including pictures
 \usepackage{color} % colors for pictures
 \usepackage{textcomp} % for textminus
-\usepackage{xcolor}
-\usepackage{lipsum}
-\usepackage{pagecolor}
-\usepackage{afterpage}
-\usepackage[a4paper, landscape, margin=1.5cm]{geometry}
-\fboxsep=5mm
+\usepackage{pagecolor} % background color for the first page
+\usepackage{afterpage} % ditto ^^
+\usepackage[a4paper, landscape, margin=1.5cm]{geometry} % basic geometry
+\fboxsep=5mm % minibox spacing
 \pagenumbering{gobble} % disable page numbering
 
+% Style for a simple numbered list
 \newenvironment{packed_enumerate}{
 \begin{enumerate}
   \setlength{\itemsep}{1pt}
@@ -22,6 +21,7 @@
   \setlength{\parsep}{0pt}
 }{\end{enumerate}}
 
+% Style for a roman literal numbered list
 \newenvironment{packed_enumerate_i}{
 \begin{enumerate}[I]
   \setlength{\itemsep}{1pt}
@@ -29,6 +29,8 @@
   \setlength{\parsep}{0pt}
 }{\end{enumerate}}
 
+
+% Metadata
 \pdfinfo{
    /Author (Zlosynth Instruments)
    /Title  (Kaseta - User Manual)
@@ -108,7 +110,7 @@ What it is. Inspired by tape machines. Achordion allows you to do many things, b
 
 \section {Warranty}
 
-\lipsum[1]
+Bla bla.
 
 \section{Installation}
 
@@ -233,7 +235,6 @@ Some basic combinations to get you started. TODO: Custom wow/flutter using posit
 * Basic hysteresis.
 * Warm soft saturation on piano is nice.
 
-\lipsum[1][1-2]
 \end{minipage}%
 \begin{minipage}{0.05\textwidth}
 \phantom{ }
