@@ -14,6 +14,7 @@ backwards compatibility.
 * Trigger impulse by a chance set through volume.
 * Optionally apply tone only on feedback.
 * Apply DC blocking filter on output.
+* Allow configuration of rewind speeds per head.
 
 ## 0.4.0
 

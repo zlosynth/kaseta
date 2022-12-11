@@ -312,6 +312,7 @@ impl FractionalDelay {
         let distance_to_target = (attributes.position - self.pointer).abs();
         if distance_to_target.is_zero() {
             self.state = State::Stable;
+            self.pointer = attributes.position;
             return;
         }
 
@@ -379,9 +380,9 @@ fn reflect_inertia_on_relative_speed(
             relative_speed.signum() * relative_speed.pow2() / (2.0 * distance_to_target + 1.0);
         *relative_speed -= acceleration;
     } else if rewind_speed.is_sign_positive() && *relative_speed < rewind_speed {
-        *relative_speed += 0.00001;
+        *relative_speed += if rewind_speed < 0.9 { 0.00001 } else { 0.001 };
     } else if rewind_speed.is_sign_negative() && *relative_speed > rewind_speed {
-        *relative_speed -= 0.00001;
+        *relative_speed -= if rewind_speed > -0.9 { 0.00001 } else { 0.001 };
     }
 }
 
@@ -406,7 +407,8 @@ impl F32Ext for f32 {
     }
 
     fn is_zero(&self) -> bool {
-        self.abs() < f32::EPSILON
+        // NOTE: In terms of sample distance, this is nothing.
+        self.abs() < 0.001
     }
 
     fn relative_eq(self, other: f32, epsilon: f32) -> bool {

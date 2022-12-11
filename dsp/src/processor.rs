@@ -58,8 +58,6 @@ pub struct Attributes {
     pub reset_impulse: bool,
     pub random_impulse: bool,
     pub filter_feedback: bool,
-    // TODO
-    #[allow(dead_code)]
     pub rewind_speed: [(f32, f32); 4],
 }
 
@@ -194,6 +192,7 @@ impl From<Attributes> for WowFlutterAttributes {
 }
 
 impl From<Attributes> for DelayAttributes {
+    // TODO: Use rewind speed from other
     fn from(other: Attributes) -> Self {
         Self {
             length: other.speed,
@@ -203,8 +202,10 @@ impl From<Attributes> for DelayAttributes {
                     volume: other.head[0].volume,
                     feedback: other.head[0].feedback,
                     pan: other.head[0].pan,
-                    rewind_forward: other.rewind.then_some(-0.25),
-                    rewind_backward: other.rewind.then_some(0.25),
+                    // rewind_forward: other.rewind.then_some(-0.25),
+                    // rewind_backward: other.rewind.then_some(0.25),
+                    rewind_forward: other.rewind.then_some(other.rewind_speed[0].1),
+                    rewind_backward: other.rewind.then_some(other.rewind_speed[0].0),
                 },
                 DelayHeadAttributes {
                     position: other.head[1].position,
@@ -212,24 +213,30 @@ impl From<Attributes> for DelayAttributes {
                     feedback: other.head[1].feedback,
                     pan: other.head[1].pan,
                     // NOTE: Slightly detuned (not 0.125) to avoid ticking when crossing samples (?)
-                    rewind_forward: other.rewind.then_some(-0.124),
-                    rewind_backward: other.rewind.then_some(0.124),
+                    // rewind_forward: other.rewind.then_some(-0.124),
+                    // rewind_backward: other.rewind.then_some(0.124),
+                    rewind_forward: other.rewind.then_some(other.rewind_speed[1].1),
+                    rewind_backward: other.rewind.then_some(other.rewind_speed[1].0),
                 },
                 DelayHeadAttributes {
                     position: other.head[2].position,
                     volume: other.head[2].volume,
                     feedback: other.head[2].feedback,
                     pan: other.head[2].pan,
-                    rewind_forward: other.rewind.then_some(-1.0),
-                    rewind_backward: other.rewind.then_some(2.0),
+                    // rewind_forward: other.rewind.then_some(-1.0),
+                    // rewind_backward: other.rewind.then_some(2.0),
+                    rewind_forward: other.rewind.then_some(other.rewind_speed[2].1),
+                    rewind_backward: other.rewind.then_some(other.rewind_speed[2].0),
                 },
                 DelayHeadAttributes {
                     position: other.head[3].position,
                     volume: other.head[3].volume,
                     feedback: other.head[3].feedback,
                     pan: other.head[3].pan,
-                    rewind_forward: other.rewind.then_some(-0.124),
-                    rewind_backward: other.rewind.then_some(0.124),
+                    // rewind_forward: other.rewind.then_some(-0.124),
+                    // rewind_backward: other.rewind.then_some(0.124),
+                    rewind_forward: other.rewind.then_some(other.rewind_speed[3].1),
+                    rewind_backward: other.rewind.then_some(other.rewind_speed[3].0),
                 },
             ],
             reset_impulse: other.reset_impulse,

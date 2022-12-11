@@ -131,7 +131,7 @@ pub struct Options {
 /// (float) or offer enumeration of variants. An examle of a configuration
 /// may be tweaking of head's rewind speed.
 // TODO: Drop Copy
-#[derive(Debug, Default, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Configuration {
     pub rewind_speed: [(usize, usize); 4],
@@ -292,6 +292,15 @@ impl Cache {
     }
 }
 
+impl Default for Configuration {
+    fn default() -> Self {
+        Self {
+            rewind_speed: [(0, 0), (1, 1), (2, 2), (3, 3)],
+        }
+    }
+}
+
+// TODO: This should be in its own module
 fn rewind_indices_to_speeds(x: [(usize, usize); 4]) -> [(f32, f32); 4] {
     let mut speeds = [(0.0, 0.0); 4];
     for (i, indices) in x.iter().enumerate() {
@@ -302,9 +311,19 @@ fn rewind_indices_to_speeds(x: [(usize, usize); 4]) -> [(f32, f32); 4] {
 }
 
 fn fast_forward_index_to_speed(i: usize) -> f32 {
-    [1.0, 2.0, 4.0, 8.0][i]
+    [
+        -0.25,   // Fifth up
+        -0.5,    // Octave up
+        -1.4999, // Two octaves up
+        -1.9999, // Just fast as hell
+    ][i]
 }
 
 fn rewind_index_to_speed(i: usize) -> f32 {
-    [0.75, 0.5, -1.0, -4.0][i]
+    [
+        0.125,  // One fifth slowed down
+        0.25,   // One octave slowed down
+        0.9999, // Same speed backwards. NOTE: Slightly less than 1 to avoid bumps while crossing samples
+        1.4999, // One octave up backwards. NOTE: Slightly less than 1.5 to avoid bumps while crossing samples
+    ][i]
 }
