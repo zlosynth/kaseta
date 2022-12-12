@@ -134,6 +134,24 @@ are brought in:
 makers bloat
 ```
 
+## Manual
+
+The user manual is defined in latex under `manual/user`. To build it, first
+install needed pre-requisites. On Fedora it can be done by running the
+following:
+
+```sh
+sudo dnf install inkscape texlive-latex texlive-ec texlive-microtype texlive-pagecolor
+```
+
+To build the manual:
+
+```sh
+makers manual
+```
+
+The built PDF is then available in `manual/user/manual.pdf`.
+
 ## Gerbers, BOM and CPL
 
 I extensivelly use https://github.com/Bouni/kicad-jlcpcb-tools to deal with the
