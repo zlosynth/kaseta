@@ -91,8 +91,8 @@ makers flash-dfu
 
 Firmware integration tests are executed directly on the module.
 
-Before running a benchmark, first make sure to go through the guidance given in
-[Flash via ST-Link](#flash-via-st-link).
+Before running an embedded test, first make sure to go through the guidance
+given in [Flash via ST-Link](#flash-via-st-link).
 
 To run one of the integration tests kept under `firmware/tests`:
 
