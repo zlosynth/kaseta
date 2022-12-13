@@ -25,6 +25,6 @@ impl Button {
     }
 
     pub fn active_no_filter(&self) -> bool {
-        self.pin.is_low()
+        self.pin.is_high()
     }
 }
