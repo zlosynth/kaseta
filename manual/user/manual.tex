@@ -38,30 +38,34 @@
 
 \begin{document}
 
+% Front page should be black
 \pagecolor{black}\afterpage{\nopagecolor}
 
+% Front title
 \title{\textcolor{white}{MANUAL}}
 \author{}
 \date{}
 
-% Left column
+% Left column of the front page
 \begin{minipage}{0.4\textwidth}
 \color{white}
 \maketitle
 
-% Overview
+% Overview box
 \noindent\colorbox{white}
 {
 \begin{minipage}{0.85\textwidth}\color{black}
-Kaseta is a multi-purpose module inspired by reel-to-reel tape machines.
-It simulates magnetic hysteresis to provide warm saturation, its four independent delay lines can be used to sculpt rhythms or feedback loops, and it offers wow and flutter control.
-The module also goes beyond typical tape machine features, with free-moving delays, trigger sequencing, and an internal oscillator.
+Kaseta is a multi-purpose module inspired by reel-to-reel tape machines. It
+simulates magnetic hysteresis to provide warm saturation, its four independent
+delay lines can be used to sculpt rhythms or feedback loops, and it offers wow
+and flutter control. The module also goes beyond typical tape machine features,
+with free-moving delays, trigger sequencing, and an internal oscillator.
 \end{minipage}
 }
 
 \vspace{1cm}
 
-% Specs
+% Specs table
 \begin{minipage}{0.8\textwidth}\color{white}
 \begin{tabular}{@{}rl@{}}
   Width & 20 HP \\
@@ -77,7 +81,7 @@ The module also goes beyond typical tape machine features, with free-moving dela
 
 \vspace{1cm}
 
-% Features
+% Features list
 \begin{minipage}{0.8\textwidth}\color{white}
 \begin{tabular}{@{}l}
   - Warm tape saturation \\
@@ -97,15 +101,17 @@ The module also goes beyond typical tape machine features, with free-moving dela
 % Right column
 \begin{minipage}{0.6\textwidth}
 \vspace{8mm}
+
+% Illustration of the panel
 \begin{center}
   \includegraphics[width=0.8\textwidth]{schema.pdf}
 \end{center}
+
 \end{minipage}
 
+% Start of the second page
 \newpage
 \color{black}
-
-
 
 % Left column
 \begin{minipage}[t]{0.35\textwidth}
@@ -116,7 +122,9 @@ Bla bla.
 
 \section{Installation}
 
-Achordion is 20 HP wide. It is powered by a +12V/-12V 2x5 connector. The red stripe (-12V) must be connected on the side of the board marked with the white line. The module must be mounted in a Eurorack case.
+Kaseta is 20 HP wide. It is powered by a +12V/{\textminus}12V 2\texttimes5
+connector. The red stripe (\textminus12V) must be connected on the side of the
+board marked with the white line. The module must be mounted in a Eurorack case.
 
 \end{minipage}%
 \begin{minipage}{0.05\textwidth}
@@ -148,6 +156,10 @@ What is the button for.
 How are delay heads grouped.
 
 How to use CV input.
+
+\section{Mapping}
+
+\section{Calibration}
 
 \end{minipage}
 
