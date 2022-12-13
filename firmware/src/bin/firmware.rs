@@ -71,7 +71,7 @@ mod app {
         let mono = system.mono;
         let status_led = system.status_led;
         let sdram = system.sdram;
-        let audio = system.audio;
+        let mut audio = system.audio;
         let randomizer = system.randomizer;
         let mut inputs = system.inputs;
         let flash = system.flash;
@@ -113,6 +113,7 @@ mod app {
             control
         };
 
+        audio.spawn();
         blink::spawn(true, BLINKS).unwrap();
         control::spawn().unwrap();
         input::spawn().unwrap();
