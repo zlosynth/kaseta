@@ -63,23 +63,23 @@ impl Pots {
         let (a, b, c) = self.read_values(adc_1, adc_2);
         match cycle {
             0 => {
-                self.tone = a;
+                self.speed = a;
                 self.head[3].volume = b;
                 self.head[1].volume = c;
             }
             1 => {
                 self.head[3].feedback = b;
-                self.head[1].feedback = b;
+                self.head[1].feedback = c;
             }
             2 => {
-                self.speed = a;
-                self.head[2].pan = b;
+                self.tone = a;
+                self.head[3].pan = b;
                 self.head[1].pan = c;
             }
             3 => {
                 self.head[0].volume = a;
                 self.head[2].position = b;
-                self.head[3].pan = c;
+                self.head[2].pan = c;
             }
             4 => {
                 self.head[0].feedback = a;
