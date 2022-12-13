@@ -24,7 +24,7 @@ mod tests {
             ($name:expr, $pot:expr) => {
                 defmt::info!("Turn {} all the way up, then click the button", $name);
                 sample_until_button_is_clicked(inputs);
-                defmt::assert!($pot > 0.99);
+                defmt::assert!($pot > 0.99, "Assert failed, actual value: {:?}", $pot);
                 defmt::info!("OK");
             };
         }
@@ -64,9 +64,14 @@ mod tests {
     #[test]
     fn all_switches_work(inputs: &mut Inputs) {
         defmt::info!("Set all switches down, then click the button");
+
         sample_until_button_is_clicked(inputs);
         for i in 0..10 {
-            defmt::assert!(!inputs.switches.switch[i].value);
+            defmt::assert!(
+                !inputs.switches.switch[i].value,
+                "Switch {:?} is not down",
+                i + 1,
+            );
         }
         defmt::info!("OK");
 
@@ -104,7 +109,7 @@ mod tests {
 
             defmt::info!("Set the input to +5 V, then click the button");
             sample_until_button_is_clicked(inputs);
-            defmt::assert!(inputs.cvs.cv[i].value.unwrap() > 0.99);
+            defmt::assert!(inputs.cvs.cv[i].value.unwrap() > 0.98);
 
             defmt::info!("OK");
         }
@@ -119,6 +124,12 @@ fn sample_until_button_is_clicked(inputs: &mut Inputs) {
         if !was_down && is_down {
             break;
         }
+        // FIXME: At least 4 ms of break are needed, otherwise there is
+        // crosstalk between channels. With 3 ms it can turn parameter by 1 %.
+        // With 1 ms it was even 25 %.
+        cortex_m::asm::delay(480_000_000 / 1000);
+        cortex_m::asm::delay(480_000_000 / 1000);
+        cortex_m::asm::delay(480_000_000 / 1000);
         cortex_m::asm::delay(480_000_000 / 1000);
     }
 }
