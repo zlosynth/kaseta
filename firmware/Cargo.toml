@@ -15,7 +15,7 @@ harness = false # defined through defmt_test
 
 [[test]]
 name = "outputs"
-harness = false # defined through defmt_test
+harness = false  # defined through defmt_test
 
 [dependencies]
 kaseta-dsp = { path = "../dsp", features = ["defmt"] }
