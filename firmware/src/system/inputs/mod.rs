@@ -69,13 +69,15 @@ impl Inputs {
     }
 
     pub fn sample(&mut self) {
-        self.multiplexer.select(self.cycle);
         self.switches.sample(self.cycle);
         self.pots
             .sample(self.cycle, &mut self.adc_1, &mut self.adc_2);
         self.cvs.sample(&mut self.adc_1, &mut self.adc_2);
         self.button.sample();
         self.cycle = if self.cycle == 7 { 0 } else { self.cycle + 1 };
+        // XXX: Selection happens at the end so the signal gets a chance
+        // to propagate to mux before the next reading cycle.
+        self.multiplexer.select(self.cycle);
         self.probe.tick();
     }
 
