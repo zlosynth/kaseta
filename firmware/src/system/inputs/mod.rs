@@ -75,7 +75,7 @@ impl Inputs {
             .sample(self.cycle, &mut self.adc_1, &mut self.adc_2);
         self.cvs.sample(&mut self.adc_1, &mut self.adc_2);
         self.button.sample();
-        self.cycle = if self.cycle == 8 { 0 } else { self.cycle + 1 };
+        self.cycle = if self.cycle == 7 { 0 } else { self.cycle + 1 };
         self.probe.tick();
     }
 
