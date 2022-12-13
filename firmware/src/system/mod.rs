@@ -87,16 +87,20 @@ impl System {
             },
             button: pins.GPIO.PIN_B9.into_floating_input(),
             switches: SwitchesPins {
-                switch_1: pins.GPIO.PIN_B10.into_floating_input(),
+                switch_1: pins.GPIO.PIN_D5.into_floating_input(),
                 multiplexed_switches_2_to_9: pins.GPIO.PIN_A2.into_floating_input(),
-                switch_10: pins.GPIO.PIN_D5.into_floating_input(),
+                switch_10: pins.GPIO.PIN_B10.into_floating_input(),
             },
             multiplexer: MultiplexerPins {
                 address_a: pins.GPIO.PIN_A3.into_push_pull_output(),
                 address_b: pins.GPIO.PIN_A8.into_push_pull_output(),
                 address_c: pins.GPIO.PIN_A9.into_push_pull_output(),
             },
-            probe: pins.GPIO.PIN_B6.into_push_pull_output(),
+            // FIXME: Based on the layout, this should be B6. There is a mismatch between
+            // datasheet https://static1.squarespace.com/static/58d03fdc1b10e3bf442567b8/t/628bc1307a1e2b5bc04af099/1653326133665/ES_Patch_SM_datasheet_v1.0.4.pdf
+            // and lib daisy https://github.com/electro-smith/libDaisy/blob/master/src/daisy_patch_sm.cpp
+            // report this issue, and fix it in my daisy library.
+            probe: pins.GPIO.PIN_B5.into_push_pull_output(),
             adc_1,
             adc_2,
         });
@@ -114,7 +118,11 @@ impl System {
                 ),
                 impulse: pins.GPIO.PIN_D6.into_push_pull_output(),
             },
-            impulse: pins.GPIO.PIN_B5.into_push_pull_output(),
+            // FIXME: Based on the layout, this should be B5. There is a mismatch between
+            // datasheet https://static1.squarespace.com/static/58d03fdc1b10e3bf442567b8/t/628bc1307a1e2b5bc04af099/1653326133665/ES_Patch_SM_datasheet_v1.0.4.pdf
+            // and lib daisy https://github.com/electro-smith/libDaisy/blob/master/src/daisy_patch_sm.cpp
+            // report this issue, and fix it in my daisy library.
+            impulse: pins.GPIO.PIN_B6.into_push_pull_output(),
         });
         let flash = daisy::board_split_flash!(ccdr, dp, pins);
         let randomizer = Randomizer::new(dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks));

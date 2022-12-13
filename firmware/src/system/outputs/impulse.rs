@@ -4,7 +4,7 @@ pub struct Impulse {
     pin: Pin,
 }
 
-pub type Pin = gpio::gpioc::PC13<gpio::Output>;
+pub type Pin = gpio::gpioc::PC14<gpio::Output>;
 
 impl Impulse {
     #[must_use]

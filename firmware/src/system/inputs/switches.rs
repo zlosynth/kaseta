@@ -18,9 +18,9 @@ pub struct Pins {
     pub switch_10: Switch10Pin,
 }
 
-pub type Switch1Pin = gpio::gpiog::PG13<gpio::Input>;
+pub type Switch1Pin = gpio::gpioc::PC8<gpio::Input>;
 pub type MultiplexedSwitches2To9Pin = gpio::gpioa::PA1<gpio::Input>;
-pub type Switch10Pin = gpio::gpioc::PC8<gpio::Input>;
+pub type Switch10Pin = gpio::gpiog::PG13<gpio::Input>;
 
 impl Switches {
     pub(crate) fn new(pins: Pins) -> Self {
@@ -49,7 +49,7 @@ impl Switches {
             }
             1 => {
                 self.switch[2].update(self.pins.multiplexed_switches_2_to_9.is_high());
-                self.switch[9].update(self.pins.switch_10.is_high());
+                self.switch[9].update(self.pins.switch_10.is_low());
             }
             2 => self.switch[3].update(self.pins.multiplexed_switches_2_to_9.is_high()),
             3 => self.switch[4].update(self.pins.multiplexed_switches_2_to_9.is_high()),
