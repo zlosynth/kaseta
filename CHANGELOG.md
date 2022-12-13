@@ -6,6 +6,10 @@ backwards compatibility.
 
 ## Unreleased
 
+* Add more embedded tests.
+* Fix I/O bugs found while testing with a prototype.
+* Finalize user manual's front page.
+
 ## 0.5.0
 
 * Further refactoring of the control module.
