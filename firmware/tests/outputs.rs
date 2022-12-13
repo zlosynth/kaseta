@@ -7,7 +7,6 @@ use kaseta_firmware::system::inputs::Inputs;
 #[defmt_test::tests]
 mod tests {
     use super::sample_until_button_is_clicked;
-    use kaseta_firmware::system::inputs::Inputs;
     use kaseta_firmware::system::System;
 
     #[init]
