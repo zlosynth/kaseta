@@ -71,7 +71,7 @@ cargo run --release --bin ${1}
 clear = true
 workspace = false
 script = '''
-cd benches
+cd firmware
 DEFMT_LOG=info cargo test --test ${1}
 '''
 
