@@ -104,12 +104,14 @@ impl Processor {
     pub fn process(&mut self, block: &mut [(f32, f32); 32], random: &mut impl Random) -> Reaction {
         let mut reaction = Reaction::default();
 
+        self.dc_blocker.process(&mut block[..]);
+
         let mut buffer = [0.0; 32];
 
         match self.first_stage {
             FirstStage::PreAmp => {
                 for (i, x) in block.iter_mut().enumerate() {
-                    buffer[i] = x.0;
+                    buffer[i] = x.1;
                 }
                 self.pre_amp.process(&mut buffer);
             }
