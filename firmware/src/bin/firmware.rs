@@ -25,6 +25,7 @@ mod app {
     use kaseta_firmware::system::System;
 
     const BLINKS: u8 = 1;
+    const MS: u32 = 480_000_000 / 1000;
 
     #[monotonic(binds = SysTick, default = true)]
     type Mono = Systick<1000>; // 1 kHz / 1 ms granularity
@@ -106,9 +107,10 @@ mod app {
             defmt::info!("INITIALIZE WITH: {:?}", save);
             let mut control = Store::from(save);
 
-            for _ in 0..20 {
+            for _ in 0..50 {
                 inputs.sample();
                 control.warm_up(inputs.snapshot());
+                cortex_m::asm::delay(5 * MS);
             }
 
             control
