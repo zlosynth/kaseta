@@ -59,7 +59,7 @@ impl CVs {
 impl CV {
     fn set(&mut self, sample: u32, slope: u32) {
         let value = transpose_adc(sample, slope);
-        self.probe.write(value > 0.75);
+        self.probe.write(value > 2.0);
         self.value = if self.probe.detected() {
             None
         } else {
@@ -70,5 +70,8 @@ impl CV {
 
 #[allow(clippy::cast_precision_loss)]
 fn transpose_adc(sample: u32, slope: u32) -> f32 {
-    (slope as f32 - sample as f32) / slope as f32
+    let min = -5.0;
+    let span = 10.0;
+    let phase = (slope as f32 - sample as f32) / slope as f32;
+    min + phase * span
 }

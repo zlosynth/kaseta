@@ -48,7 +48,6 @@ impl Oscillator {
     }
 
     pub fn set_attributes(&mut self, attributes: &Attributes) {
-        // TODO: Handle V/OCT scaling and selection of first stage in control
-        self.frequency = attributes.frequency * 1000.0;
+        self.frequency = attributes.frequency;
     }
 }

@@ -148,6 +148,7 @@ pub type TappedTempo = Option<f32>;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {
     pub pre_amp: f32,
+    pub oscillator: f32,
     pub drive: f32,
     pub saturation: f32,
     pub bias: f32,
@@ -173,6 +174,7 @@ impl Cache {
     pub fn build_dsp_attributes(&mut self) -> DSPAttributes {
         DSPAttributes {
             pre_amp: self.attributes.pre_amp,
+            oscillator: self.attributes.oscillator,
             drive: self.attributes.drive,
             saturation: self.attributes.saturation,
             bias: self.attributes.bias,
