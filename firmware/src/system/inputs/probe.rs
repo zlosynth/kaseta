@@ -50,7 +50,7 @@ impl Detector {
                 .queue
                 .iter()
                 .zip(&SEQUENCE)
-                .map(|(q, s)| if q == s { 0 } else { 1 })
+                .map(|(q, s)| u32::from(q != s))
                 .sum();
             self.detected_cache = unmatched <= 2;
         }
