@@ -95,7 +95,10 @@ impl Store {
         }
     }
 
-    pub fn warm_up(&mut self, snapshot: InputSnapshot) {
+    pub fn warm_up(&mut self, mut snapshot: InputSnapshot) {
+        // XXX: Pretend controls are unplugged, so they will be
+        // detected as plugged into after warm up.
+        snapshot.control = [None; 4];
         self.input.update(snapshot);
     }
 
@@ -118,11 +121,14 @@ impl Store {
     }
 
     fn converge_internal_state(&mut self) -> Option<Save> {
+        // TODO: Diff mapped and connected, to catch those that were added previously
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
         if !plugged_controls.is_empty() {
+            #[cfg(feature = "defmt")]
             defmt::info!("PLUGGED: {:?}", plugged_controls);
         }
         if !unplugged_controls.is_empty() {
+            #[cfg(feature = "defmt")]
             defmt::info!("UNPLUGGED: {:?}", unplugged_controls);
         }
         self.cache.unmap_controls(&unplugged_controls);
@@ -198,17 +204,20 @@ impl Store {
     fn converge_from_normal_state(&mut self, needs_save: &mut bool) {
         self.detect_tapped_tempo(needs_save);
         if self.button_is_long_held() {
+            #[cfg(feature = "defmt")]
             defmt::info!("ENTERING CONFIGURATION");
             self.state = State::configuring_from_draft(self.cache.configuration);
             self.cache.display.set_screen(1, Screen::configuration());
         } else if let Some(action) = self.queue.pop() {
             match action {
                 ControlAction::Calibrate(i) => {
+                    #[cfg(feature = "defmt")]
                     defmt::info!("ENTERING CALIBRATION");
                     self.state = State::calibrating_octave_1(i);
                     self.cache.display.set_screen(1, Screen::calibration_1(i));
                 }
                 ControlAction::Map(i) => {
+                    #[cfg(feature = "defmt")]
                     defmt::info!("ENTERING MAPPING");
                     self.state = State::mapping(i);
                     self.cache.display.set_screen(1, Screen::mapping(i));
@@ -222,10 +231,12 @@ impl Store {
     fn detect_tapped_tempo(&mut self, needs_save: &mut bool) {
         if let Some(detected_tempo) = self.cache.tap_detector.detected_tempo() {
             if self.input.speed.active() {
+                #[cfg(feature = "defmt")]
                 defmt::info!("RESETTING TAPPED TEMPO");
                 self.cache.tap_detector.reset();
                 self.cache.tapped_tempo = None;
             } else {
+                #[cfg(feature = "defmt")]
                 defmt::info!("SETTING TAPPED TEMPO");
                 *needs_save = true;
                 self.cache.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
@@ -244,10 +255,12 @@ impl Store {
     ) {
         let destination = self.active_attribute();
         if !self.input.control[input].is_plugged {
+            #[cfg(feature = "defmt")]
             defmt::info!("CONTROL UNPLUGGED WHILE MAPPING {:?}", input + 1);
             self.cache.display.set_screen(0, Screen::failure());
             self.state = State::Normal;
         } else if !destination.is_none() && !self.cache.mapping.contains(&destination) {
+            #[cfg(feature = "defmt")]
             defmt::info!("MAPPED {:?} TO {:?}", input + 1, destination);
             *needs_save = true;
             self.cache.mapping[input] = destination;
@@ -936,6 +949,28 @@ mod tests {
             let save = store.apply_input_snapshot(input).save;
 
             assert!(save.is_none());
+            assert!(matches!(
+                store.state,
+                State::Mapping(StateMapping { input: 1 })
+            ));
+            assert_animation(
+                &mut store,
+                &[9600, 0800, 0690, 0609, 9600, 0800, 0690, 0609],
+            );
+        }
+
+        #[test]
+        fn when_control_is_plugged_before_start_then_state_changes_to_mapping_after_startup() {
+            let mut store = init_store();
+            let mut input = InputSnapshot::default();
+
+            input.control[1] = Some(1.0);
+            for _ in 0..10 {
+                store.warm_up(input);
+            }
+
+            store.apply_input_snapshot(input);
+
             assert!(matches!(
                 store.state,
                 State::Mapping(StateMapping { input: 1 })
