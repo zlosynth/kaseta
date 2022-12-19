@@ -110,7 +110,7 @@ impl Processor {
 
         match self.first_stage {
             FirstStage::PreAmp => {
-                for (i, x) in block.iter_mut().enumerate() {
+                for (i, x) in block.iter().enumerate() {
                     buffer[i] = x.1;
                 }
                 self.pre_amp.process(&mut buffer);
@@ -119,18 +119,24 @@ impl Processor {
                 self.oscillator.populate(&mut buffer);
             }
         }
-        self.wow_flutter.process(&mut buffer, random);
-        let mut oversampled_block = [0.0; 32 * 4];
-        self.upsampler.process(&buffer, &mut oversampled_block);
-        self.hysteresis
-            .process(&mut oversampled_block)
-            .notify(&mut reaction);
-        self.downsampler
-            .process(&oversampled_block, &mut buffer[..]);
-        self.delay
-            .process(&mut buffer[..], &mut block[..], &mut self.tone, random)
-            .notify(&mut reaction);
-        self.dc_blocker.process(&mut block[..]);
+
+        // self.wow_flutter.process(&mut buffer, random);
+        // let mut oversampled_block = [0.0; 32 * 4];
+        // self.upsampler.process(&buffer, &mut oversampled_block);
+        // self.hysteresis
+        //     .process(&mut oversampled_block)
+        //     .notify(&mut reaction);
+        // self.downsampler
+        //     .process(&oversampled_block, &mut buffer[..]);
+        // self.delay
+        //     .process(&mut buffer[..], &mut block[..], &mut self.tone, random)
+        //     .notify(&mut reaction);
+        // self.dc_blocker.process(&mut block[..]);
+
+        for (i, (l, r)) in block.iter_mut().enumerate() {
+            *l = buffer[i];
+            *r = buffer[i];
+        }
 
         reaction
     }
