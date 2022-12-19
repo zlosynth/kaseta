@@ -346,7 +346,7 @@ impl Store {
             let control = &self.input.control[i];
             if control.is_plugged {
                 let calibration = self.cache.calibrations[i];
-                Some(calibration.apply(control.value()))
+                Some(calibration.apply(control.value_raw()))
             } else {
                 None
             }
