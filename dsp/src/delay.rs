@@ -138,7 +138,7 @@ impl Delay {
         }
 
         let initial_impulse_cursor = self.impulse_cursor;
-        self.impulse_cursor += input_buffer.len() as f32 / self.sample_rate as f32;
+        self.impulse_cursor += input_buffer.len() as f32 / self.sample_rate;
         while self.impulse_cursor > self.length {
             self.impulse_cursor -= self.length;
         }
