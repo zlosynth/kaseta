@@ -27,8 +27,9 @@ impl OrnsteinUhlenbeck {
         }
     }
 
-    pub fn pop(&mut self, mean: f32, random: &mut impl Random) -> f32 {
-        self.value += self.spring * (mean - self.value) * self.sample_interval;
+    pub fn pop(&mut self, random: &mut impl Random) -> f32 {
+        const MEAN: f32 = 0.0;
+        self.value += self.spring * (MEAN - self.value) * self.sample_interval;
         self.value += self.noise * (random.normal() * 2.0 - 1.0) * self.sqrt_delta;
         self.value
     }

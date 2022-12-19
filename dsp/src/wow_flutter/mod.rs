@@ -62,7 +62,8 @@ impl WowFlutter {
     pub fn process(&mut self, buffer: &mut [f32], random: &mut impl Random) {
         for x in buffer.iter_mut() {
             let wow_delay = self.wow.pop(random) * self.sample_rate as f32;
-            let flutter_delay = self.flutter.pop() * self.sample_rate as f32;
+            // let flutter_delay = self.flutter.pop() * self.sample_rate as f32;
+            let flutter_delay = 0.0;
             let delay = wow_delay + flutter_delay;
 
             let a = self.buffer.peek(delay as usize);

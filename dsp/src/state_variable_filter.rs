@@ -81,8 +81,6 @@ impl StateVariableFilter {
         self.delay_1 = sum_2;
         self.delay_2 = sum_3;
 
-        // f32::max(f32::min(value, 1.0), -1.0)
-
         signal
     }
 }

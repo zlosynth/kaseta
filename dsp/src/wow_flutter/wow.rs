@@ -6,7 +6,7 @@ use micromath::F32Ext as _;
 use super::ornstein_uhlenbeck::OrnsteinUhlenbeck;
 use super::wavefolder;
 use crate::random::Random;
-use sirena::state_variable_filter::{Bandform, StateVariableFilter};
+use crate::state_variable_filter::StateVariableFilter;
 
 // These constants were obtained through design in hack/wow.py and
 // experimentation with sound.
@@ -39,9 +39,7 @@ impl Wow {
         );
         let filter = {
             let mut filter = StateVariableFilter::new(sample_rate);
-            filter
-                .set_bandform(Bandform::LowPass)
-                .set_frequency(MODULATION_CUTOFF);
+            filter.set_frequency(MODULATION_CUTOFF);
             filter
         };
         let ornstein_uhlenbeck = {
@@ -61,15 +59,18 @@ impl Wow {
 
     // TODO: This needs a high quality interpolation
     pub fn pop(&mut self, random: &mut impl Random) -> f32 {
+        // TODO: If depth is 0.0, then target should be always 0.0. Create a bench and test it
         let target = {
             let x = (libm::cosf(self.phase * 2.0 * PI) + 1.0) * self.depth / 2.0;
-            let drift = self.ornstein_uhlenbeck.pop(0.0, random) * PHASE_DRIFT;
+
+            let drift = self.ornstein_uhlenbeck.pop(random) * PHASE_DRIFT;
             self.phase += (BASE_FREQUENCY / self.sample_rate) * (1.0 + drift);
-            // TODO: Try if usngi (while > 1.0: -= 1.0) is faster
+            // TODO: Try if using (while > 1.0: -= 1.0) is faster
             self.phase %= 1.0;
+
             x
         };
-        wavefolder::fold(self.filter.tick(target), 0.0, self.depth)
+        wavefolder::fold(self.filter.tick(target).low_pass, 0.0, 1000.0)
     }
 
     pub fn set_attributes(&mut self, attributes: &Attributes) {
