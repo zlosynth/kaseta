@@ -119,6 +119,12 @@ impl Store {
 
     fn converge_internal_state(&mut self) -> Option<Save> {
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
+        if !plugged_controls.is_empty() {
+            defmt::info!("PLUGGED: {:?}", plugged_controls);
+        }
+        if !unplugged_controls.is_empty() {
+            defmt::info!("UNPLUGGED: {:?}", unplugged_controls);
+        }
         self.cache.unmap_controls(&unplugged_controls);
         self.dequeue_controls(&unplugged_controls);
         self.enqueue_controls(&plugged_controls);
@@ -192,15 +198,18 @@ impl Store {
     fn converge_from_normal_state(&mut self, needs_save: &mut bool) {
         self.detect_tapped_tempo(needs_save);
         if self.button_is_long_held() {
+            defmt::info!("ENTERING CONFIGURATION");
             self.state = State::configuring_from_draft(self.cache.configuration);
             self.cache.display.set_screen(1, Screen::configuration());
         } else if let Some(action) = self.queue.pop() {
             match action {
                 ControlAction::Calibrate(i) => {
+                    defmt::info!("ENTERING CALIBRATION");
                     self.state = State::calibrating_octave_1(i);
                     self.cache.display.set_screen(1, Screen::calibration_1(i));
                 }
                 ControlAction::Map(i) => {
+                    defmt::info!("ENTERING MAPPING");
                     self.state = State::mapping(i);
                     self.cache.display.set_screen(1, Screen::mapping(i));
                 }
@@ -213,9 +222,11 @@ impl Store {
     fn detect_tapped_tempo(&mut self, needs_save: &mut bool) {
         if let Some(detected_tempo) = self.cache.tap_detector.detected_tempo() {
             if self.input.speed.active() {
+                defmt::info!("RESETTING TAPPED TEMPO");
                 self.cache.tap_detector.reset();
                 self.cache.tapped_tempo = None;
             } else {
+                defmt::info!("SETTING TAPPED TEMPO");
                 *needs_save = true;
                 self.cache.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
             }
@@ -233,10 +244,11 @@ impl Store {
     ) {
         let destination = self.active_attribute();
         if !self.input.control[input].is_plugged {
+            defmt::info!("CONTROL UNPLUGGED WHILE MAPPING {:?}", input + 1);
             self.cache.display.set_screen(0, Screen::failure());
             self.state = State::Normal;
         } else if !destination.is_none() && !self.cache.mapping.contains(&destination) {
-            defmt::info!("Mapped {:?} to {:?}", input + 1, destination);
+            defmt::info!("MAPPED {:?} TO {:?}", input + 1, destination);
             *needs_save = true;
             self.cache.mapping[input] = destination;
             self.state = State::Normal;
