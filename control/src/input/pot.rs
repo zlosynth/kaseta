@@ -26,7 +26,11 @@ impl Pot {
     }
 
     pub fn active(&self) -> bool {
-        self.buffer.traveled().abs() > 0.001
+        self.active_with_toleration(0.001)
+    }
+
+    pub fn active_with_toleration(&self, toleration: f32) -> bool {
+        self.buffer.traveled().abs() > toleration
     }
 }
 

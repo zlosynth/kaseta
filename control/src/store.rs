@@ -236,6 +236,7 @@ impl Store {
             self.cache.display.set_screen(0, Screen::failure());
             self.state = State::Normal;
         } else if !destination.is_none() && !self.cache.mapping.contains(&destination) {
+            defmt::info!("Mapped {:?} to {:?}", input + 1, destination);
             *needs_save = true;
             self.cache.mapping[input] = destination;
             self.state = State::Normal;
@@ -252,7 +253,7 @@ impl Store {
             (&self.input.speed, AttributeIdentifier::Speed),
             (&self.input.tone, AttributeIdentifier::Tone),
         ] {
-            if pot.active() {
+            if pot.active_with_toleration(0.01) {
                 return identifier;
             }
         }
@@ -264,7 +265,7 @@ impl Store {
                 (&head.feedback, AttributeIdentifier::Feedback(i)),
                 (&head.pan, AttributeIdentifier::Pan(i)),
             ] {
-                if pot.active() {
+                if pot.active_with_toleration(0.01) {
                     return identifier;
                 }
             }
