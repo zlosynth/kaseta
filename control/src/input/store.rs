@@ -138,7 +138,7 @@ mod tests {
             inputs.control[2].value(),
             inputs.control[3].value(),
         ] {
-            assert!(value > previous, "{} !> {}", value, previous);
+            assert!(value > previous, "{value} !> {previous}");
             previous = value;
         }
 
