@@ -36,6 +36,7 @@ pub struct WowFlutter {
 pub struct Attributes {
     pub wow_depth: f32,
     pub flutter_depth: f32,
+    pub flutter_chance: f32,
 }
 
 impl WowFlutter {
@@ -60,6 +61,8 @@ impl WowFlutter {
     }
 
     pub fn process(&mut self, buffer: &mut [f32], random: &mut impl Random) {
+        self.flutter.roll_dice(random);
+
         for x in buffer.iter_mut() {
             let wow_delay = self.wow.pop(random) * self.sample_rate as f32;
             let flutter_delay = self.flutter.pop() * self.sample_rate as f32;
@@ -93,6 +96,7 @@ impl From<Attributes> for FlutterAttributes {
     fn from(other: Attributes) -> Self {
         Self {
             depth: other.flutter_depth,
+            chance: other.flutter_chance,
         }
     }
 }

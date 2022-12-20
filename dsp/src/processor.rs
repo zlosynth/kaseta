@@ -50,7 +50,8 @@ pub struct Attributes {
     pub bias: f32,
     pub dry_wet: f32,
     pub wow: f32,
-    pub flutter: f32,
+    pub flutter_depth: f32,
+    pub flutter_chance: f32,
     pub speed: f32,
     pub tone: f32,
     pub head: [AttributesHead; 4],
@@ -196,7 +197,8 @@ impl From<Attributes> for WowFlutterAttributes {
     fn from(other: Attributes) -> Self {
         Self {
             wow_depth: other.wow,
-            flutter_depth: other.flutter,
+            flutter_depth: other.flutter_depth,
+            flutter_chance: other.flutter_chance,
         }
     }
 }

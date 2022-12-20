@@ -1,17 +1,21 @@
-use core::f32::consts::PI;
-
-use crate::trigonometry;
-
 #[allow(unused_imports)]
 use micromath::F32Ext as _;
 
-const BASE_FREQUENCY: f32 = 8.0;
-const SECOND_FREQUENCY: f32 = BASE_FREQUENCY * 1.718_712_4;
-const THIRD_FREQUENCY: f32 = BASE_FREQUENCY * 2.834_324_1;
+use crate::random::Random;
+use crate::trigonometry;
+
+const BASE_FREQUENCY: f32 = 6.0;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {
     pub depth: f32,
+    // Assuming 48 kHz sample rate and buffers of 32 samples,
+    // the dice should be thrown
+    //   48000 / 32 = 1500 times a second.
+    // With chance of X, successful throw is one in
+    //   1 / X.
+    // Chance to trigger pops within one second is X * 1500.
+    pub chance: f32,
 }
 
 // TODO: Based on intensity, start with pulsing, then enable fully.
@@ -21,9 +25,17 @@ pub struct Attributes {
 pub struct Flutter {
     sample_rate: f32,
     depth: f32,
-    phase_base: f32,
-    phase_second: f32,
-    phase_third: f32,
+    chance: f32,
+    pops: Option<Pops>,
+}
+
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct Pops {
+    amount: u8,
+    phase: f32,
+    slowdowns: [f32; 3],
+    // TODO: Intensity
 }
 
 impl Flutter {
@@ -31,28 +43,120 @@ impl Flutter {
         Self {
             sample_rate: sample_rate as f32,
             depth: 0.0,
-            phase_base: 0.5, // Start the offset sine wave on 0.0
-            phase_second: 0.5,
-            phase_third: 0.5,
+            chance: 0.0,
+            pops: None,
         }
     }
 
+    pub fn roll_dice(&mut self, random: &mut impl Random) {
+        if self.pops.is_some() {
+            return;
+        }
+
+        let rand = random.normal();
+        let amount = (rand - (1.0 - self.chance)) / self.chance;
+        self.pops = if amount < 0.0 {
+            None
+        } else if amount < 0.7 {
+            Some(Pops::with_amount(1))
+        } else if amount < 0.9 {
+            Some(Pops::with_amount(2))
+        } else {
+            Some(Pops::with_amount(3))
+        };
+    }
+
     pub fn pop(&mut self) -> f32 {
-        let x1 = trigonometry::cos(self.phase_base) + 1.0;
-        let x2 = trigonometry::cos(self.phase_second) + 1.0;
-        let x3 = trigonometry::cos(self.phase_third) + 1.0;
-        let x = ((x1 + x2 + x3) / 3.0) * self.depth / 2.0;
-        self.phase_base += BASE_FREQUENCY / self.sample_rate;
-        self.phase_second += SECOND_FREQUENCY / self.sample_rate;
-        self.phase_third += THIRD_FREQUENCY / self.sample_rate;
-        // TODO: Try if using (while > 1.0: -= 1.0) is faster
-        self.phase_base %= 1.0;
-        self.phase_second %= 1.0;
-        self.phase_third %= 1.0;
+        let (x, pops) = if let Some(pops) = self.pops.take() {
+            let x = pops.friction();
+            let maybe_pops = pops.tick(self.sample_rate);
+            (x * self.depth, maybe_pops)
+        } else {
+            (0.0, None)
+        };
+
+        self.pops = pops;
+
         x
     }
 
     pub fn set_attributes(&mut self, attributes: &Attributes) {
         self.depth = attributes.depth;
+        self.chance = attributes.chance;
+    }
+}
+
+impl Pops {
+    fn with_amount(amount: u8) -> Self {
+        Pops {
+            amount,
+            phase: 0.0,
+            slowdowns: [0.25, 0.5, 0.4],
+        }
+    }
+
+    /// Simulate flutter friction.
+    ///
+    /// Sinusoidal slowdown until it stops. Then after it overcomes the static friction
+    /// it launches with linear speed.
+    fn friction(&self) -> f32 {
+        let phase = self.phase.fract();
+        let breaking = phase < 0.5;
+        if breaking {
+            (trigonometry::cos(phase + 0.5) + 1.0) / 2.0
+        } else {
+            let catching_up_phase = (phase - 0.5) * 2.0;
+            1.0 - catching_up_phase
+        }
+    }
+
+    /// Increase phase based on the current position.
+    ///
+    /// While breaking, it would apply slowdown coefficient. It would go in
+    /// full speed while catching back up.
+    fn tick(mut self, sample_rate: f32) -> Option<Self> {
+        let breaking = self.phase.fract() < 0.5;
+        let slowdown_coefficient = if breaking {
+            self.slowdowns[self.phase as usize]
+        } else {
+            1.0
+        };
+        self.phase += BASE_FREQUENCY / sample_rate * slowdown_coefficient;
+
+        if self.phase > self.amount as f32 {
+            None
+        } else {
+            Some(self)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn pops_friction_is_continuous() {
+        let mut pops = Pops {
+            amount: 3,
+            phase: 0.0,
+            slowdowns: [0.25, 0.5, 1.0],
+        };
+        let mut last_friction = 0.0;
+        loop {
+            let new_friction = pops.friction();
+            let eq = relative_eq!(new_friction, last_friction, epsilon = 0.01);
+            assert!(
+                eq,
+                "new_friction({new_friction}) != last_friction({last_friction}) for phase({})",
+                pops.phase
+            );
+            if let Some(new_pops) = pops.tick(48_000.0) {
+                last_friction = new_friction;
+                pops = new_pops;
+            } else {
+                break;
+            }
+        }
     }
 }

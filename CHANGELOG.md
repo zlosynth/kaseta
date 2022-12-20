@@ -9,6 +9,8 @@ backwards compatibility.
 * Add more embedded tests.
 * Fix I/O bugs found while testing with a prototype.
 * Finalize user manual's front page.
+* Trigger flutter in sporadic pulses.
+* Optimize wow and flutter algorithms.
 
 ## 0.5.0
 
