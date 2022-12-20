@@ -268,8 +268,6 @@ const TABLE: [f32; 256] = [
     -0.024541228522912448,
 ];
 
-// TODO: Use wrapping around of pow2
-// TODO: Use as usize just once
 pub fn cos(mut phase: f32) -> f32 {
     phase += 0.25;
     phase *= 256.0;
