@@ -1,9 +1,10 @@
-//! Flutter benchmark.
+//! Wow and flutter benchmark.
 //!
 //! Measuring how many DWT cycles it takes for a buffer of 32 random samples
-//! to be processed by flutter.
+//! to be processed by wow and flutter.
 //!
 //! * Original implementation: 162429
+//! * Using cosinus lookup table: 15743
 
 #![no_main]
 #![no_std]
@@ -32,7 +33,7 @@ impl Random for RandomStub {
 fn main() -> ! {
     const BUFFER_SIZE: usize = 32;
 
-    defmt::println!("Flutter benchmark");
+    defmt::println!("Wow and flutter benchmark");
 
     let mut cp = cortex_m::Peripherals::take().unwrap();
     let dp = daisy::pac::Peripherals::take().unwrap();
@@ -56,7 +57,7 @@ fn main() -> ! {
 
     let mut wow_flutter = WowFlutter::new(48_000, &mut memory_manager);
     wow_flutter.set_attributes(Attributes {
-        wow_depth: 0.0,
+        wow_depth: 1.0,
         flutter_depth: 1.0,
     });
 

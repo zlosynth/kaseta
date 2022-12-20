@@ -30,3 +30,4 @@ mod oscillator;
 mod pre_amp;
 mod ring_buffer;
 mod state_variable_filter;
+mod trigonometry;

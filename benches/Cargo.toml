@@ -54,9 +54,5 @@ name = "delay_blend"
 harness = false
 
 [[bin]]
-name = "wow"
-harness = false
-
-[[bin]]
-name = "flutter"
+name = "wow_flutter"
 harness = false

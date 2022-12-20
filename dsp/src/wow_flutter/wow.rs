@@ -7,6 +7,7 @@ use super::ornstein_uhlenbeck::OrnsteinUhlenbeck;
 use super::wavefolder;
 use crate::random::Random;
 use crate::state_variable_filter::StateVariableFilter;
+use crate::trigonometry;
 
 // These constants were obtained through design in hack/wow.py and
 // experimentation with sound.
@@ -61,7 +62,7 @@ impl Wow {
     pub fn pop(&mut self, random: &mut impl Random) -> f32 {
         // TODO: If depth is 0.0, then target should be always 0.0. Create a bench and test it
         let target = {
-            let x = (libm::cosf(self.phase * 2.0 * PI) + 1.0) * self.depth / 2.0;
+            let x = (trigonometry::cos(self.phase) + 1.0) * self.depth / 2.0;
 
             let drift = self.ornstein_uhlenbeck.pop(random) * PHASE_DRIFT;
             self.phase += (BASE_FREQUENCY / self.sample_rate) * (1.0 + drift);

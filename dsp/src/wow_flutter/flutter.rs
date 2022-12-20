@@ -1,5 +1,7 @@
 use core::f32::consts::PI;
 
+use crate::trigonometry;
+
 #[allow(unused_imports)]
 use micromath::F32Ext as _;
 
@@ -36,9 +38,9 @@ impl Flutter {
     }
 
     pub fn pop(&mut self) -> f32 {
-        let x1 = libm::cosf(self.phase_base * 2.0 * PI) + 1.0;
-        let x2 = libm::cosf(self.phase_second * 2.0 * PI) + 1.0;
-        let x3 = libm::cosf(self.phase_third * 2.0 * PI) + 1.0;
+        let x1 = trigonometry::cos(self.phase_base) + 1.0;
+        let x2 = trigonometry::cos(self.phase_second) + 1.0;
+        let x3 = trigonometry::cos(self.phase_third) + 1.0;
         let x = ((x1 + x2 + x3) / 3.0) * self.depth / 2.0;
         self.phase_base += BASE_FREQUENCY / self.sample_rate;
         self.phase_second += SECOND_FREQUENCY / self.sample_rate;
