@@ -516,6 +516,8 @@ mod tests {
     }
 
     fn hold_button(store: &mut Store, mut input: InputSnapshot) {
+        store.apply_input_snapshot(input);
+        store.tick();
         input.button = true;
         for _ in 0..6 * 1000 {
             store.apply_input_snapshot(input);
