@@ -13,7 +13,9 @@ const VOCT_RANGE: (f32, f32) = (0.0, 5.0);
 
 impl Store {
     pub fn reconcile_pre_amp(&mut self) {
-        self.cache.options.enable_oscillator = self.input.switch[0];
+        if self.input.button.pressed && self.input.pre_amp.active() {
+            self.cache.options.enable_oscillator = self.input.pre_amp.value() > 0.5;
+        }
 
         if self.cache.options.enable_oscillator {
             let pot = self.input.pre_amp.value() * 5.0;

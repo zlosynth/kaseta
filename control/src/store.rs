@@ -201,7 +201,6 @@ impl Store {
 
     fn converge_from_normal_state(&mut self, needs_save: &mut bool) {
         self.detect_tapped_tempo(needs_save);
-        // TODO: Store last activity of pots, to stop hold counter
         if self.button_is_long_held_without_pot_activity() {
             log::info!("ENTERING CONFIGURATION");
             self.state = State::configuring_from_draft(self.cache.configuration);
