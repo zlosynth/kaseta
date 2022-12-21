@@ -59,6 +59,37 @@ impl Store {
         self.switch = snapshot.switch;
         self.button.update(snapshot.button);
     }
+
+    // TODO: Define function flattening all pots
+    pub fn latest_pot_activity(&self) -> u32 {
+        [
+            self.pre_amp.last_active,
+            self.drive.last_active,
+            self.bias.last_active,
+            self.dry_wet.last_active,
+            self.wow_flut.last_active,
+            self.speed.last_active,
+            self.tone.last_active,
+            self.head
+                .iter()
+                .map(|h| {
+                    [
+                        h.position.last_active,
+                        h.volume.last_active,
+                        h.feedback.last_active,
+                        h.pan.last_active,
+                    ]
+                    .into_iter()
+                    .min()
+                    .unwrap()
+                })
+                .min()
+                .unwrap(),
+        ]
+        .into_iter()
+        .min()
+        .unwrap()
+    }
 }
 
 #[cfg(test)]

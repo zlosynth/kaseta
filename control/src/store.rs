@@ -121,7 +121,6 @@ impl Store {
     }
 
     fn converge_internal_state(&mut self) -> Option<Save> {
-        // TODO: Diff mapped and connected, to catch those that were added previously
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
         if !plugged_controls.is_empty() {
             #[cfg(feature = "defmt")]
@@ -203,7 +202,8 @@ impl Store {
 
     fn converge_from_normal_state(&mut self, needs_save: &mut bool) {
         self.detect_tapped_tempo(needs_save);
-        if self.button_is_long_held() {
+        // TODO: Store last activity of pots, to stop hold counter
+        if self.button_is_long_held_without_pot_activity() {
             #[cfg(feature = "defmt")]
             defmt::info!("ENTERING CONFIGURATION");
             self.state = State::configuring_from_draft(self.cache.configuration);
@@ -244,8 +244,8 @@ impl Store {
         }
     }
 
-    fn button_is_long_held(&mut self) -> bool {
-        self.input.button.held > 5_000
+    fn button_is_long_held_without_pot_activity(&mut self) -> bool {
+        self.input.button.held > 5_000 && self.input.latest_pot_activity() > self.input.button.held
     }
 
     fn converge_from_mapping_state(
@@ -278,7 +278,7 @@ impl Store {
             (&self.input.speed, AttributeIdentifier::Speed),
             (&self.input.tone, AttributeIdentifier::Tone),
         ] {
-            if pot.active_with_toleration(0.01) {
+            if pot.active() {
                 return identifier;
             }
         }
@@ -290,7 +290,7 @@ impl Store {
                 (&head.feedback, AttributeIdentifier::Feedback(i)),
                 (&head.pan, AttributeIdentifier::Pan(i)),
             ] {
-                if pot.active_with_toleration(0.01) {
+                if pot.active() {
                     return identifier;
                 }
             }
@@ -1065,6 +1065,28 @@ mod tests {
             hold_button(&mut store, input);
 
             assert!(matches!(store.state, State::Configuring(_)));
+        }
+
+        #[test]
+        fn when_button_is_held_but_pots_are_active_it_does_not_enter_configuration_mode() {
+            let mut store = init_store();
+            let mut input = InputSnapshot::default();
+
+            input.button = true;
+            for _ in 0..1 * 1000 {
+                store.apply_input_snapshot(input);
+                store.tick();
+            }
+            input.pre_amp = 1.0;
+            for _ in 0..6 * 1000 {
+                store.apply_input_snapshot(input);
+                store.tick();
+            }
+            input.button = false;
+            store.apply_input_snapshot(input);
+            store.tick();
+
+            assert!(matches!(store.state, State::Normal));
         }
 
         #[test]

@@ -13,11 +13,17 @@ use super::buffer::Buffer;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Pot {
     buffer: Buffer<4>,
+    pub last_active: u32,
 }
 
 impl Pot {
     pub fn update(&mut self, value: f32) {
         self.buffer.write(value);
+        self.last_active = if self.active_with_toleration(0.01) {
+            0
+        } else {
+            self.last_active.saturating_add(1)
+        }
     }
 
     // TODO: Implement window support
@@ -26,10 +32,10 @@ impl Pot {
     }
 
     pub fn active(&self) -> bool {
-        self.active_with_toleration(0.001)
+        self.last_active == 0
     }
 
-    pub fn active_with_toleration(&self, toleration: f32) -> bool {
+    fn active_with_toleration(&self, toleration: f32) -> bool {
         self.buffer.traveled().abs() > toleration
     }
 }
