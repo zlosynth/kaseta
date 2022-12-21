@@ -22,6 +22,7 @@ extern crate approx;
 mod action;
 mod cache;
 mod input;
+mod log;
 mod output;
 mod save;
 mod store;

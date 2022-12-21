@@ -14,6 +14,7 @@ use crate::cache::mapping::AttributeIdentifier;
 use crate::cache::{Cache, Configuration};
 use crate::input::snapshot::Snapshot as InputSnapshot;
 use crate::input::store::{Store as Input, StoreHead as InputHead};
+use crate::log;
 use crate::output::DesiredOutput;
 use crate::save::Save;
 
@@ -123,12 +124,10 @@ impl Store {
     fn converge_internal_state(&mut self) -> Option<Save> {
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
         if !plugged_controls.is_empty() {
-            #[cfg(feature = "defmt")]
-            defmt::info!("PLUGGED: {:?}", plugged_controls);
+            log::info!("PLUGGED: {:?}", plugged_controls);
         }
         if !unplugged_controls.is_empty() {
-            #[cfg(feature = "defmt")]
-            defmt::info!("UNPLUGGED: {:?}", unplugged_controls);
+            log::info!("UNPLUGGED: {:?}", unplugged_controls);
         }
         self.cache.unmap_controls(&unplugged_controls);
         self.dequeue_controls(&unplugged_controls);
@@ -204,21 +203,18 @@ impl Store {
         self.detect_tapped_tempo(needs_save);
         // TODO: Store last activity of pots, to stop hold counter
         if self.button_is_long_held_without_pot_activity() {
-            #[cfg(feature = "defmt")]
-            defmt::info!("ENTERING CONFIGURATION");
+            log::info!("ENTERING CONFIGURATION");
             self.state = State::configuring_from_draft(self.cache.configuration);
             self.cache.display.set_screen(1, Screen::configuration());
         } else if let Some(action) = self.queue.pop() {
             match action {
                 ControlAction::Calibrate(i) => {
-                    #[cfg(feature = "defmt")]
-                    defmt::info!("ENTERING CALIBRATION");
+                    log::info!("ENTERING CALIBRATION");
                     self.state = State::calibrating_octave_1(i);
                     self.cache.display.set_screen(1, Screen::calibration_1(i));
                 }
                 ControlAction::Map(i) => {
-                    #[cfg(feature = "defmt")]
-                    defmt::info!("ENTERING MAPPING");
+                    log::info!("ENTERING MAPPING");
                     self.state = State::mapping(i);
                     self.cache.display.set_screen(1, Screen::mapping(i));
                 }
@@ -231,13 +227,11 @@ impl Store {
     fn detect_tapped_tempo(&mut self, needs_save: &mut bool) {
         if let Some(detected_tempo) = self.cache.tap_detector.detected_tempo() {
             if self.input.speed.active() {
-                #[cfg(feature = "defmt")]
-                defmt::info!("RESETTING TAPPED TEMPO");
+                log::info!("RESETTING TAPPED TEMPO");
                 self.cache.tap_detector.reset();
                 self.cache.tapped_tempo = None;
             } else {
-                #[cfg(feature = "defmt")]
-                defmt::info!("SETTING TAPPED TEMPO");
+                log::info!("SETTING TAPPED TEMPO");
                 *needs_save = true;
                 self.cache.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
             }
@@ -255,13 +249,11 @@ impl Store {
     ) {
         let destination = self.active_attribute();
         if !self.input.control[input].is_plugged {
-            #[cfg(feature = "defmt")]
-            defmt::info!("CONTROL UNPLUGGED WHILE MAPPING {:?}", input + 1);
+            log::info!("CONTROL UNPLUGGED WHILE MAPPING {:?}", input + 1);
             self.cache.display.set_screen(0, Screen::failure());
             self.state = State::Normal;
         } else if !destination.is_none() && !self.cache.mapping.contains(&destination) {
-            #[cfg(feature = "defmt")]
-            defmt::info!("MAPPED {:?} TO {:?}", input + 1, destination);
+            log::info!("MAPPED {:?} TO {:?}", input + 1, destination);
             *needs_save = true;
             self.cache.mapping[input] = destination;
             self.state = State::Normal;
