@@ -5,7 +5,7 @@
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Display {
-    pub prioritized: [Option<Screen>; 3],
+    pub prioritized: [Option<Screen>; 4],
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -16,6 +16,7 @@ pub enum Screen {
     Configuration(ConfigurationScreen),
     Failure(u32),
     Heads([bool; 4], [bool; 4]),
+    AltMenu(u32, AltMenuScreen),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -32,10 +33,28 @@ pub enum ConfigurationScreen {
     Rewind((usize, usize)),
 }
 
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum AltMenuScreen {
+    PreAmpMode(PreAmpMode),
+}
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum PreAmpMode {
+    PreAmp,
+    Oscillator,
+}
+
 impl Default for Display {
     fn default() -> Self {
         Self {
-            prioritized: [None, None, Some(Screen::Heads([false; 4], [false; 4]))],
+            prioritized: [
+                None,
+                None,
+                None,
+                Some(Screen::Heads([false; 4], [false; 4])),
+            ],
         }
     }
 }
@@ -158,6 +177,12 @@ impl Screen {
                     [false; 8]
                 }
             }
+            Self::AltMenu(_, menu) => match menu {
+                AltMenuScreen::PreAmpMode(mode) => match mode {
+                    PreAmpMode::PreAmp => [true, true, false, false, true, true, false, false],
+                    PreAmpMode::Oscillator => [false, false, true, true, false, false, true, true],
+                },
+            },
         }
     }
 
@@ -195,6 +220,13 @@ impl Screen {
                 }
             }
             Screen::Heads(_, _) => Some(self),
+            Screen::AltMenu(age, menu) => {
+                if age > 1000 {
+                    None
+                } else {
+                    Some(Screen::AltMenu(age + 1, menu))
+                }
+            }
         }
     }
 

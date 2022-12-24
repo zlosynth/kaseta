@@ -118,7 +118,19 @@ impl Store {
     }
 
     pub fn tick(&mut self) -> DesiredOutput {
+        self.sustain_alt_menu();
         self.cache.tick()
+    }
+
+    // TODO: Use reference
+    fn sustain_alt_menu(&mut self) {
+        if self.input.button.pressed {
+            if let Some(Screen::AltMenu(age, menu)) = self.cache.display.prioritized[2] {
+                if age <= 1 {
+                    self.cache.display.set_screen(2, Screen::AltMenu(0, menu));
+                }
+            }
+        }
     }
 
     fn converge_internal_state(&mut self) -> Option<Save> {
@@ -155,7 +167,7 @@ impl Store {
 
         self.cache
             .display
-            .set_screen(2, self.cache.screen_for_heads());
+            .set_screen(3, self.cache.screen_for_heads());
 
         if needs_save {
             Some(self.cache.save())

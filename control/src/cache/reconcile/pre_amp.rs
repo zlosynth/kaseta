@@ -2,6 +2,7 @@ use libm::powf;
 
 use super::calculate;
 use super::taper;
+use crate::cache::display::{AltMenuScreen, PreAmpMode, Screen};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
@@ -14,7 +15,20 @@ const VOCT_RANGE: (f32, f32) = (0.0, 5.0);
 impl Store {
     pub fn reconcile_pre_amp(&mut self) {
         if self.input.button.pressed && self.input.pre_amp.active() {
-            self.cache.options.enable_oscillator = self.input.pre_amp.value() > 0.5;
+            if self.input.pre_amp.value() > 0.5 {
+                // TODO: Refactor this so PreAmpMode can be selected frm index
+                self.cache.options.enable_oscillator = true;
+                self.cache.display.set_screen(
+                    2,
+                    Screen::AltMenu(0, AltMenuScreen::PreAmpMode(PreAmpMode::Oscillator)),
+                );
+            } else {
+                self.cache.options.enable_oscillator = false;
+                self.cache.display.set_screen(
+                    2,
+                    Screen::AltMenu(0, AltMenuScreen::PreAmpMode(PreAmpMode::PreAmp)),
+                );
+            }
         }
 
         if self.cache.options.enable_oscillator {
