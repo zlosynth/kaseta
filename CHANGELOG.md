@@ -11,6 +11,7 @@ backwards compatibility.
 * Finalize user manual's front page.
 * Trigger flutter in sporadic pulses.
 * Optimize wow and flutter algorithms.
+* Control pre-amp mode using alt button and potentiometer.
 
 ## 0.5.0
 
