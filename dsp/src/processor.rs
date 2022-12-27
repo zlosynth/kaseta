@@ -132,9 +132,11 @@ impl Processor {
         self.downsampler
             .process(&oversampled_block, &mut buffer[..]);
 
-        // self.delay
-        //     .process(&mut buffer[..], &mut block[..], &mut self.tone, random)
-        //     .notify(&mut reaction);
+        self.delay
+            .process(&mut buffer[..], &mut block[..], &mut self.tone, random)
+            .notify(&mut reaction);
+
+        // TODO: Enabling this causes instability on higher pre-amps
         // self.dc_blocker.process(&mut block[..]);
 
         for (i, (l, r)) in block.iter_mut().enumerate() {
