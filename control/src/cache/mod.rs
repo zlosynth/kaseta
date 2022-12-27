@@ -220,13 +220,6 @@ impl Cache {
         }
     }
 
-    pub fn apply_dsp_reaction(&mut self, dsp_reaction: DSPReaction) {
-        if dsp_reaction.delay_impulse {
-            self.impulse_trigger.trigger();
-            self.impulse_led.trigger();
-        }
-    }
-
     pub fn screen_for_heads(&self) -> Screen {
         let ordered_heads = self.heads_ordered_by_position();
 

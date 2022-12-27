@@ -114,7 +114,14 @@ impl Store {
     }
 
     pub fn apply_dsp_reaction(&mut self, dsp_reaction: DSPReaction) {
-        self.cache.apply_dsp_reaction(dsp_reaction);
+        if dsp_reaction.delay_impulse {
+            self.cache.impulse_trigger.trigger();
+            self.cache.impulse_led.trigger();
+        }
+
+        if dsp_reaction.hysteresis_clipping {
+            self.cache.display.set_clipping(Screen::Clipping(0));
+        }
     }
 
     pub fn tick(&mut self) -> DesiredOutput {

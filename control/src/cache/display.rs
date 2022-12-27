@@ -5,7 +5,7 @@
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Display {
-    pub prioritized: [Option<Screen>; 4],
+    pub prioritized: [Option<Screen>; 5],
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -17,6 +17,7 @@ pub enum Screen {
     Failure(u32),
     Heads([bool; 4], [bool; 4]),
     AltMenu(u32, AltMenuScreen),
+    Clipping(u32),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -53,6 +54,7 @@ impl Default for Display {
                 None,
                 None,
                 None,
+                None,
                 Some(Screen::Heads([false; 4], [false; 4])),
             ],
         }
@@ -77,6 +79,7 @@ impl Display {
         self.set_screen(0, screen);
     }
 
+    // TODO: Group the 3 following as sub screens?
     pub fn set_configuration(&mut self, screen: Screen) {
         self.set_screen(1, screen);
     }
@@ -93,14 +96,22 @@ impl Display {
         self.set_screen(2, screen);
     }
 
+    pub fn set_clipping(&mut self, screen: Screen) {
+        match self.prioritized[3] {
+            Some(Screen::Clipping(_)) => (),
+            _ => self.set_screen(3, screen),
+        }
+    }
+
     pub fn set_heads(&mut self, screen: Screen) {
-        self.set_screen(3, screen);
+        self.set_screen(4, screen);
     }
 
     pub fn set_screen(&mut self, priority: usize, screen: Screen) {
         self.prioritized[priority] = Some(screen);
     }
 
+    // TODO: Define this per group of screens
     pub fn reset_screen(&mut self, priority: usize) {
         self.prioritized[priority] = None;
     }
@@ -207,6 +218,15 @@ impl Screen {
                     PreAmpMode::Oscillator => [false, false, true, true, false, false, true, true],
                 },
             },
+            Self::Clipping(cycles) => {
+                if *cycles < 40 {
+                    [true, true, false, false, true, true, false, false]
+                } else if *cycles < 80 {
+                    [true, true, true, false, true, true, true, false]
+                } else {
+                    [true, true, true, true, true, true, true, true]
+                }
+            }
         }
     }
 
@@ -249,6 +269,13 @@ impl Screen {
                     None
                 } else {
                     Some(Screen::AltMenu(age + 1, menu))
+                }
+            }
+            Screen::Clipping(age) => {
+                if age > 120 {
+                    None
+                } else {
+                    Some(Screen::Clipping(age + 1))
                 }
             }
         }

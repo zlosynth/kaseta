@@ -124,13 +124,14 @@ impl Processor {
 
         self.wow_flutter.process(&mut buffer, random);
 
-        // let mut oversampled_block = [0.0; 32 * 4];
-        // self.upsampler.process(&buffer, &mut oversampled_block);
-        // self.hysteresis
-        //     .process(&mut oversampled_block)
-        //     .notify(&mut reaction);
-        // self.downsampler
-        //     .process(&oversampled_block, &mut buffer[..]);
+        let mut oversampled_block = [0.0; 32 * 4];
+        self.upsampler.process(&buffer, &mut oversampled_block);
+        self.hysteresis
+            .process(&mut oversampled_block)
+            .notify(&mut reaction);
+        self.downsampler
+            .process(&oversampled_block, &mut buffer[..]);
+
         // self.delay
         //     .process(&mut buffer[..], &mut block[..], &mut self.tone, random)
         //     .notify(&mut reaction);
