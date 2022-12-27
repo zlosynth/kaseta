@@ -73,6 +73,30 @@ impl Display {
             .expect("The always is at least one active page.")
     }
 
+    pub fn set_failure(&mut self, screen: Screen) {
+        self.set_screen(0, screen);
+    }
+
+    pub fn set_configuration(&mut self, screen: Screen) {
+        self.set_screen(1, screen);
+    }
+
+    pub fn set_calibration(&mut self, screen: Screen) {
+        self.set_screen(1, screen);
+    }
+
+    pub fn set_mapping(&mut self, screen: Screen) {
+        self.set_screen(1, screen);
+    }
+
+    pub fn set_alt_menu(&mut self, screen: Screen) {
+        self.set_screen(2, screen);
+    }
+
+    pub fn set_heads(&mut self, screen: Screen) {
+        self.set_screen(3, screen);
+    }
+
     pub fn set_screen(&mut self, priority: usize, screen: Screen) {
         self.prioritized[priority] = Some(screen);
     }

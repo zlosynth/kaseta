@@ -127,7 +127,7 @@ impl Store {
         if self.input.button.pressed {
             if let Some(Screen::AltMenu(age, menu)) = self.cache.display.prioritized[2] {
                 if age <= 1 {
-                    self.cache.display.set_screen(2, Screen::AltMenu(0, menu));
+                    self.cache.display.set_alt_menu(Screen::AltMenu(0, menu));
                 }
             }
         }
@@ -165,9 +165,7 @@ impl Store {
         self.reconcile_detectors();
         self.reconcile_attributes();
 
-        self.cache
-            .display
-            .set_screen(3, self.cache.screen_for_heads());
+        self.cache.display.set_heads(self.cache.screen_for_heads());
 
         if needs_save {
             Some(self.cache.save())
@@ -216,18 +214,20 @@ impl Store {
         if self.button_is_long_held_without_pot_activity() {
             log::info!("ENTERING CONFIGURATION");
             self.state = State::configuring_from_draft(self.cache.configuration);
-            self.cache.display.set_screen(1, Screen::configuration());
+            self.cache
+                .display
+                .set_configuration(Screen::configuration());
         } else if let Some(action) = self.queue.pop() {
             match action {
                 ControlAction::Calibrate(i) => {
                     log::info!("ENTERING CALIBRATION");
                     self.state = State::calibrating_octave_1(i);
-                    self.cache.display.set_screen(1, Screen::calibration_1(i));
+                    self.cache.display.set_calibration(Screen::calibration_1(i));
                 }
                 ControlAction::Map(i) => {
                     log::info!("ENTERING MAPPING");
                     self.state = State::mapping(i);
-                    self.cache.display.set_screen(1, Screen::mapping(i));
+                    self.cache.display.set_mapping(Screen::mapping(i));
                 }
             }
         } else {
@@ -261,7 +261,7 @@ impl Store {
         let destination = self.active_attribute();
         if !self.input.control[input].is_plugged {
             log::info!("CONTROL UNPLUGGED WHILE MAPPING {:?}", input + 1);
-            self.cache.display.set_screen(0, Screen::failure());
+            self.cache.display.set_failure(Screen::failure());
             self.state = State::Normal;
         } else if !destination.is_none() && !self.cache.mapping.contains(&destination) {
             log::info!("MAPPED {:?} TO {:?}", input + 1, destination);
@@ -308,7 +308,7 @@ impl Store {
         needs_save: &mut bool,
     ) {
         if !self.input.control[input].is_plugged {
-            self.cache.display.set_screen(0, Screen::failure());
+            self.cache.display.set_failure(Screen::failure());
             self.state = State::Normal;
         } else if self.input.button.clicked {
             match phase {
@@ -317,7 +317,7 @@ impl Store {
                     self.state = State::calibrating_octave_2(input, octave_1);
                     self.cache
                         .display
-                        .set_screen(1, Screen::calibration_2(input));
+                        .set_calibration(Screen::calibration_2(input));
                 }
                 CalibrationPhase::Octave2(octave_1) => {
                     let octave_2 = self.input.control[input].value();
@@ -325,7 +325,7 @@ impl Store {
                         *needs_save = true;
                         self.cache.calibrations[input] = calibration;
                     } else {
-                        self.cache.display.set_screen(0, Screen::failure());
+                        self.cache.display.set_failure(Screen::failure());
                     }
                     self.state = State::Normal;
                 }
@@ -345,7 +345,7 @@ impl Store {
         } else {
             let (draft, screen) = self.updated_configuration_draft(configuring.draft);
             if let Some(screen) = screen {
-                self.cache.display.set_screen(1, screen);
+                self.cache.display.set_configuration(screen);
             }
             self.state = State::Configuring(StateConfiguring { draft });
         }
