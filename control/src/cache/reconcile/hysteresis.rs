@@ -14,6 +14,8 @@ impl Store {
         // gets scaled down based on bias.
         const DRIVE_PORTION: f32 = 1.0 / 2.0;
 
+        self.cache.options.unlimited = self.input.switch[7];
+
         self.cache.attributes.dry_wet = calculate(
             self.input.dry_wet.value(),
             self.control_value_for_attribute(AttributeIdentifier::DryWet),
@@ -43,7 +45,11 @@ impl Store {
             None,
         );
 
-        let max_bias = max_bias_for_drive(drive).clamp(BIAS_RANGE.0, BIAS_RANGE.1);
+        let max_bias = if self.cache.options.unlimited {
+            BIAS_RANGE.1
+        } else {
+            max_bias_for_drive(drive).clamp(BIAS_RANGE.0, BIAS_RANGE.1)
+        };
         self.cache.attributes.bias = calculate(
             self.input.bias.value(),
             self.control_value_for_attribute(AttributeIdentifier::Bias),

@@ -122,6 +122,7 @@ pub struct Options {
     pub enable_oscillator: bool,
     pub random_impulse: bool,
     pub filter_feedback: bool,
+    pub unlimited: bool,
 }
 
 /// Tweaking of the default module configuration.
