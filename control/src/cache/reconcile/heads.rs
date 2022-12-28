@@ -9,7 +9,6 @@ impl Store {
         self.cache.options.quantize_8 = self.input.switch[3];
         self.cache.options.quantize_6 = self.input.switch[4];
         self.cache.options.random_impulse = self.input.switch[5];
-        self.cache.options.filter_feedback = self.input.switch[6];
 
         for i in 0..4 {
             self.reconcile_head(i);

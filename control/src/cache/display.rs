@@ -39,6 +39,7 @@ pub enum ConfigurationScreen {
 pub enum AltMenuScreen {
     PreAmpMode(PreAmpMode),
     SpeedRange(SpeedRange),
+    TonePosition(TonePosition),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -53,6 +54,13 @@ pub enum PreAmpMode {
 pub enum SpeedRange {
     Short,
     Long,
+}
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum TonePosition {
+    Volume,
+    Feedback,
 }
 
 impl Default for Display {
@@ -228,6 +236,10 @@ impl Screen {
                 AltMenuScreen::SpeedRange(range) => match range {
                     SpeedRange::Short => [true, false, false, false, true, false, false, false],
                     SpeedRange::Long => [true, true, true, true, true, true, true, true],
+                },
+                AltMenuScreen::TonePosition(position) => match position {
+                    TonePosition::Volume => [true, true, true, true, false, false, false, false],
+                    TonePosition::Feedback => [false, false, false, false, true, true, true, true],
                 },
             },
             Self::Clipping(cycles) => {
