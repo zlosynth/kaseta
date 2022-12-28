@@ -1,11 +1,12 @@
 # Kaseta
 
-To-be tape simulation module for Eurorack.
+Saturating tape delay and feedback sculptor module for Eurorack.
 
 # Development
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) to find some basic commands to interact
-with the project.
+with the project. To learn more, read the code. A good place to start would be
+[firmware/src/main.rs](firmware/src/main.rs).
 
 # License
 
