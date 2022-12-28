@@ -12,6 +12,7 @@ backwards compatibility.
 * Trigger flutter in sporadic pulses.
 * Optimize wow and flutter algorithms.
 * Control pre-amp mode using alt button and potentiometer.
+* Control speed range using alt button and potentiometer.
 
 ## 0.5.0
 
