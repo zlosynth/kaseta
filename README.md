@@ -6,7 +6,7 @@ Saturating tape delay and feedback sculptor module for Eurorack.
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) to find some basic commands to interact
 with the project. To learn more, read the code. A good place to start would be
-[firmware/src/main.rs](firmware/src/main.rs).
+[firmware/src/bin/firmware.rs](firmware/src/bin/firmware.rs).
 
 # License
 
