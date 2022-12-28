@@ -9,25 +9,22 @@ use crate::Store;
 // Pre-amp scales between -20 to +28 dB.
 const PRE_AMP_RANGE: (f32, f32) = (0.0, 25.0);
 
-// Five octaves.
-const VOCT_RANGE: (f32, f32) = (0.0, 5.0);
-
 impl Store {
     pub fn reconcile_pre_amp(&mut self) {
         if self.input.button.pressed && self.input.pre_amp.active() {
             if self.input.pre_amp.value() > 0.5 {
                 // TODO: Refactor this so PreAmpMode can be selected frm index
                 self.cache.options.enable_oscillator = true;
-                self.cache.display.set_screen(
-                    2,
-                    Screen::AltMenu(0, AltMenuScreen::PreAmpMode(PreAmpMode::Oscillator)),
-                );
+                self.cache.display.set_alt_menu(Screen::AltMenu(
+                    0,
+                    AltMenuScreen::PreAmpMode(PreAmpMode::Oscillator),
+                ));
             } else {
                 self.cache.options.enable_oscillator = false;
-                self.cache.display.set_screen(
-                    2,
-                    Screen::AltMenu(0, AltMenuScreen::PreAmpMode(PreAmpMode::PreAmp)),
-                );
+                self.cache.display.set_alt_menu(Screen::AltMenu(
+                    0,
+                    AltMenuScreen::PreAmpMode(PreAmpMode::PreAmp),
+                ));
             }
         }
 

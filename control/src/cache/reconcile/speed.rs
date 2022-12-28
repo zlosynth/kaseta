@@ -1,5 +1,6 @@
 use super::calculate;
 use super::taper;
+use crate::cache::display::{AltMenuScreen, Screen, SpeedRange};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
@@ -9,7 +10,21 @@ const LENGTH_SHORT_RANGE: (f32, f32) = (1.0 / 400.0, 1.0);
 
 impl Store {
     pub fn reconcile_speed(&mut self) {
-        self.cache.options.short_delay_range = self.input.switch[1];
+        if self.input.button.pressed && self.input.speed.active() {
+            if self.input.speed.value() < 0.5 {
+                self.cache.options.short_delay_range = true;
+                self.cache.display.set_alt_menu(Screen::AltMenu(
+                    0,
+                    AltMenuScreen::SpeedRange(SpeedRange::Short),
+                ));
+            } else {
+                self.cache.options.short_delay_range = false;
+                self.cache.display.set_alt_menu(Screen::AltMenu(
+                    0,
+                    AltMenuScreen::SpeedRange(SpeedRange::Long),
+                ));
+            }
+        }
 
         let control_index = self.control_index_for_attribute(AttributeIdentifier::Speed);
         let clock_detector = control_index.map(|i| &self.cache.clock_detectors[i]);

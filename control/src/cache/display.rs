@@ -38,6 +38,7 @@ pub enum ConfigurationScreen {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum AltMenuScreen {
     PreAmpMode(PreAmpMode),
+    SpeedRange(SpeedRange),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -45,6 +46,13 @@ pub enum AltMenuScreen {
 pub enum PreAmpMode {
     PreAmp,
     Oscillator,
+}
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum SpeedRange {
+    Short,
+    Long,
 }
 
 impl Default for Display {
@@ -216,6 +224,10 @@ impl Screen {
                 AltMenuScreen::PreAmpMode(mode) => match mode {
                     PreAmpMode::PreAmp => [true, true, false, false, true, true, false, false],
                     PreAmpMode::Oscillator => [false, false, true, true, false, false, true, true],
+                },
+                AltMenuScreen::SpeedRange(range) => match range {
+                    SpeedRange::Short => [true, false, false, false, true, false, false, false],
+                    SpeedRange::Long => [true, true, true, true, true, true, true, true],
                 },
             },
             Self::Clipping(cycles) => {

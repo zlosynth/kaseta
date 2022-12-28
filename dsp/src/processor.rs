@@ -139,10 +139,10 @@ impl Processor {
         // TODO: Enabling this causes instability on higher pre-amps
         // self.dc_blocker.process(&mut block[..]);
 
-        for (i, (l, r)) in block.iter_mut().enumerate() {
-            *l = buffer[i];
-            *r = buffer[i];
-        }
+        // for (i, (l, r)) in block.iter_mut().enumerate() {
+        //     *l = buffer[i];
+        //     *r = buffer[i];
+        // }
 
         reaction
     }

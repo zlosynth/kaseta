@@ -137,6 +137,11 @@ impl Delay {
             *x = (left, right);
         }
 
+        // NOTE: In case the length gets set to 0, don't send any impulse.
+        if self.length < f32::EPSILON {
+            return Reaction { impulse: false };
+        }
+
         let initial_impulse_cursor = self.impulse_cursor;
         self.impulse_cursor += input_buffer.len() as f32 / self.sample_rate;
         while self.impulse_cursor > self.length {
