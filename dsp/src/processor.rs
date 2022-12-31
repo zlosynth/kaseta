@@ -2,6 +2,7 @@
 
 use sirena::memory_manager::MemoryManager;
 
+use crate::clipper::Clipper;
 use crate::dc_blocker::DCBlocker;
 use crate::delay::{
     Attributes as DelayAttributes, Delay, HeadAttributes as DelayHeadAttributes,
@@ -22,12 +23,19 @@ use crate::wow_flutter::{Attributes as WowFlutterAttributes, WowFlutter};
 pub struct Processor {
     upsampler: Upsampler4,
     downsampler: Downsampler4,
+    //
+    // upsampler_left: Upsampler4,
+    // downsampler_left: Downsampler4,
+    // upsampler_right: Upsampler4,
+    // downsampler_right: Downsampler4,
+    //
     pre_amp: PreAmp,
     oscillator: Oscillator,
     hysteresis: Hysteresis,
     wow_flutter: WowFlutter,
     delay: Delay,
     tone: Tone,
+    clipper: Clipper,
     dc_blocker: DCBlocker,
     first_stage: FirstStage,
 }
@@ -87,12 +95,19 @@ impl Processor {
         let mut uninitialized_processor = Self {
             upsampler: Upsampler4::new_4(memory_manager),
             downsampler: Downsampler4::new_4(memory_manager),
+            //
+            // upsampler_left: Upsampler4::new_4(memory_manager),
+            // downsampler_left: Downsampler4::new_4(memory_manager),
+            // upsampler_right: Upsampler4::new_4(memory_manager),
+            // downsampler_right: Downsampler4::new_4(memory_manager),
+            //
             pre_amp: PreAmp::new(),
             oscillator: Oscillator::new(fs),
             hysteresis: Hysteresis::new(fs),
             wow_flutter: WowFlutter::new(fs as u32, memory_manager),
             delay: Delay::new(fs, memory_manager),
             tone: Tone::new(fs as u32),
+            clipper: Clipper,
             dc_blocker: DCBlocker::default(),
             first_stage: FirstStage::PreAmp,
         };
@@ -132,17 +147,44 @@ impl Processor {
         self.downsampler
             .process(&oversampled_block, &mut buffer[..]);
 
+        // TODO: Populate two buffers left and right
+        let mut buffer_left = [0.0; 32];
+        let mut buffer_right = [0.0; 32];
         self.delay
-            .process(&mut buffer[..], &mut block[..], &mut self.tone, random)
+            .process(
+                &mut buffer[..],
+                &mut buffer_left,
+                &mut buffer_right,
+                &mut self.tone,
+                random,
+            )
             .notify(&mut reaction);
+
+        // TODO: Oversample those two buffers
+
+        // let mut oversampled_block_left = [0.0; 32 * 4];
+        // let mut oversampled_block_right = [0.0; 32 * 4];
+        // self.upsampler_left
+        // .process(&buffer_left, &mut oversampled_block_left);
+        // self.upsampler_left
+        // .process(&buffer_right, &mut oversampled_block_right);
+        // self.clipper.process(&mut oversampled_block_left);
+        // self.clipper.process(&mut oversampled_block_right);
+        // TODO: Notify output clipping if landed above 2/3
+        self.clipper.process(&mut buffer_left);
+        self.clipper.process(&mut buffer_right);
+        // self.downsampler_left
+        // .process(&oversampled_block_left, &mut buffer_left[..]);
+        // self.downsampler_right
+        // .process(&oversampled_block_right, &mut buffer_right[..]);
 
         // TODO: Enabling this causes instability on higher pre-amps
         // self.dc_blocker.process(&mut block[..]);
 
-        // for (i, (l, r)) in block.iter_mut().enumerate() {
-        //     *l = buffer[i];
-        //     *r = buffer[i];
-        // }
+        for (i, (l, r)) in block.iter_mut().enumerate() {
+            *l = buffer_left[i];
+            *r = buffer_right[i];
+        }
 
         reaction
     }

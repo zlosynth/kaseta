@@ -97,7 +97,8 @@ impl Delay {
     pub fn process(
         &mut self,
         input_buffer: &mut [f32],
-        output_buffer: &mut [(f32, f32)],
+        output_buffer_left: &mut [f32],
+        output_buffer_right: &mut [f32],
         tone: &mut Tone,
         random: &mut impl Random,
     ) -> Reaction {
@@ -109,8 +110,12 @@ impl Delay {
             self.buffer.write(*x);
         }
 
-        let buffer_len = output_buffer.len();
-        for (i, x) in output_buffer.iter_mut().enumerate() {
+        let buffer_len = output_buffer_left.len();
+        for (i, x) in output_buffer_left
+            .iter_mut()
+            .zip(output_buffer_right)
+            .enumerate()
+        {
             // NOTE: Must read from back, so heads can move from old to new
             let age = buffer_len - i;
 
@@ -134,7 +139,8 @@ impl Delay {
                 right += amplified * head.pan;
             }
 
-            *x = (left, right);
+            *x.0 = left;
+            *x.1 = right;
         }
 
         // NOTE: In case the length gets set to 0, don't send any impulse.

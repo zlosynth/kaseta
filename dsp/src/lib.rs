@@ -24,6 +24,7 @@ pub mod oversampling;
 pub mod tone;
 pub mod wow_flutter;
 
+mod clipper;
 mod dc_blocker;
 mod math;
 mod oscillator;
