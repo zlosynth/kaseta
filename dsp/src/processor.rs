@@ -124,7 +124,7 @@ impl Processor {
     pub fn process(&mut self, block: &mut [(f32, f32); 32], random: &mut impl Random) -> Reaction {
         let mut reaction = Reaction::default();
 
-        self.dc_blocker.process(&mut block[..]);
+        // self.dc_blocker.process(&mut block[..]);
 
         let mut buffer = [0.0; 32];
 
@@ -166,6 +166,7 @@ impl Processor {
         // TODO: Oversample those two buffers
 
         // TODO: Apply dc blocker
+        self.dc_blocker.process(&mut buffer_left, &mut buffer_right);
 
         self.compressor.process(&mut buffer_left, &mut buffer_right);
 

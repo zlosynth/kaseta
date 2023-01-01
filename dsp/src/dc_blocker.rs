@@ -14,8 +14,8 @@ pub struct DCBlocker {
 }
 
 impl DCBlocker {
-    pub fn process(&mut self, buffer: &mut [(f32, f32)]) {
-        for (xl, xr) in buffer.iter_mut() {
+    pub fn process(&mut self, buffer_left: &mut [f32], buffer_right: &mut [f32]) {
+        for (xl, xr) in buffer_left.iter_mut().zip(buffer_right) {
             let yl = *xl - self.xl_m1 + POLE * self.yl_m1;
             self.xl_m1 = *xl;
             self.yl_m1 = yl;
