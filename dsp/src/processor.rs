@@ -3,6 +3,7 @@
 use sirena::memory_manager::MemoryManager;
 
 use crate::clipper::Clipper;
+use crate::compressor::Compressor;
 use crate::dc_blocker::DCBlocker;
 use crate::delay::{
     Attributes as DelayAttributes, Delay, HeadAttributes as DelayHeadAttributes,
@@ -35,6 +36,7 @@ pub struct Processor {
     wow_flutter: WowFlutter,
     delay: Delay,
     tone: Tone,
+    compressor: Compressor,
     clipper: Clipper,
     dc_blocker: DCBlocker,
     first_stage: FirstStage,
@@ -107,6 +109,7 @@ impl Processor {
             wow_flutter: WowFlutter::new(fs as u32, memory_manager),
             delay: Delay::new(fs, memory_manager),
             tone: Tone::new(fs as u32),
+            compressor: Compressor::new(fs),
             clipper: Clipper,
             dc_blocker: DCBlocker::default(),
             first_stage: FirstStage::PreAmp,
@@ -161,6 +164,10 @@ impl Processor {
             .notify(&mut reaction);
 
         // TODO: Oversample those two buffers
+
+        // TODO: Apply dc blocker
+
+        self.compressor.process(&mut buffer_left, &mut buffer_right);
 
         // let mut oversampled_block_left = [0.0; 32 * 4];
         // let mut oversampled_block_right = [0.0; 32 * 4];

@@ -13,6 +13,7 @@ backwards compatibility.
 * Optimize wow and flutter algorithms.
 * Replace DIP switch with alt button and potentiomenter for:
   pre-amp mode, speed range, tone filter position.
+* Apply dynamic range compression on output.
 
 ## 0.5.0
 

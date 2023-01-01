@@ -25,6 +25,7 @@ pub mod tone;
 pub mod wow_flutter;
 
 mod clipper;
+mod compressor;
 mod dc_blocker;
 mod math;
 mod oscillator;
