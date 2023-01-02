@@ -244,18 +244,17 @@ impl Store {
 
     fn detect_tapped_tempo(&mut self, needs_save: &mut bool) {
         if let Some(detected_tempo) = self.cache.tap_detector.detected_tempo() {
-            if self.input.speed.active() {
-                log::info!("RESETTING TAPPED TEMPO");
-                self.cache.tap_detector.reset();
-                self.cache.tapped_tempo = None;
-            } else {
-                let tapped_tempo = detected_tempo as f32 / 1000.0;
-                if self.cache.tapped_tempo != Some(tapped_tempo) {
-                    log::info!("SETTING TAPPED TEMPO");
-                    *needs_save = true;
-                    self.cache.tapped_tempo = Some(tapped_tempo);
-                }
+            let tapped_tempo = detected_tempo as f32 / 1000.0;
+            if self.cache.tapped_tempo != Some(tapped_tempo) {
+                log::info!("SETTING TAPPED TEMPO");
+                *needs_save = true;
+                self.cache.tapped_tempo = Some(tapped_tempo);
             }
+        }
+        if self.cache.tapped_tempo.is_some() && self.input.speed.active() {
+            log::info!("RESETTING TAPPED TEMPO");
+            self.cache.tap_detector.reset();
+            self.cache.tapped_tempo = None;
         }
     }
 
@@ -695,6 +694,29 @@ mod tests {
         }
         store.apply_input_snapshot(input);
         assert_relative_eq!(store.cache.attributes.speed, 2.0);
+    }
+
+    #[test]
+    fn given_tempo_recovered_from_save_when_speed_pot_turns_the_tempo_changes() {
+        let mut store = Store::new();
+        let input = InputSnapshot::default();
+
+        tap_button(&mut store, input, 2000);
+        tap_button(&mut store, input, 2000);
+        tap_button(&mut store, input, 2000);
+
+        let save = click_button(&mut store, input);
+        assert_relative_eq!(store.cache.attributes.speed, 2.0);
+
+        let mut store = Store::from(save.unwrap());
+        let mut input = InputSnapshot::default();
+        input.speed = 0.5;
+        for _ in 0..10 {
+            store.warm_up(input);
+        }
+        input.speed = 0.1;
+        store.apply_input_snapshot(input);
+        assert_relative_ne!(store.cache.attributes.speed, 2.0);
     }
 
     #[test]
