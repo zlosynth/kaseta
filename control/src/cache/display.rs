@@ -140,6 +140,7 @@ impl Default for Screen {
 }
 
 impl Screen {
+    #[allow(clippy::too_many_lines)]
     pub fn leds(&self) -> [bool; 8] {
         match self {
             Self::Calibration(calibration) => match calibration {

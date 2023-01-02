@@ -1088,7 +1088,7 @@ mod tests {
             let mut input = InputSnapshot::default();
 
             input.button = true;
-            for _ in 0..1 * 1000 {
+            for _ in 0..1000 {
                 store.apply_input_snapshot(input);
                 store.tick();
             }

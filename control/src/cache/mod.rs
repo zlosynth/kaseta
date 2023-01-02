@@ -8,9 +8,7 @@ mod reconcile;
 mod trigger;
 
 use heapless::Vec;
-use kaseta_dsp::processor::{
-    Attributes as DSPAttributes, AttributesHead as DSPAttributesHead, Reaction as DSPReaction,
-};
+use kaseta_dsp::processor::{Attributes as DSPAttributes, AttributesHead as DSPAttributesHead};
 
 use self::calibration::Calibration;
 use self::display::{Display, Screen};
