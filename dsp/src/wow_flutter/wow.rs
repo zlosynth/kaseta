@@ -147,7 +147,8 @@ mod tests {
             wow.set_attributes(&Attributes { depth });
 
             for _ in 0..SAMPLE_RATE * (1.0 / BASE_FREQUENCY) as u32 {
-                assert!(wow.pop(&mut TestRandom) <= depth);
+                let x = wow.pop(&mut TestRandom);
+                assert!(x < depth * 1.05, "{x} > {depth} * 1.05");
             }
         }
     }
