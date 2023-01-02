@@ -209,7 +209,7 @@ mod app {
             let result = control.apply_input_snapshot(snapshot);
             if let Some(save) = result.save {
                 // TODO: In production code, this should not fail - let _ =
-                // store::spawn(save).ok().unwrap();
+                store::spawn(save).ok().unwrap();
             }
             // TODO: In production code, this should not fail - let _ =, or even use unchecked enqueue
             processor_attributes_producer
@@ -227,11 +227,11 @@ mod app {
     // this for now. Corrupt Daisy can be fixed by flushing first
     // blinky and then QSPI examples from
     // https://electro-smith.github.io/Programmer/.
-    // #[task(local = [storage])]
-    // fn store(cx: store::Context, save: Save) {
-    //     let storage = cx.local.storage;
-    //     // storage.save_save(save);
-    // }
+    #[task(local = [storage])]
+    fn store(cx: store::Context, save: Save) {
+        let storage = cx.local.storage;
+        storage.save_save(save);
+    }
 
     #[task(local = [status_led])]
     fn blink(cx: blink::Context, on: bool, blinks: u8) {

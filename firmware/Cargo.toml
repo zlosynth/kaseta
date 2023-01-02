@@ -33,7 +33,7 @@ stm32h7xx-hal = { version = "0.12", features = [
   "rt",
   "revision_v",
 ] }
-daisy = { version = "0.7.2", features = ["patch_sm"] }
+daisy = { version = "0.7.3", features = ["patch_sm"] }
 fugit = "0.3"
 nb = "1"
 
