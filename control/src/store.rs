@@ -683,7 +683,6 @@ mod tests {
         tap_button(&mut store, input, 2000);
         tap_button(&mut store, input, 2000);
         tap_button(&mut store, input, 2000);
-        tap_button(&mut store, input, 2000);
 
         let save = click_button(&mut store, input);
         assert_relative_eq!(store.cache.attributes.speed, 2.0);
