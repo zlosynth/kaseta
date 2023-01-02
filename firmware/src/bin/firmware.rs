@@ -222,11 +222,6 @@ mod app {
         outputs.set(&desired_output);
     }
 
-    // TODO: Currently saves corrupt flash and prevent
-    // starts using debugger (reset works ok). Hence disabling
-    // this for now. Corrupt Daisy can be fixed by flushing first
-    // blinky and then QSPI examples from
-    // https://electro-smith.github.io/Programmer/.
     #[task(local = [storage])]
     fn store(cx: store::Context, save: Save) {
         let storage = cx.local.storage;
