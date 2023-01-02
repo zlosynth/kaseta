@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* Save after tapped tempo is overridden.
+
 ## 0.6.0
 
 * Add more embedded tests.
