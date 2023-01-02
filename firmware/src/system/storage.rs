@@ -50,7 +50,7 @@ impl Storage {
 
         if let Some(latest) = latest_store {
             let save = latest.save();
-            defmt::info!("LOADED {:?}: {:?}", self.version, save);
+            defmt::info!("LOADED {:?}: {:?}", latest.version(), save);
             self.version = latest.version() + 1;
             save
         } else {
