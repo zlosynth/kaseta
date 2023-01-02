@@ -37,7 +37,6 @@ pub struct Processor {
     delay: Delay,
     tone: Tone,
     compressor: Compressor,
-    clipper: Clipper,
     dc_blocker: DCBlocker,
     first_stage: FirstStage,
 }
@@ -110,7 +109,6 @@ impl Processor {
             delay: Delay::new(fs, memory_manager),
             tone: Tone::new(fs as u32),
             compressor: Compressor::new(fs),
-            clipper: Clipper,
             dc_blocker: DCBlocker::default(),
             first_stage: FirstStage::PreAmp,
         };
@@ -179,8 +177,8 @@ impl Processor {
         // self.clipper.process(&mut oversampled_block_left);
         // self.clipper.process(&mut oversampled_block_right);
         // TODO: Notify output clipping if landed above 2/3
-        self.clipper.process(&mut buffer_left);
-        self.clipper.process(&mut buffer_right);
+        Clipper::process(&mut buffer_left);
+        Clipper::process(&mut buffer_right);
         // self.downsampler_left
         // .process(&oversampled_block_left, &mut buffer_left[..]);
         // self.downsampler_right

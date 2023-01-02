@@ -1,5 +1,3 @@
-use core::f32::consts::PI;
-
 #[allow(unused_imports)]
 use micromath::F32Ext as _;
 

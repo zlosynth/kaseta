@@ -1,6 +1,6 @@
 //! Dynamic range compressor.
 //!
-//! Based on the README of https://github.com/p-hlp/CTAGDRC.
+//! Based on the README of <https://github.com/p-hlp/CTAGDRC>.
 
 // TODO: For stereo, analyzing max on both sides, applying equally
 
