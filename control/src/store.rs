@@ -249,9 +249,12 @@ impl Store {
                 self.cache.tap_detector.reset();
                 self.cache.tapped_tempo = None;
             } else {
-                log::info!("SETTING TAPPED TEMPO");
-                *needs_save = true;
-                self.cache.tapped_tempo = Some(detected_tempo as f32 / 1000.0);
+                let tapped_tempo = detected_tempo as f32 / 1000.0;
+                if self.cache.tapped_tempo != Some(tapped_tempo) {
+                    log::info!("SETTING TAPPED TEMPO");
+                    *needs_save = true;
+                    self.cache.tapped_tempo = Some(tapped_tempo);
+                }
             }
         }
     }

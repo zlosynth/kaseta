@@ -21,7 +21,7 @@ mod app {
     use kaseta_firmware::system::inputs::Inputs;
     use kaseta_firmware::system::outputs::Outputs;
     use kaseta_firmware::system::randomizer::Randomizer;
-    // use kaseta_firmware::system::storage::Storage;
+    use kaseta_firmware::system::storage::Storage;
     use kaseta_firmware::system::System;
 
     const BLINKS: u8 = 1;
@@ -42,7 +42,7 @@ mod app {
         inputs: Inputs,
         outputs: Outputs,
         control: Store,
-        // storage: Storage,
+        storage: Storage,
         input_snapshot_producer: Producer<'static, InputSnapshot, 6>,
         input_snapshot_consumer: Consumer<'static, InputSnapshot, 6>,
         processor_attributes_producer: Producer<'static, ProcessorAttributes, 6>,
@@ -75,7 +75,7 @@ mod app {
         let mut audio = system.audio;
         let randomizer = system.randomizer;
         let mut inputs = system.inputs;
-        // let flash = system.flash;
+        let flash = system.flash;
         let outputs = system.outputs;
 
         #[allow(clippy::cast_precision_loss)]
@@ -91,7 +91,7 @@ mod app {
             Processor::new(SAMPLE_RATE as f32, &mut memory_manager)
         };
 
-        // let mut storage = Storage::new(flash);
+        let mut storage = Storage::new(flash);
 
         let control = {
             let save = if inputs.button.active_no_filter() {
@@ -100,8 +100,7 @@ mod app {
                 while inputs.button.active_no_filter() {}
                 save
             } else {
-                Save::default()
-                // storage.load_save()
+                storage.load_save()
             };
 
             defmt::info!("INITIALIZE WITH: {:?}", save);
@@ -131,7 +130,7 @@ mod app {
                 inputs,
                 outputs,
                 control,
-                // storage,
+                storage,
                 input_snapshot_producer,
                 input_snapshot_consumer,
                 processor_attributes_producer,
