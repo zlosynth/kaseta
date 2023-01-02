@@ -108,8 +108,15 @@ fn main() -> ! {
                 filter_feedback: false,
             });
             let mut input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
-            let mut output: [(f32, f32); BUFFER_SIZE] = [(0.0, 0.0); BUFFER_SIZE];
-            delay.process(&mut input, &mut output, &mut tone, &mut RandomStub);
+            let mut output_left: [f32; BUFFER_SIZE] = [0.0; BUFFER_SIZE];
+            let mut output_right: [f32; BUFFER_SIZE] = [0.0; BUFFER_SIZE];
+            delay.process(
+                &mut input,
+                &mut output_left,
+                &mut output_right,
+                &mut tone,
+                &mut RandomStub,
+            );
         }
     });
 

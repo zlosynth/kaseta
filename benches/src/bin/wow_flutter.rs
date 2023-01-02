@@ -59,6 +59,7 @@ fn main() -> ! {
     wow_flutter.set_attributes(Attributes {
         wow_depth: 1.0,
         flutter_depth: 1.0,
+        flutter_chance: 1.0,
     });
 
     let mut buffer: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
