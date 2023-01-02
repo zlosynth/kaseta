@@ -253,6 +253,7 @@ impl Store {
         }
         if self.cache.tapped_tempo.is_some() && self.input.speed.active() {
             log::info!("RESETTING TAPPED TEMPO");
+            *needs_save = true;
             self.cache.tap_detector.reset();
             self.cache.tapped_tempo = None;
         }
