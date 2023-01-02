@@ -327,7 +327,7 @@ dependencies = [
 
 [[package]]
 name = "kaseta-control"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "crc",
  "defmt",
@@ -339,7 +339,7 @@ dependencies = [
 
 [[package]]
 name = "kaseta-dsp"
-version = "0.5.0"
+version = "0.6.0"
 dependencies = [
  "defmt",
  "libm",

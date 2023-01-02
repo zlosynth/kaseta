@@ -7,7 +7,7 @@
   (title_block
     (title "Kaseta")
     (date "2022-11-07")
-    (rev "v0.5.0")
+    (rev "v0.6.0")
     (company "Petr Horáček")
     (comment 1 "petr@zlosynth.com")
     (comment 2 "https://github.com/zlosynth/kaseta")

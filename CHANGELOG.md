@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+## 0.6.0
+
 * Add more embedded tests.
 * Fix I/O bugs found while testing with a prototype.
 * Finalize user manual's front page.
