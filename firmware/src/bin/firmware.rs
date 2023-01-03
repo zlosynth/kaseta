@@ -114,7 +114,17 @@ mod app {
         )
     }
 
-    #[task(binds = DMA1_STR1, local = [processor, audio, randomizer, processor_attributes_consumer, processor_reaction_producer], priority = 4)]
+    #[task(
+        binds = DMA1_STR1,
+        local = [
+            processor,
+            audio,
+            randomizer,
+            processor_attributes_consumer,
+            processor_reaction_producer,
+        ],
+        priority = 4,
+    )]
     fn dsp(cx: dsp::Context) {
         let processor = cx.local.processor;
         let audio = cx.local.audio;
@@ -137,7 +147,13 @@ mod app {
             .unwrap();
     }
 
-    #[task(local = [inputs, input_snapshot_producer], priority = 2)]
+    #[task(
+        local = [
+            inputs,
+            input_snapshot_producer,
+        ],
+        priority = 2,
+    )]
     fn input(cx: input::Context) {
         // TODO: Reconcile CV every ms, pots every 4
         input::spawn_after(4.millis()).ok().unwrap();
@@ -146,13 +162,23 @@ mod app {
         let input_snapshot_producer = cx.local.input_snapshot_producer;
 
         inputs.sample();
+
         input_snapshot_producer
             .enqueue(inputs.snapshot())
             .ok()
             .unwrap();
     }
 
-    #[task(local = [control, outputs, input_snapshot_consumer, processor_attributes_producer, processor_reaction_consumer], priority = 3)]
+    #[task(
+        local = [
+            control,
+            outputs,
+            input_snapshot_consumer,
+            processor_attributes_producer,
+            processor_reaction_consumer,
+        ],
+        priority = 3,
+    )]
     fn control(cx: control::Context) {
         // TODO: Make sure this is using accurate clock: https://rtic.rs/1/book/en/by-example/monotonic.html
         control::spawn_after(1.millis()).ok().unwrap();
