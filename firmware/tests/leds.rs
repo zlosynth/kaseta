@@ -31,24 +31,4 @@ mod tests {
         sample_until_button_is_clicked(&mut system.inputs);
         defmt::info!("Click the button if all leds are lit up");
     }
-
-    #[test]
-    fn impulse_output_acts_as_a_trigger(system: &mut System) {
-        const MS: u32 = 480_000_000 / 1000;
-
-        defmt::info!("Connect a trigger destination to impulse output, and click the button");
-        sample_until_button_is_clicked(&mut system.inputs);
-
-        defmt::info!("Click the button and confirm that there are 4 regular triggers");
-        sample_until_button_is_clicked(&mut system.inputs);
-        for _ in 0..4 {
-            system.outputs.impulse.set(true);
-            cortex_m::asm::delay(10 * MS);
-            system.outputs.impulse.set(false);
-            cortex_m::asm::delay(990 * MS);
-        }
-
-        defmt::info!("Click the button to end this test");
-        sample_until_button_is_clicked(&mut system.inputs);
-    }
 }

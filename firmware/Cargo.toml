@@ -10,12 +10,28 @@ publish = false
 harness = false
 
 [[test]]
-name = "inputs"
+name = "button"
 harness = false # defined through defmt_test
 
 [[test]]
-name = "outputs"
-harness = false  # defined through defmt_test
+name = "cv"
+harness = false
+
+[[test]]
+name = "pots"
+harness = false
+
+[[test]]
+name = "switches"
+harness = false
+
+[[test]]
+name = "leds"
+harness = false
+
+[[test]]
+name = "impulse"
+harness = false
 
 [dependencies]
 kaseta-dsp = { path = "../dsp", features = ["defmt"] }
