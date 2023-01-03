@@ -8,6 +8,7 @@ mod app {
     use core::mem::MaybeUninit;
 
     use daisy::led::{Led, LedUser};
+    use daisy::sdram::SDRAM;
     use fugit::ExtU64;
     use heapless::spsc::{Consumer, Producer, Queue};
     use sirena::memory_manager::MemoryManager;
@@ -79,18 +80,7 @@ mod app {
         let flash = system.flash;
         let outputs = system.outputs;
 
-        #[allow(clippy::cast_precision_loss)]
-        let processor = {
-            let mut memory_manager = {
-                let ram_slice = unsafe {
-                    let ram_items = sdram.size() / core::mem::size_of::<MaybeUninit<u32>>();
-                    let ram_ptr = sdram.base_address.cast::<core::mem::MaybeUninit<u32>>();
-                    core::slice::from_raw_parts_mut(ram_ptr, ram_items)
-                };
-                MemoryManager::from(ram_slice)
-            };
-            Processor::new(SAMPLE_RATE as f32, &mut memory_manager)
-        };
+        let processor = initialize_dsp_processor(sdram);
 
         let mut storage = Storage::new(flash);
 
@@ -247,6 +237,26 @@ mod app {
             } else {
                 blink::spawn_after(time_off_long, true, BLINKS).unwrap();
             }
+        }
+    }
+
+    #[allow(clippy::cast_precision_loss)]
+    fn initialize_dsp_processor(sdram: SDRAM) -> Processor {
+        let mut memory_manager = initialize_memory_manager(sdram);
+        Processor::new(SAMPLE_RATE as f32, &mut memory_manager)
+    }
+
+    fn initialize_memory_manager(sdram: SDRAM) -> MemoryManager {
+        let ram_slice = convert_sdram_into_u32_slice(sdram);
+        MemoryManager::from(ram_slice)
+    }
+
+    #[allow(clippy::needless_pass_by_value)] // This function takes over the ownership of the memory
+    fn convert_sdram_into_u32_slice(sdram: SDRAM) -> &'static mut [MaybeUninit<u32>] {
+        unsafe {
+            let ram_items = sdram.size() / core::mem::size_of::<MaybeUninit<u32>>();
+            let ram_ptr = sdram.base_address.cast::<core::mem::MaybeUninit<u32>>();
+            core::slice::from_raw_parts_mut(ram_ptr, ram_items)
         }
     }
 }
