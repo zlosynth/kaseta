@@ -1,5 +1,6 @@
 #![no_main]
 #![no_std]
+#![allow(clippy::cast_precision_loss)]
 
 use defmt_rtt as _; // Global logger.
 use panic_probe as _;

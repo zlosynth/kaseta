@@ -126,7 +126,6 @@ impl Pots {
     }
 }
 
-#[allow(clippy::cast_precision_loss)]
 fn transpose_adc(sample: u32, slope: u32) -> f32 {
     let float = (slope as f32 - sample as f32) / slope as f32;
     // NOTE: Pots are connected to -5 to +5 V ADC while they span only

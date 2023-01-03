@@ -19,8 +19,7 @@ pub type BroadcasterPin = gpio::gpioc::PC13<gpio::Output>;
 impl Broadcaster {
     pub fn new(pin: BroadcasterPin) -> Self {
         let mut broadcaster = Self { position: 0, pin };
-        // Make sure to start in the first position.
-        broadcaster.tick();
+        broadcaster.tick(); // Make sure to start in the first position
         broadcaster
     }
 

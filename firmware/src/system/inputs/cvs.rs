@@ -1,4 +1,3 @@
-// TODO: Try to mark as many as possible to pub(crate)
 use nb::block;
 
 use crate::system::hal::adc::{Adc, Enabled};
@@ -68,7 +67,6 @@ impl CV {
     }
 }
 
-#[allow(clippy::cast_precision_loss)]
 fn transpose_adc(sample: u32, slope: u32) -> f32 {
     let min = -5.0;
     let span = 10.0;
