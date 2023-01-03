@@ -23,7 +23,7 @@ pub struct Store {
     pub wow_flut: Pot,
     pub speed: Pot,
     pub tone: Pot,
-    pub head: [StoreHead; 4],
+    pub head: [Head; 4],
     pub control: [Control; 4],
     pub switch: [Switch; 10],
     pub button: Button,
@@ -31,7 +31,7 @@ pub struct Store {
 
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct StoreHead {
+pub struct Head {
     pub position: Pot,
     pub volume: Pot,
     pub feedback: Pot,

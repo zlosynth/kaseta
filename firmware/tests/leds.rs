@@ -28,7 +28,7 @@ mod tests {
 
         system.outputs.leds.set_display_config([true; 8]);
         system.outputs.leds.set_impulse(true);
-        sample_until_button_is_clicked(&mut system.inputs);
         defmt::info!("Click the button if all leds are lit up");
+        sample_until_button_is_clicked(&mut system.inputs);
     }
 }

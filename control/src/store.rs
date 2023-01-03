@@ -13,7 +13,7 @@ use crate::cache::display::{ConfigurationScreen, Screen};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::cache::{Cache, Configuration};
 use crate::input::snapshot::Snapshot as InputSnapshot;
-use crate::input::store::{Store as Input, StoreHead as InputHead};
+use crate::input::store::{Head as InputHead, Store as Input};
 use crate::log;
 use crate::output::DesiredOutput;
 use crate::save::Save;
