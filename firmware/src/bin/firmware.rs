@@ -1,7 +1,7 @@
 #![no_main]
 #![no_std]
 
-use kaseta_firmware as _; // global logger + panicking-behavior
+use kaseta_firmware as _; // Global logger and panicking behavior.
 
 #[rtic::app(device = stm32h7xx_hal::pac, peripherals = true, dispatchers = [EXTI0, EXTI1, EXTI2])]
 mod app {
@@ -24,11 +24,12 @@ mod app {
     use kaseta_firmware::system::storage::Storage;
     use kaseta_firmware::system::System;
 
-    /// Single blinks on the PCB's LED signalize the first revision.
+    // Single blinks on the PCB's LED signalize the first revision.
     const BLINKS: u8 = 1;
 
+    // 1 kHz / 1 ms granularity for task scheduling.
     #[monotonic(binds = SysTick, default = true)]
-    type Mono = Systick<1000>; // 1 kHz / 1 ms granularity
+    type Mono = Systick<1000>;
 
     #[shared]
     struct Shared {}
