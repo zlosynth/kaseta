@@ -60,7 +60,7 @@ mod app {
         ]
     )]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
-        defmt::info!("START");
+        defmt::info!("Starting the firmware");
 
         let (input_snapshot_producer, input_snapshot_consumer) =
             cx.local.input_snapshot_queue.split();
@@ -96,7 +96,7 @@ mod app {
 
         let control = {
             let save = if inputs.button.active_no_filter() {
-                defmt::info!("RESET");
+                defmt::info!("Reset was initiated");
                 let save = Save::default();
                 while inputs.button.active_no_filter() {}
                 save
@@ -104,7 +104,6 @@ mod app {
                 storage.load_save()
             };
 
-            defmt::info!("INITIALIZE WITH: {:?}", save);
             let mut control = Store::from(save);
 
             let ms = system.frequency.to_kHz();
@@ -116,6 +115,8 @@ mod app {
 
             control
         };
+
+        defmt::info!("Initialization was completed, starting tasks");
 
         audio.spawn();
         blink::spawn(true, BLINKS).unwrap();

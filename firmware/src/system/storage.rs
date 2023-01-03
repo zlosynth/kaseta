@@ -21,7 +21,7 @@ impl Storage {
     }
 
     pub fn save_save(&mut self, save: Save) {
-        defmt::info!("SAVED {:?}: {:?}", self.version, save);
+        defmt::info!("Saving version={:?}: {:?}", self.version, save);
         let data = SaveStore::new(save, self.version).to_bytes();
         self.flash
             .write(sector_address(self.version as usize % NUM_SECTORS), &data);
@@ -50,11 +50,11 @@ impl Storage {
 
         if let Some(latest) = latest_store {
             let save = latest.save();
-            defmt::info!("LOADED {:?}: {:?}", latest.version(), save);
+            defmt::info!("Loaded save version={:?}: {:?}", latest.version(), save);
             self.version = latest.version() + 1;
             save
         } else {
-            defmt::info!("NO SAVE AVAILABLE");
+            defmt::info!("No valid save was found");
             Save::default()
         }
     }
