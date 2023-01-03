@@ -7,6 +7,7 @@ use kaseta_firmware as _; // Global logger and panicking behavior.
 mod app {
     use core::mem::MaybeUninit;
 
+    use daisy::hal::time::Hertz;
     use daisy::led::{Led, LedUser};
     use daisy::sdram::SDRAM;
     use fugit::ExtU64;
@@ -81,30 +82,8 @@ mod app {
         let outputs = system.outputs;
 
         let processor = initialize_dsp_processor(sdram);
-
         let mut storage = Storage::new(flash);
-
-        let control = {
-            let save = if inputs.button.active_no_filter() {
-                defmt::info!("Reset was initiated");
-                let save = Save::default();
-                while inputs.button.active_no_filter() {}
-                save
-            } else {
-                storage.load_save()
-            };
-
-            let mut control = Store::from(save);
-
-            let ms = system.frequency.to_kHz();
-            for _ in 0..50 {
-                inputs.sample();
-                control.warm_up(inputs.snapshot());
-                cortex_m::asm::delay(5 * ms);
-            }
-
-            control
-        };
+        let control = initialize_control_store(&mut inputs, &mut storage, system.frequency);
 
         defmt::info!("Initialization was completed, starting tasks");
 
@@ -257,6 +236,44 @@ mod app {
             let ram_items = sdram.size() / core::mem::size_of::<MaybeUninit<u32>>();
             let ram_ptr = sdram.base_address.cast::<core::mem::MaybeUninit<u32>>();
             core::slice::from_raw_parts_mut(ram_ptr, ram_items)
+        }
+    }
+
+    fn initialize_control_store(
+        inputs: &mut Inputs,
+        storage: &mut Storage,
+        frequency: Hertz,
+    ) -> Store {
+        let save = retrieve_save(inputs, storage);
+        let mut control = Store::from(save);
+        warm_up_control(&mut control, inputs, frequency);
+        control
+    }
+
+    fn retrieve_save(inputs: &mut Inputs, storage: &mut Storage) -> Save {
+        if is_button_held(inputs) {
+            defmt::info!("Reset was initiated");
+            wait_until_button_is_released(inputs);
+            Save::default()
+        } else {
+            storage.load_save()
+        }
+    }
+
+    fn is_button_held(inputs: &mut Inputs) -> bool {
+        inputs.button.active_no_filter()
+    }
+
+    fn wait_until_button_is_released(inputs: &mut Inputs) {
+        while inputs.button.active_no_filter() {}
+    }
+
+    fn warm_up_control(control: &mut Store, inputs: &mut Inputs, frequency: Hertz) {
+        let ms = frequency.to_kHz();
+        for _ in 0..50 {
+            inputs.sample();
+            control.warm_up(inputs.snapshot());
+            cortex_m::asm::delay(5 * ms);
         }
     }
 }
