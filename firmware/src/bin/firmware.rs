@@ -27,8 +27,6 @@ mod app {
     /// Single blinks on the PCB's LED signalize the first revision.
     const BLINKS: u8 = 1;
 
-    const MS: u32 = 480_000_000 / 1000;
-
     #[monotonic(binds = SysTick, default = true)]
     type Mono = Systick<1000>; // 1 kHz / 1 ms granularity
 
@@ -108,10 +106,11 @@ mod app {
             defmt::info!("INITIALIZE WITH: {:?}", save);
             let mut control = Store::from(save);
 
+            let ms = system.frequency.to_kHz();
             for _ in 0..50 {
                 inputs.sample();
                 control.warm_up(inputs.snapshot());
-                cortex_m::asm::delay(5 * MS);
+                cortex_m::asm::delay(5 * ms);
             }
 
             control

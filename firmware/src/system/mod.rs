@@ -14,6 +14,7 @@ use hal::delay::DelayFromCountDownTimer;
 use hal::pac::CorePeripherals;
 use hal::pac::Peripherals as DevicePeripherals;
 use hal::prelude::*;
+use hal::time::Hertz;
 use systick_monotonic::Systick;
 
 use self::audio::Audio;
@@ -32,6 +33,7 @@ pub struct System {
     pub audio: Audio,
     pub flash: Flash,
     pub randomizer: Randomizer,
+    pub frequency: Hertz,
 }
 
 impl System {
@@ -124,10 +126,9 @@ impl System {
             // report this issue, and fix it in my daisy library.
             impulse: pins.GPIO.PIN_B6.into_push_pull_output(),
         });
-        defmt::info!("BEFORE FLASH");
         let flash = daisy::board_split_flash!(ccdr, dp, pins);
-        defmt::info!("AFTER FLASH");
         let randomizer = Randomizer::new(dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks));
+        let frequency = ccdr.clocks.sys_ck();
 
         Self {
             mono,
@@ -138,6 +139,7 @@ impl System {
             audio,
             flash,
             randomizer,
+            frequency,
         }
     }
 }
