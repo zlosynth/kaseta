@@ -62,7 +62,7 @@ mod app {
         ]
     )]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
-        defmt::info!("Starting the firmware");
+        defmt::info!("Starting the firmware, initializing resources");
 
         let (input_snapshot_producer, input_snapshot_consumer) =
             cx.local.input_snapshot_queue.split();
@@ -201,18 +201,19 @@ mod app {
     }
 
     #[task(local = [status_led])]
-    fn blink(cx: blink::Context, on: bool, blinks: u8) {
+    fn blink(cx: blink::Context, on: bool, mut blinks_left: u8) {
         let time_on = 200.millis();
         let time_off_short = 200.millis();
         let time_off_long = 2.secs();
 
         if on {
             cx.local.status_led.on();
-            blink::spawn_after(time_on, false, blinks).unwrap();
+            blink::spawn_after(time_on, false, blinks_left).unwrap();
         } else {
             cx.local.status_led.off();
-            if blinks > 1 {
-                blink::spawn_after(time_off_short, true, blinks - 1).unwrap();
+            blinks_left -= 1;
+            if blinks_left > 0 {
+                blink::spawn_after(time_off_short, true, blinks_left).unwrap();
             } else {
                 blink::spawn_after(time_off_long, true, BLINKS).unwrap();
             }
