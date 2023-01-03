@@ -1,8 +1,6 @@
-// TODO: Try to optimize this by removing modulo, either with wrapping
-// using pow2 or just comparing with N - 1.
-
 use crate::system::hal::gpio;
 
+// XXX: If the length of this changes, it must be reflected in `mod_32`.
 const SEQUENCE: [bool; 32] = [
     true, true, false, true, false, false, true, false, true, true, true, false, true, false,
     false, false, false, false, false, true, true, false, true, false, true, true, true, false,
@@ -25,7 +23,7 @@ impl Broadcaster {
 
     pub fn tick(&mut self) {
         let value = SEQUENCE[self.position];
-        self.position = (self.position + 1) % SEQUENCE.len();
+        self.position = mod_32(self.position + 1);
         self.pin.set_state(value.into());
     }
 }
@@ -40,7 +38,7 @@ pub struct Detector {
 impl Detector {
     pub fn write(&mut self, value: bool) {
         self.queue[self.position] = value;
-        self.position = (self.position + 1) % SEQUENCE.len();
+        self.position = mod_32(self.position + 1);
     }
 
     pub fn detected(&mut self) -> bool {
@@ -55,4 +53,8 @@ impl Detector {
         }
         self.detected_cache
     }
+}
+
+fn mod_32(x: usize) -> usize {
+    x & 0b1_1111
 }
