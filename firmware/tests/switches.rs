@@ -1,7 +1,7 @@
 #![no_std]
 #![no_main]
 
-use kaseta_firmware as _; // memory layout + panic handler
+use kaseta_firmware as _; // Panic handler
 
 #[defmt_test::tests]
 mod tests {
@@ -13,7 +13,6 @@ mod tests {
     fn init() -> Inputs {
         let cp = cortex_m::Peripherals::take().unwrap();
         let dp = daisy::pac::Peripherals::take().unwrap();
-
         System::init(cp, dp).inputs
     }
 
