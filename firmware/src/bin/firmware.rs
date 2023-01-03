@@ -131,7 +131,6 @@ mod app {
             reaction = Some(processor.process(buffer, randomizer));
         });
 
-        // TODO: In production code, this should not fail - let _ =
         processor_reaction_producer
             .enqueue(reaction.unwrap())
             .ok()
@@ -147,7 +146,6 @@ mod app {
         let input_snapshot_producer = cx.local.input_snapshot_producer;
 
         inputs.sample();
-        // TODO: In production code, this should not fail - let _ =, or even use unchecked enqueue
         input_snapshot_producer
             .enqueue(inputs.snapshot())
             .ok()
@@ -172,10 +170,8 @@ mod app {
         if let Some(snapshot) = dequeue_last(input_snapshot_consumer) {
             let result = control.apply_input_snapshot(snapshot);
             if let Some(save) = result.save {
-                // TODO: In production code, this should not fail - let _ =
                 store::spawn(save).ok().unwrap();
             }
-            // TODO: In production code, this should not fail - let _ =, or even use unchecked enqueue
             processor_attributes_producer
                 .enqueue(result.dsp_attributes)
                 .ok()
