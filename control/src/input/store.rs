@@ -60,7 +60,6 @@ impl Store {
         self.button.update(snapshot.button);
     }
 
-    // TODO: Define function flattening all pots
     pub fn latest_pot_activity(&self) -> u32 {
         [
             self.pre_amp.last_active,
