@@ -122,11 +122,7 @@ mod app {
         let processor_attributes_consumer = cx.local.processor_attributes_consumer;
         let processor_reaction_producer = cx.local.processor_reaction_producer;
 
-        let mut last_attributes = None;
-        while let Some(attributes) = processor_attributes_consumer.dequeue() {
-            last_attributes = Some(attributes);
-        }
-        if let Some(attributes) = last_attributes {
+        if let Some(attributes) = dequeue_last(processor_attributes_consumer) {
             processor.set_attributes(attributes);
         }
 
@@ -173,11 +169,7 @@ mod app {
             control.apply_dsp_reaction(reaction);
         }
 
-        let mut last_snapshot = None;
-        while let Some(snapshot) = input_snapshot_consumer.dequeue() {
-            last_snapshot = Some(snapshot);
-        }
-        if let Some(snapshot) = last_snapshot {
+        if let Some(snapshot) = dequeue_last(input_snapshot_consumer) {
             let result = control.apply_input_snapshot(snapshot);
             if let Some(save) = result.save {
                 // TODO: In production code, this should not fail - let _ =
@@ -276,5 +268,13 @@ mod app {
             control.warm_up(inputs.snapshot());
             cortex_m::asm::delay(5 * ms);
         }
+    }
+
+    fn dequeue_last<T, const N: usize>(consumer: &mut Consumer<'static, T, N>) -> Option<T> {
+        let mut last_item = None;
+        while let Some(attributes) = consumer.dequeue() {
+            last_item = Some(attributes);
+        }
+        last_item
     }
 }
