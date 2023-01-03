@@ -24,7 +24,9 @@ mod app {
     use kaseta_firmware::system::storage::Storage;
     use kaseta_firmware::system::System;
 
+    /// Single blinks on the PCB's LED signalize the first revision.
     const BLINKS: u8 = 1;
+
     const MS: u32 = 480_000_000 / 1000;
 
     #[monotonic(binds = SysTick, default = true)]
