@@ -10,8 +10,6 @@
 //! * Using RK2 instead of RK4: 356607
 //! * Remove attribute smoothening: 301686
 //! * Remove signal abstraction: 63257
-//!
-//! TODO: Unroll loops
 
 #![no_main]
 #![no_std]

@@ -80,8 +80,6 @@ fn main() -> ! {
                         feedback: 0.3,
                         volume: 0.8,
                         pan: 0.5,
-                        // TODO FIXME: Values of rewind speed don't make sense,
-                        // I would expect it to be 0.5, not 0.25.
                         rewind_backward: Some(RELATIVE_SPEED / 2.0),
                         rewind_forward: Some(RELATIVE_SPEED / 2.0),
                     },
