@@ -7,6 +7,7 @@ const SEQUENCE: [bool; 32] = [
     false, false, false, true,
 ];
 
+#[derive(defmt::Format)]
 pub struct Broadcaster {
     position: usize,
     pin: BroadcasterPin,
@@ -28,7 +29,7 @@ impl Broadcaster {
     }
 }
 
-#[derive(Default)]
+#[derive(Default, defmt::Format)]
 pub struct Detector {
     position: usize,
     queue: [bool; SEQUENCE.len()],

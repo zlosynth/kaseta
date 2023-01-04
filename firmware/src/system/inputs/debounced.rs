@@ -1,5 +1,4 @@
-#[derive(Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug, Eq, PartialEq, defmt::Format)]
 pub struct Debounced<const N: usize> {
     debounce_filter: DebounceBuffer<N>,
     active: bool,
@@ -20,8 +19,7 @@ impl<const N: usize> Debounced<N> {
     }
 }
 
-#[derive(Debug, Eq, PartialEq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug, Eq, PartialEq, defmt::Format)]
 pub struct DebounceBuffer<const N: usize> {
     buffer: [bool; N],
     pointer: usize,

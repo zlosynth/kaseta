@@ -48,6 +48,7 @@ stm32h7xx-hal = { version = "0.12", features = [
   "stm32h750v",
   "rt",
   "revision_v",
+  "defmt",
 ] }
 daisy = { version = "0.7.3", features = ["patch_sm"] }
 fugit = "0.3"

@@ -700,6 +700,7 @@ dependencies = [
  "bare-metal 1.0.0",
  "cast",
  "cortex-m",
+ "defmt",
  "embedded-dma",
  "embedded-hal",
  "fugit",

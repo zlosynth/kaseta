@@ -1,8 +1,7 @@
 use super::debounced::Debounced;
 use crate::system::hal::gpio;
 
-#[derive(Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+#[derive(Debug, defmt::Format)]
 pub struct Button {
     pin: Pin,
     debounced: Debounced<4>,

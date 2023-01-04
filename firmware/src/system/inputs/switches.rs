@@ -2,16 +2,19 @@ use crate::system::hal::gpio;
 
 use super::debounced::Debounced;
 
+#[derive(defmt::Format)]
 pub struct Switches {
     pub switch: [Switch; 10],
     pins: Pins,
 }
 
+#[derive(defmt::Format)]
 pub struct Switch {
     debouncer: Debounced<4>,
     pub value: bool,
 }
 
+#[derive(defmt::Format)]
 pub struct Pins {
     pub switch_1: Switch1Pin,
     pub multiplexed_switches_2_to_9: MultiplexedSwitches2To9Pin,

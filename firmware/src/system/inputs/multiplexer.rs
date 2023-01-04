@@ -1,9 +1,11 @@
 use crate::system::hal::gpio;
 
+#[derive(defmt::Format)]
 pub struct Multiplexer {
     pins: Pins,
 }
 
+#[derive(defmt::Format)]
 pub struct Pins {
     pub address_a: AddressAPin,
     pub address_b: AddressBPin,

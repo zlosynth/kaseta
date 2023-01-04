@@ -6,17 +6,19 @@ use crate::system::hal::pac::{ADC1, ADC2};
 
 use super::probe::Detector as ProbeDetector;
 
+#[derive(defmt::Format)]
 pub struct CVs {
     pub cv: [CV; 4],
     pins: Pins,
 }
 
-#[derive(Default)]
+#[derive(Default, defmt::Format)]
 pub struct CV {
     pub value: Option<f32>,
     probe: ProbeDetector,
 }
 
+#[derive(defmt::Format)]
 pub struct Pins {
     pub cv_1: CV1Pin,
     pub cv_2: CV2Pin,

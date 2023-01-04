@@ -4,6 +4,7 @@ use crate::system::hal::adc::{Adc, Enabled};
 use crate::system::hal::gpio;
 use crate::system::hal::pac::{ADC1, ADC2};
 
+#[derive(defmt::Format)]
 pub struct Pots {
     pub pre_amp: f32,
     pub drive: f32,
@@ -16,7 +17,7 @@ pub struct Pots {
     pub pins: Pins,
 }
 
-#[derive(Default)]
+#[derive(Default, defmt::Format)]
 pub struct Head {
     pub position: f32,
     pub volume: f32,
@@ -24,6 +25,7 @@ pub struct Head {
     pub pan: f32,
 }
 
+#[derive(defmt::Format)]
 pub struct Pins {
     pub multiplexer_1: Multiplexer1Pin,
     pub multiplexer_2: Multiplexer2Pin,
