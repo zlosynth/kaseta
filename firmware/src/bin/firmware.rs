@@ -179,7 +179,6 @@ mod app {
         priority = 3,
     )]
     fn control(cx: control::Context) {
-        // TODO: Make sure this is using accurate clock: https://rtic.rs/1/book/en/by-example/monotonic.html
         control::spawn_after(1.millis()).ok().unwrap();
 
         let control = cx.local.control;
