@@ -34,10 +34,6 @@ lto = true
 opt-level = 3
 
 [[bin]]
-name = "hello"
-harness = false
-
-[[bin]]
 name = "oversampling"
 harness = false
 
