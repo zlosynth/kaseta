@@ -31,8 +31,9 @@ pub use self::switches::Pins as SwitchesPins;
 use self::switches::Switches;
 
 // To avoid crosstalk, it is necessary to let multiplexer settle after
-// the source was changed.
-const STABILIZATION_TICKS: u8 = 3;
+// the source was changed. With 3 ticks crosstalk gets down to 0.5 %,
+// with 4 ticks it is not measured.
+const STABILIZATION_TICKS: u8 = 4;
 
 pub struct Inputs {
     pub cvs: CVs,
