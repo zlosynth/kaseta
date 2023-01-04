@@ -155,8 +155,7 @@ mod app {
         priority = 2,
     )]
     fn input(cx: input::Context) {
-        // TODO: Reconcile CV every ms, pots every 4
-        input::spawn_after(4.millis()).ok().unwrap();
+        input::spawn_after(1.millis()).ok().unwrap();
 
         let inputs = cx.local.inputs;
         let input_snapshot_producer = cx.local.input_snapshot_producer;

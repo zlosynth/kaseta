@@ -29,4 +29,10 @@ impl Multiplexer {
         let third_bit = (position & 0b100 != 0).into();
         self.pins.address_c.set_state(third_bit);
     }
+
+    pub fn next_position(mut position: u8) -> u8 {
+        position += 1;
+        position &= 0b111;
+        position
+    }
 }

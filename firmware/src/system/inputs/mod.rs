@@ -30,6 +30,10 @@ use self::probe::{Broadcaster as ProbeBroadcaster, BroadcasterPin as ProbeBroadc
 pub use self::switches::Pins as SwitchesPins;
 use self::switches::Switches;
 
+// To avoid crosstalk, it is necessary to let multiplexer settle after
+// the source was changed.
+const STABILIZATION_TICKS: u8 = 3;
+
 pub struct Inputs {
     pub cvs: CVs,
     pub pots: Pots,
@@ -40,6 +44,7 @@ pub struct Inputs {
     adc_1: Adc<ADC1, Enabled>,
     adc_2: Adc<ADC2, Enabled>,
     cycle: u8,
+    stabilization: u8,
 }
 
 pub struct Config {
@@ -65,19 +70,30 @@ impl Inputs {
             adc_1: config.adc_1,
             adc_2: config.adc_2,
             cycle: 0,
+            stabilization: 0,
         }
     }
 
     pub fn sample(&mut self) {
-        self.switches.sample(self.cycle);
-        self.pots
-            .sample(self.cycle, &mut self.adc_1, &mut self.adc_2);
         self.cvs.sample(&mut self.adc_1, &mut self.adc_2);
         self.button.sample();
-        self.cycle = if self.cycle == 7 { 0 } else { self.cycle + 1 };
+
+        self.stabilization += 1;
+        if self.stabilization == STABILIZATION_TICKS {
+            self.stabilization = 0;
+
+            self.switches.sample(self.cycle);
+            self.pots
+                .sample(self.cycle, &mut self.adc_1, &mut self.adc_2);
+
+            // XXX: Selection happens at the end so the signal gets a chance
+            // to propagate to mux before the next reading cycle.
+            self.cycle = Multiplexer::next_position(self.cycle);
+            self.multiplexer.select(self.cycle);
+        }
+
         // XXX: Selection happens at the end so the signal gets a chance
-        // to propagate to mux before the next reading cycle.
-        self.multiplexer.select(self.cycle);
+        // to propagate to probe detectors before the next reading cycle.
         self.probe.tick();
     }
 
@@ -88,18 +104,18 @@ impl Inputs {
             control[i] = cv.value;
         }
 
-        let mut switches = [false; 10];
+        let mut switch = [false; 10];
         for (i, sw) in self.switches.switch.iter().enumerate() {
-            switches[i] = sw.value;
+            switch[i] = sw.value;
         }
 
-        let mut heads = [SnapshotHead::default(); 4];
-        for (i, head) in self.pots.head.iter().enumerate() {
-            heads[i] = SnapshotHead {
-                position: head.position,
-                volume: head.volume,
-                feedback: head.feedback,
-                pan: head.pan,
+        let mut head = [SnapshotHead::default(); 4];
+        for (i, h) in self.pots.head.iter().enumerate() {
+            head[i] = SnapshotHead {
+                position: h.position,
+                volume: h.volume,
+                feedback: h.feedback,
+                pan: h.pan,
             };
         }
 
@@ -111,9 +127,9 @@ impl Inputs {
             wow_flut: self.pots.wow_flut,
             speed: self.pots.speed,
             tone: self.pots.tone,
-            head: heads,
+            head,
             control,
-            switch: switches,
+            switch,
             button: self.button.active,
         }
     }
