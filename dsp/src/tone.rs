@@ -50,7 +50,6 @@ impl Tone {
         }
     }
 
-    // TODO: Move this to the control module
     pub fn set_attributes(&mut self, attributes: Attributes) {
         let max_cutoff = 6000.0;
         self.position = attributes.tone;
