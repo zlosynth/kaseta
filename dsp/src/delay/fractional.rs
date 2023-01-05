@@ -1,206 +1,7 @@
 #[allow(unused_imports)]
 use micromath::F32Ext as _;
 
-use crate::math;
-use crate::random::Random;
 use crate::ring_buffer::RingBuffer;
-use crate::tone::Tone;
-use sirena::memory_manager::MemoryManager;
-
-const MAX_LENGTH: f32 = 2.0 * 60.0;
-
-#[derive(Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Delay {
-    sample_rate: f32,
-    buffer: RingBuffer,
-    heads: [Head; 4],
-    length: f32,
-    impulse_cursor: f32,
-    random_impulse: bool,
-    filter_feedback: bool,
-}
-
-#[derive(Default, Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-struct Head {
-    reader: FractionalDelay,
-    feedback: f32,
-    volume: f32,
-    pan: f32,
-}
-
-#[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Attributes {
-    pub length: f32,
-    pub heads: [HeadAttributes; 4],
-    pub reset_impulse: bool,
-    pub random_impulse: bool,
-    pub filter_feedback: bool,
-}
-
-#[derive(Clone, Copy, Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct HeadAttributes {
-    pub position: f32,
-    pub feedback: f32,
-    pub volume: f32,
-    pub pan: f32,
-    pub rewind_forward: Option<f32>,
-    pub rewind_backward: Option<f32>,
-}
-
-#[derive(Default, Clone, Copy, Debug)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Reaction {
-    pub impulse: bool,
-}
-
-impl Delay {
-    /// # Panics
-    ///
-    /// Panics if there is not enough space in the memory manager to allocate a
-    /// buffer of `MAX_LENGTH`.
-    pub fn new(sample_rate: f32, memory_manager: &mut MemoryManager) -> Self {
-        Self {
-            sample_rate,
-            buffer: RingBuffer::from(
-                memory_manager
-                    .allocate(math::upper_power_of_two(
-                        (sample_rate * MAX_LENGTH) as usize,
-                    ))
-                    .unwrap(),
-            ),
-            heads: [
-                Head::default(),
-                Head::default(),
-                Head::default(),
-                Head::default(),
-            ],
-            length: 0.0,
-            impulse_cursor: 0.0,
-            random_impulse: false,
-            filter_feedback: false,
-        }
-    }
-
-    // IN                     (1) write samples from the input
-    // |
-    // +--------------------+ (3) feed read samples back to the write
-    // W                    |
-    // ===================  |
-    // R   R     R      R   | (2) read samples from the tape
-    // +---+-----+------+---+
-    // |
-    // OUT                    (4) mix all read samples together and play them back
-    pub fn process(
-        &mut self,
-        input_buffer: &mut [f32],
-        output_buffer_left: &mut [f32],
-        output_buffer_right: &mut [f32],
-        tone: &mut Tone,
-        random: &mut impl Random,
-    ) -> Reaction {
-        if !self.filter_feedback {
-            tone.process(input_buffer);
-        }
-
-        for x in input_buffer.iter() {
-            self.buffer.write(*x);
-        }
-
-        let buffer_len = output_buffer_left.len();
-        for (i, x) in output_buffer_left
-            .iter_mut()
-            .zip(output_buffer_right)
-            .enumerate()
-        {
-            // NOTE: Must read from back, so heads can move from old to new
-            let age = buffer_len - i;
-
-            let mut feedback: f32 = self
-                .heads
-                .iter_mut()
-                .map(|head| head.reader.read(&self.buffer, age) * head.feedback)
-                .sum();
-            if self.filter_feedback {
-                feedback = tone.tick(feedback);
-            }
-            *self.buffer.peek_mut(age) += feedback;
-
-            // NOTE: Must read again now when feedback was written back
-            let mut left = 0.0;
-            let mut right = 0.0;
-            for head in &mut self.heads {
-                let value = head.reader.read(&self.buffer, age);
-                let amplified = value * head.volume;
-                left += amplified * (1.0 - head.pan);
-                right += amplified * head.pan;
-            }
-
-            *x.0 = left;
-            *x.1 = right;
-        }
-
-        // NOTE: In case the length gets set to 0, don't send any impulse.
-        if self.length < f32::EPSILON {
-            return Reaction { impulse: false };
-        }
-
-        let initial_impulse_cursor = self.impulse_cursor;
-        self.impulse_cursor += input_buffer.len() as f32 / self.sample_rate;
-        while self.impulse_cursor > self.length {
-            self.impulse_cursor -= self.length;
-        }
-
-        let mut impulse = false;
-        for head in &self.heads {
-            if head.volume < 0.01 {
-                continue;
-            }
-            let impulse_position = head.reader.impulse_position() / self.sample_rate;
-            let head_impulse = if initial_impulse_cursor > self.impulse_cursor {
-                impulse_position >= initial_impulse_cursor || impulse_position < self.impulse_cursor
-            } else {
-                initial_impulse_cursor <= impulse_position && impulse_position < self.impulse_cursor
-            };
-            let chance = if self.random_impulse {
-                dice_to_bool(random.normal(), head.volume)
-            } else {
-                true
-            };
-            impulse |= head_impulse && chance;
-        }
-
-        Reaction { impulse }
-    }
-
-    pub fn set_attributes(&mut self, attributes: Attributes) {
-        if attributes.reset_impulse {
-            self.impulse_cursor = 0.0;
-        }
-        self.random_impulse = attributes.random_impulse;
-        self.filter_feedback = attributes.filter_feedback;
-
-        self.length = attributes.length;
-        for (i, head) in self.heads.iter_mut().enumerate() {
-            head.feedback = attributes.heads[i].feedback;
-            head.volume = attributes.heads[i].volume;
-            head.pan = attributes.heads[i].pan;
-            head.reader.set_attributes(&FractionalDelayAttributes {
-                position: self.length * attributes.heads[i].position * self.sample_rate,
-                rewind_forward: attributes.heads[i].rewind_forward,
-                rewind_backward: attributes.heads[i].rewind_backward,
-                blend_steps: 3200, // TODO: Make sure it is never higher than buffer size passed to process, it must be also dividable by buffer size
-            });
-        }
-    }
-}
-
-fn dice_to_bool(random: f32, chance: f32) -> bool {
-    random + chance > 0.99
-}
 
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -212,14 +13,13 @@ pub struct FractionalDelay {
 impl FractionalDelay {
     #[must_use]
     pub fn impulse_position(&self) -> f32 {
-        // TODO: Use the target immediatelly with blend
         self.pointer
     }
 }
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum State {
+enum State {
     Rewinding(StateRewinding),
     Blending(StateBlending),
     Stable,
@@ -233,7 +33,7 @@ impl Default for State {
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct StateRewinding {
+struct StateRewinding {
     pub relative_speed: f32,
     pub target_position: f32,
     pub rewind_speed: f32,
@@ -241,7 +41,7 @@ pub struct StateRewinding {
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct StateBlending {
+struct StateBlending {
     pub target: f32,
     pub current_volume: f32,
     pub target_volume: f32,
@@ -418,7 +218,7 @@ impl F32Ext for f32 {
     }
 
     fn is_zero(&self) -> bool {
-        // NOTE: In terms of sample distance, this is nothing.
+        // NOTE: In terms of a single sample distance, this is nothing.
         self.abs() < 0.001
     }
 
