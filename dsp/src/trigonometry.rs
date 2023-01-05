@@ -9,7 +9,7 @@ use micromath::F32Ext as _;
 // for i in range(256):
 //     print("{},".format(math.sin((i / 256) * 2 * math.pi)))
 // ```
-const TABLE: [f32; 256] = [
+const COS: [f32; 256] = [
     0.0,
     0.024_541_229,
     0.049_067_676,
@@ -271,8 +271,8 @@ const TABLE: [f32; 256] = [
 pub fn cos(mut phase: f32) -> f32 {
     phase += 0.25;
     phase *= 256.0;
-    let a = TABLE[(phase as usize) % 256];
-    let b = TABLE[(phase as usize + 1) % 256];
+    let a = COS[(phase as usize) % 256];
+    let b = COS[(phase as usize + 1) % 256];
     a + (b - a) * phase.fract()
 }
 
