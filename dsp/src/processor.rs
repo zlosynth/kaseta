@@ -6,7 +6,7 @@ use crate::clipper::Clipper;
 use crate::compressor::Compressor;
 use crate::dc_blocker::DCBlocker;
 use crate::delay::{
-    Attributes as DelayAttributes, Delay, HeadAttributes as DelayHeadAttributes,
+    Attributes as DelayAttributes, Delay, FilterPlacement, HeadAttributes as DelayHeadAttributes,
     Reaction as DelayReaction,
 };
 use crate::hysteresis::{
@@ -24,12 +24,6 @@ use crate::wow_flutter::{Attributes as WowFlutterAttributes, WowFlutter};
 pub struct Processor {
     upsampler: Upsampler4,
     downsampler: Downsampler4,
-    //
-    // upsampler_left: Upsampler4,
-    // downsampler_left: Downsampler4,
-    // upsampler_right: Upsampler4,
-    // downsampler_right: Downsampler4,
-    //
     pre_amp: PreAmp,
     oscillator: Oscillator,
     hysteresis: Hysteresis,
@@ -81,7 +75,6 @@ pub struct AttributesHead {
     pub pan: f32,
 }
 
-// TODO: Just re-use and re-export component's attributes
 #[derive(Default, Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Reaction {
@@ -96,12 +89,6 @@ impl Processor {
         let mut uninitialized_processor = Self {
             upsampler: Upsampler4::new_4(memory_manager),
             downsampler: Downsampler4::new_4(memory_manager),
-            //
-            // upsampler_left: Upsampler4::new_4(memory_manager),
-            // downsampler_left: Downsampler4::new_4(memory_manager),
-            // upsampler_right: Upsampler4::new_4(memory_manager),
-            // downsampler_right: Downsampler4::new_4(memory_manager),
-            //
             pre_amp: PreAmp::new(),
             oscillator: Oscillator::new(fs),
             hysteresis: Hysteresis::new(fs),
@@ -122,10 +109,7 @@ impl Processor {
     pub fn process(&mut self, block: &mut [(f32, f32); 32], random: &mut impl Random) -> Reaction {
         let mut reaction = Reaction::default();
 
-        // self.dc_blocker.process(&mut block[..]);
-
         let mut buffer = [0.0; 32];
-
         match self.first_stage {
             FirstStage::PreAmp => {
                 for (i, x) in block.iter().enumerate() {
@@ -148,7 +132,6 @@ impl Processor {
         self.downsampler
             .process(&oversampled_block, &mut buffer[..]);
 
-        // TODO: Populate two buffers left and right
         let mut buffer_left = [0.0; 32];
         let mut buffer_right = [0.0; 32];
         self.delay
@@ -161,31 +144,10 @@ impl Processor {
             )
             .notify(&mut reaction);
 
-        // TODO: Oversample those two buffers
-
-        // TODO: Apply dc blocker
         self.dc_blocker.process(&mut buffer_left, &mut buffer_right);
-
         self.compressor.process(&mut buffer_left, &mut buffer_right);
-
-        // let mut oversampled_block_left = [0.0; 32 * 4];
-        // let mut oversampled_block_right = [0.0; 32 * 4];
-        // self.upsampler_left
-        // .process(&buffer_left, &mut oversampled_block_left);
-        // self.upsampler_left
-        // .process(&buffer_right, &mut oversampled_block_right);
-        // self.clipper.process(&mut oversampled_block_left);
-        // self.clipper.process(&mut oversampled_block_right);
-        // TODO: Notify output clipping if landed above 2/3
         Clipper::process(&mut buffer_left);
         Clipper::process(&mut buffer_right);
-        // self.downsampler_left
-        // .process(&oversampled_block_left, &mut buffer_left[..]);
-        // self.downsampler_right
-        // .process(&oversampled_block_right, &mut buffer_right[..]);
-
-        // TODO: Enabling this causes instability on higher pre-amps
-        // self.dc_blocker.process(&mut block[..]);
 
         for (i, (l, r)) in block.iter_mut().enumerate() {
             *l = buffer_left[i];
@@ -265,8 +227,6 @@ impl From<Attributes> for DelayAttributes {
                     volume: other.head[0].volume,
                     feedback: other.head[0].feedback,
                     pan: other.head[0].pan,
-                    // rewind_forward: other.rewind.then_some(-0.25),
-                    // rewind_backward: other.rewind.then_some(0.25),
                     rewind_forward: other.rewind.then_some(other.rewind_speed[0].1),
                     rewind_backward: other.rewind.then_some(other.rewind_speed[0].0),
                 },
@@ -275,9 +235,6 @@ impl From<Attributes> for DelayAttributes {
                     volume: other.head[1].volume,
                     feedback: other.head[1].feedback,
                     pan: other.head[1].pan,
-                    // NOTE: Slightly detuned (not 0.125) to avoid ticking when crossing samples (?)
-                    // rewind_forward: other.rewind.then_some(-0.124),
-                    // rewind_backward: other.rewind.then_some(0.124),
                     rewind_forward: other.rewind.then_some(other.rewind_speed[1].1),
                     rewind_backward: other.rewind.then_some(other.rewind_speed[1].0),
                 },
@@ -286,8 +243,6 @@ impl From<Attributes> for DelayAttributes {
                     volume: other.head[2].volume,
                     feedback: other.head[2].feedback,
                     pan: other.head[2].pan,
-                    // rewind_forward: other.rewind.then_some(-1.0),
-                    // rewind_backward: other.rewind.then_some(2.0),
                     rewind_forward: other.rewind.then_some(other.rewind_speed[2].1),
                     rewind_backward: other.rewind.then_some(other.rewind_speed[2].0),
                 },
@@ -296,15 +251,17 @@ impl From<Attributes> for DelayAttributes {
                     volume: other.head[3].volume,
                     feedback: other.head[3].feedback,
                     pan: other.head[3].pan,
-                    // rewind_forward: other.rewind.then_some(-0.124),
-                    // rewind_backward: other.rewind.then_some(0.124),
                     rewind_forward: other.rewind.then_some(other.rewind_speed[3].1),
                     rewind_backward: other.rewind.then_some(other.rewind_speed[3].0),
                 },
             ],
             reset_impulse: other.reset_impulse,
             random_impulse: other.random_impulse,
-            filter_feedback: other.filter_feedback,
+            filter_placement: if other.filter_feedback {
+                FilterPlacement::Feedback
+            } else {
+                FilterPlacement::Volume
+            },
         }
     }
 }
