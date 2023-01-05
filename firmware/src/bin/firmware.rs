@@ -29,6 +29,11 @@ mod app {
     // Single blinks on the PCB's LED signalize the first revision.
     const BLINKS: u8 = 1;
 
+    // Slice for shorter buffers that will be stored in the main memory.
+    #[link_section = ".sram"]
+    static mut MEMORY: [MaybeUninit<u32>; 96 * 1024] =
+        unsafe { MaybeUninit::uninit().assume_init() };
+
     // 1 kHz / 1 ms granularity for task scheduling.
     #[monotonic(binds = SysTick, default = true)]
     type Mono = Systick<1000>;
@@ -234,11 +239,12 @@ mod app {
 
     #[allow(clippy::cast_precision_loss)]
     fn initialize_dsp_processor(sdram: SDRAM) -> Processor {
-        let mut memory_manager = initialize_memory_manager(sdram);
-        Processor::new(SAMPLE_RATE as f32, &mut memory_manager)
+        let mut sdram_manager = initialize_sdram_manager(sdram);
+        let mut stack_manager = initialize_stack_manager();
+        Processor::new(SAMPLE_RATE as f32, &mut stack_manager, &mut sdram_manager)
     }
 
-    fn initialize_memory_manager(sdram: SDRAM) -> MemoryManager {
+    fn initialize_sdram_manager(sdram: SDRAM) -> MemoryManager {
         let ram_slice = convert_sdram_into_u32_slice(sdram);
         MemoryManager::from(ram_slice)
     }
@@ -250,6 +256,10 @@ mod app {
             let ram_ptr = sdram.base_address.cast::<core::mem::MaybeUninit<u32>>();
             core::slice::from_raw_parts_mut(ram_ptr, ram_items)
         }
+    }
+
+    fn initialize_stack_manager() -> MemoryManager {
+        MemoryManager::from(unsafe { &mut MEMORY[..] })
     }
 
     fn initialize_control_store(

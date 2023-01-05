@@ -5,7 +5,7 @@ use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
 // TODO: Rename to speed and revert it 1/X
-const LENGTH_LONG_RANGE: (f32, f32) = (0.02, 2.0 * 60.0);
+const LENGTH_LONG_RANGE: (f32, f32) = (0.02, 5.0 * 60.0);
 const LENGTH_SHORT_RANGE: (f32, f32) = (1.0 / 400.0, 1.0);
 
 impl Store {

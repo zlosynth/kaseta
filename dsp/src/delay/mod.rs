@@ -14,11 +14,8 @@ use self::fractional::{FractionalDelay, FractionalDelayAttributes};
 
 // Assuming sample rate of 48 kHz, 64 MB memory and f32 samples of 4 bytes,
 // the module should hold up to 349 seconds of audio. Rounding down to whole
-// minutes to make up space for other uses of the memory.
-// TODO: Make it 5 minutes
-// XXX: This does not fit since it gets wrapped up to the closest power of two
-// XXX: TODO: Try to move the other uses of sdram to regular memory, so SDRAM can be fully utilized for delay
-const MAX_LENGTH: f32 = 2.0 * 60.0;
+// minutes.
+const MAX_LENGTH: f32 = 5.0 * 60.0;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]

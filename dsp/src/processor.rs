@@ -85,15 +85,19 @@ pub struct Reaction {
 impl Processor {
     #[allow(clippy::let_and_return)]
     #[must_use]
-    pub fn new(fs: f32, memory_manager: &mut MemoryManager) -> Self {
+    pub fn new(
+        fs: f32,
+        stack_manager: &mut MemoryManager,
+        sdram_manager: &mut MemoryManager,
+    ) -> Self {
         let mut uninitialized_processor = Self {
-            upsampler: Upsampler4::new_4(memory_manager),
-            downsampler: Downsampler4::new_4(memory_manager),
+            upsampler: Upsampler4::new_4(stack_manager),
+            downsampler: Downsampler4::new_4(stack_manager),
             pre_amp: PreAmp::new(),
             oscillator: Oscillator::new(fs),
             hysteresis: Hysteresis::new(fs),
-            wow_flutter: WowFlutter::new(fs as u32, memory_manager),
-            delay: Delay::new(fs, memory_manager),
+            wow_flutter: WowFlutter::new(fs as u32, stack_manager),
+            delay: Delay::new(fs, sdram_manager),
             tone: Tone::new(fs as u32),
             compressor: Compressor::new(fs),
             dc_blocker: DCBlocker::default(),

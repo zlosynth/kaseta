@@ -6,6 +6,7 @@ backwards compatibility.
 
 ## Unreleased
 
+* Extend maximum delay length to 5 minutes.
 * Save after tapped tempo is overridden.
 
 ## 0.6.0
