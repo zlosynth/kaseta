@@ -1,3 +1,6 @@
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 use core::f32::consts::PI;
 
 const SUB_COEFFICIENT: f32 = 0.499;
@@ -18,6 +21,7 @@ pub struct Attributes {
 }
 
 impl Oscillator {
+    #[must_use]
     pub fn new(sample_rate: f32) -> Self {
         Self {
             sample_rate,
@@ -29,9 +33,8 @@ impl Oscillator {
 
     pub fn populate(&mut self, buffer: &mut [f32]) {
         for x in buffer.iter_mut() {
-            // TODO: Compare performance with micromath
-            let x_base = libm::sinf(self.phase_base * 2.0 * PI);
-            let x_sub = libm::sinf(self.phase_sub * 2.0 * PI);
+            let x_base = f32::sin(self.phase_base * 2.0 * PI);
+            let x_sub = f32::sin(self.phase_sub * 2.0 * PI);
             *x = (x_base + x_sub) * 1.0;
 
             let step = self.frequency / self.sample_rate;

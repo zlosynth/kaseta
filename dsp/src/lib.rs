@@ -20,6 +20,7 @@ pub mod random;
 // Public for the sake of benchmarks
 pub mod delay;
 pub mod hysteresis;
+pub mod oscillator;
 pub mod oversampling;
 pub mod tone;
 pub mod wow_flutter;
@@ -28,7 +29,6 @@ mod clipper;
 mod compressor;
 mod dc_blocker;
 mod math;
-mod oscillator;
 mod pre_amp;
 mod ring_buffer;
 mod state_variable_filter;

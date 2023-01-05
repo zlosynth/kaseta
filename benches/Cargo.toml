@@ -52,3 +52,7 @@ harness = false
 [[bin]]
 name = "wow_flutter"
 harness = false
+
+[[bin]]
+name = "oscillator"
+harness = false
