@@ -30,7 +30,6 @@ pub struct WowFlutter {
     flutter: Flutter,
 }
 
-// TODO: Just nest wow attributes
 #[derive(Default, Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {

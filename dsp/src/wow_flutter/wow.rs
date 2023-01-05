@@ -56,16 +56,15 @@ impl Wow {
         }
     }
 
-    // TODO: This needs a high quality interpolation
     pub fn pop(&mut self, random: &mut impl Random) -> f32 {
-        // TODO: If depth is 0.0, then target should be always 0.0. Create a bench and test it
         let target = {
             let x = (trigonometry::cos(self.phase) + 1.0) * self.depth / 2.0;
 
             let drift = self.ornstein_uhlenbeck.pop(random) * PHASE_DRIFT;
             self.phase += (BASE_FREQUENCY / self.sample_rate) * (1.0 + drift);
-            // TODO: Try if using (while > 1.0: -= 1.0) is faster
-            self.phase %= 1.0;
+            while self.phase > 1.0 {
+                self.phase -= 1.0;
+            }
 
             x
         };

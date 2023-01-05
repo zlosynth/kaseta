@@ -18,8 +18,6 @@ pub struct Attributes {
     pub chance: f32,
 }
 
-// TODO: Based on intensity, start with pulsing, then enable fully.
-// TODO: On the very end it would start getting deeper
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Flutter {
@@ -35,7 +33,6 @@ struct Pops {
     amount: u8,
     phase: f32,
     slowdowns: [f32; 3],
-    // TODO: Intensity
 }
 
 impl Flutter {
