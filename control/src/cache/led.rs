@@ -20,6 +20,6 @@ impl Led {
     }
 
     pub fn triggered(&self) -> bool {
-        self.since < 100
+        self.since < 20
     }
 }
