@@ -1,3 +1,5 @@
+//! Quantize position potentiometer into even blocks.
+
 #[derive(Clone, Copy)]
 pub enum Quantization {
     Six,

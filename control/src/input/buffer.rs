@@ -1,4 +1,5 @@
 //! Smoothening of control data and travel distance measurement.
+
 use core::{ptr, sync::atomic};
 
 /// Buffer meant for smoothening and history tracking.

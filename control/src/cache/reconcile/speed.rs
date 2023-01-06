@@ -54,7 +54,6 @@ impl Store {
     }
 }
 
-// TODO: Keep this in Pot, so it can manage its own hysteresis
 fn f32_to_usize_5(x: f32) -> usize {
     if x < 1.0 / 5.0 {
         0
