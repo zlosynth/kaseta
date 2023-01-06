@@ -20,6 +20,7 @@ panic-probe = { version = "0.3.0", features = ["print-defmt"] }
 daisy = { version = "0.7", features = ["seed"] }
 sirena = { git = "https://github.com/zlosynth/sirena", rev = "0ba4c32" }
 kaseta-dsp = { path = "../dsp" }
+kaseta-control = { path = "../control" }
 
 [profile.dev]
 codegen-units = 1 # better optimizations
@@ -55,4 +56,8 @@ harness = false
 
 [[bin]]
 name = "oscillator"
+harness = false
+
+[[bin]]
+name = "buffer"
 harness = false

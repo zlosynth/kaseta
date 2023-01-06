@@ -31,3 +31,6 @@ pub use crate::input::snapshot::{Snapshot as InputSnapshot, SnapshotHead as Inpu
 pub use crate::output::DesiredOutput;
 pub use crate::save::{Save, Store as SaveStore};
 pub use crate::store::Store;
+
+// Public for the sake of benchmarks
+pub use crate::input::buffer::Buffer;
