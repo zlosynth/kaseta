@@ -26,7 +26,6 @@ impl Pot {
         }
     }
 
-    // TODO: Implement window support
     pub fn value(&self) -> f32 {
         self.buffer.read()
     }
