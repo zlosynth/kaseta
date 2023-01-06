@@ -83,7 +83,6 @@ pub struct ApplyInputSnapshotResult {
     pub save: Option<Save>,
 }
 
-// TODO: Try to mark as many control methods as private as possible
 #[allow(clippy::new_without_default)]
 impl Store {
     #[must_use]
@@ -129,7 +128,6 @@ impl Store {
         self.cache.tick()
     }
 
-    // TODO: Use reference
     fn sustain_alt_menu(&mut self) {
         if self.input.button.pressed {
             if let Some(Screen::AltMenu(age, menu)) = self.cache.display.prioritized[2] {
@@ -361,7 +359,6 @@ impl Store {
         }
     }
 
-    // TODO: Pass reference instead
     fn updated_configuration_draft(
         &self,
         mut draft: Configuration,

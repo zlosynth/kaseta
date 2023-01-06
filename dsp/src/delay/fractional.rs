@@ -178,7 +178,6 @@ fn has_crossed_target(current_position: f32, target_position: f32, rewind_speed:
         || rewind_speed.is_sign_negative() && current_position < target_position
 }
 
-// TODO: The acceleration speed should depend on total size of the delay
 fn reflect_inertia_on_relative_speed(
     relative_speed: &mut f32,
     current_position: f32,

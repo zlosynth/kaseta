@@ -5,7 +5,7 @@ use crc::{Crc, CRC_16_USB};
 use crate::cache::mapping::Mapping;
 use crate::cache::{Calibrations, Configuration, TappedTempo};
 
-/// TODO: Docs
+/// Subset of control structures needed for recovery after restart.
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Save {

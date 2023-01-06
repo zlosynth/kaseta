@@ -13,7 +13,6 @@ impl Store {
     pub fn reconcile_pre_amp(&mut self) {
         if self.input.button.pressed && self.input.pre_amp.active() {
             if self.input.pre_amp.value() > 0.5 {
-                // TODO: Refactor this so PreAmpMode can be selected frm index
                 self.cache.options.enable_oscillator = true;
                 self.cache.display.set_alt_menu(Screen::AltMenu(
                     0,

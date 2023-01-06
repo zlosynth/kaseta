@@ -1,20 +1,25 @@
 pub mod calibration;
+mod clock_detector;
+pub mod configuration;
 pub mod display;
 mod interval_detector;
 mod led;
 pub mod mapping;
 mod quantization;
 mod reconcile;
+mod tap_detector;
 mod trigger;
 
 use heapless::Vec;
 use kaseta_dsp::processor::{Attributes as DSPAttributes, AttributesHead as DSPAttributesHead};
 
 use self::calibration::Calibration;
+use self::clock_detector::ClockDetector;
+pub use self::configuration::Configuration;
 use self::display::{Display, Screen};
-use self::interval_detector::IntervalDetector;
 use self::led::Led;
 use self::mapping::{AttributeIdentifier, Mapping};
+use self::tap_detector::TapDetector;
 use self::trigger::Trigger;
 use crate::output::DesiredOutput;
 use crate::save::Save;
@@ -45,65 +50,6 @@ pub type Calibrations = [Calibration; 4];
 /// Clock signal detectors of each control input.
 pub type ClockDetectors = [ClockDetector; 4];
 
-/// TODO: Doc
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct ClockDetector {
-    detector: IntervalDetector,
-}
-
-impl ClockDetector {
-    pub fn trigger(&mut self) {
-        self.detector.trigger();
-    }
-
-    pub fn just_detected(&self) -> bool {
-        self.detector.just_detected
-    }
-
-    pub fn tick(&mut self) {
-        self.detector.tick();
-        self.detector.reset_if_inactive();
-    }
-
-    pub fn reset(&mut self) {
-        self.detector.reset();
-    }
-
-    pub fn detected_tempo(&self) -> Option<u32> {
-        self.detector.tempo
-    }
-}
-
-/// TODO: Doc
-#[derive(Debug, Default)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct TapDetector {
-    detector: IntervalDetector,
-}
-
-impl TapDetector {
-    pub fn trigger(&mut self) {
-        self.detector.trigger();
-    }
-
-    pub fn just_detected(&self) -> bool {
-        self.detector.just_detected
-    }
-
-    pub fn tick(&mut self) {
-        self.detector.tick();
-    }
-
-    pub fn reset(&mut self) {
-        self.detector.reset();
-    }
-
-    pub fn detected_tempo(&self) -> Option<u32> {
-        self.detector.tempo
-    }
-}
-
 /// Easy to access modifications of the default module behavior.
 ///
 /// Options are configured using the DIP switch on the front of the module.
@@ -121,19 +67,6 @@ pub struct Options {
     pub random_impulse: bool,
     pub filter_feedback: bool,
     pub unlimited: bool,
-}
-
-/// Tweaking of the default module configuration.
-///
-/// This is mean to allow tweaking of some more niche configuration of the
-/// module. Unlike with `Options`, the parameters here may be continuous
-/// (float) or offer enumeration of variants. An examle of a configuration
-/// may be tweaking of head's rewind speed.
-// TODO: Drop Copy
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct Configuration {
-    pub rewind_speed: [(usize, usize); 4],
 }
 
 /// Storing tempo if it was tapped in using the button.
@@ -212,7 +145,7 @@ impl Cache {
             ],
             rewind: self.options.rewind,
             enable_oscillator: self.options.enable_oscillator,
-            rewind_speed: rewind_indices_to_speeds(self.configuration.rewind_speed),
+            rewind_speed: self.configuration.rewind_speed(),
             reset_impulse: self.attributes.reset_impulse,
             random_impulse: self.options.random_impulse,
             filter_feedback: self.options.filter_feedback,
@@ -286,40 +219,4 @@ impl Cache {
             self.mapping[*i] = AttributeIdentifier::None;
         }
     }
-}
-
-impl Default for Configuration {
-    fn default() -> Self {
-        Self {
-            rewind_speed: [(0, 0), (1, 1), (2, 2), (3, 3)],
-        }
-    }
-}
-
-// TODO: This should be in its own module
-fn rewind_indices_to_speeds(x: [(usize, usize); 4]) -> [(f32, f32); 4] {
-    let mut speeds = [(0.0, 0.0); 4];
-    for (i, indices) in x.iter().enumerate() {
-        speeds[i].0 = rewind_index_to_speed(indices.0);
-        speeds[i].1 = fast_forward_index_to_speed(indices.1);
-    }
-    speeds
-}
-
-fn fast_forward_index_to_speed(i: usize) -> f32 {
-    [
-        -0.25,   // Fifth up
-        -0.5,    // Octave up
-        -1.4999, // Two octaves up
-        -1.9999, // Just fast as hell
-    ][i]
-}
-
-fn rewind_index_to_speed(i: usize) -> f32 {
-    [
-        0.125,  // One fifth slowed down
-        0.25,   // One octave slowed down
-        0.9999, // Same speed backwards. NOTE: Slightly less than 1 to avoid bumps while crossing samples
-        1.4999, // One octave up backwards. NOTE: Slightly less than 1.5 to avoid bumps while crossing samples
-    ][i]
 }
