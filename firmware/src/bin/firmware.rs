@@ -51,19 +51,19 @@ mod app {
         outputs: Outputs,
         control: Store,
         storage: Storage,
-        input_snapshot_producer: Producer<'static, InputSnapshot, 6>,
-        input_snapshot_consumer: Consumer<'static, InputSnapshot, 6>,
-        processor_attributes_producer: Producer<'static, ProcessorAttributes, 6>,
-        processor_attributes_consumer: Consumer<'static, ProcessorAttributes, 6>,
-        processor_reaction_producer: Producer<'static, ProcessorReaction, 6>,
-        processor_reaction_consumer: Consumer<'static, ProcessorReaction, 6>,
+        input_snapshot_producer: Producer<'static, InputSnapshot, 8>,
+        input_snapshot_consumer: Consumer<'static, InputSnapshot, 8>,
+        processor_attributes_producer: Producer<'static, ProcessorAttributes, 8>,
+        processor_attributes_consumer: Consumer<'static, ProcessorAttributes, 8>,
+        processor_reaction_producer: Producer<'static, ProcessorReaction, 8>,
+        processor_reaction_consumer: Consumer<'static, ProcessorReaction, 8>,
     }
 
     #[init(
         local = [
-            input_snapshot_queue: Queue<InputSnapshot, 6> = Queue::new(),
-            processor_attributes_queue: Queue<ProcessorAttributes, 6> = Queue::new(),
-            processor_reaction_queue: Queue<ProcessorReaction, 6> = Queue::new(),
+            input_snapshot_queue: Queue<InputSnapshot, 8> = Queue::new(),
+            processor_attributes_queue: Queue<ProcessorAttributes, 8> = Queue::new(),
+            processor_reaction_queue: Queue<ProcessorReaction, 8> = Queue::new(),
         ]
     )]
     fn init(cx: init::Context) -> (Shared, Local, init::Monotonics) {
@@ -137,6 +137,8 @@ mod app {
         let processor_attributes_consumer = cx.local.processor_attributes_consumer;
         let processor_reaction_producer = cx.local.processor_reaction_producer;
 
+        warn_about_queue_capacity("processor_attributes", processor_attributes_consumer);
+
         if let Some(attributes) = dequeue_last(processor_attributes_consumer) {
             processor.set_attributes(attributes);
         }
@@ -191,6 +193,9 @@ mod app {
         let input_snapshot_consumer = cx.local.input_snapshot_consumer;
         let processor_attributes_producer = cx.local.processor_attributes_producer;
         let processor_reaction_consumer = cx.local.processor_reaction_consumer;
+
+        warn_about_queue_capacity("input_snapshot", input_snapshot_consumer);
+        warn_about_queue_capacity("processor_reaction", processor_reaction_consumer);
 
         while let Some(reaction) = processor_reaction_consumer.dequeue() {
             control.apply_dsp_reaction(reaction);
@@ -306,5 +311,19 @@ mod app {
             last_item = Some(attributes);
         }
         last_item
+    }
+
+    fn warn_about_queue_capacity<T, const N: usize>(
+        name: &str,
+        consumer: &mut Consumer<'static, T, N>,
+    ) {
+        if consumer.len() > consumer.capacity() / 2 {
+            defmt::warn!(
+                "Queue={:?} is above the half of its capacity {:?}/{:?}",
+                name,
+                consumer.len(),
+                consumer.capacity()
+            );
+        }
     }
 }
