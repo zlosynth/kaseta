@@ -415,7 +415,7 @@ impl Store {
 
     fn reconcile_attributes(&mut self, needs_save: &mut bool) {
         self.reconcile_pre_amp(needs_save);
-        self.reconcile_hysteresis();
+        self.reconcile_hysteresis(needs_save);
         self.reconcile_wow_flutter();
         self.reconcile_tone(needs_save);
         self.reconcile_speed(needs_save);

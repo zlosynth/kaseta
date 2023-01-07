@@ -48,6 +48,7 @@ pub enum AltAttributeScreen {
     PreAmpMode(PreAmpMode),
     SpeedRange(SpeedRange),
     TonePosition(TonePosition),
+    HysteresisRange(HysteresisRange),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -69,6 +70,13 @@ pub enum SpeedRange {
 pub enum TonePosition {
     Volume,
     Feedback,
+}
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum HysteresisRange {
+    Unlimited,
+    Limited,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -367,6 +375,10 @@ fn leds_for_alt_attribute(alt_attribute: AltAttributeScreen) -> [bool; 8] {
         AltAttributeScreen::TonePosition(position) => match position {
             TonePosition::Volume => [true, true, true, true, false, false, false, false],
             TonePosition::Feedback => [false, false, false, false, true, true, true, true],
+        },
+        AltAttributeScreen::HysteresisRange(range) => match range {
+            HysteresisRange::Unlimited => [false, true, false, true, true, false, true, false],
+            HysteresisRange::Limited => [false, false, false, false, true, true, true, true],
         },
     }
 }

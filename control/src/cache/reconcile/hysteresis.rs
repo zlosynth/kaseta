@@ -1,6 +1,9 @@
 use super::calculate;
 use super::taper;
+use crate::cache::display::AltAttributeScreen;
+use crate::cache::display::HysteresisRange::{Limited, Unlimited};
 use crate::cache::mapping::AttributeIdentifier;
+use crate::log;
 use crate::Store;
 
 const DRY_WET_RANGE: (f32, f32) = (0.0, 1.0);
@@ -9,12 +12,32 @@ const SATURATION_RANGE: (f32, f32) = (0.0, 1.0);
 const BIAS_RANGE: (f32, f32) = (0.01, 1.0);
 
 impl Store {
-    pub fn reconcile_hysteresis(&mut self) {
+    pub fn reconcile_hysteresis(&mut self, needs_save: &mut bool) {
         // Maximum limit of how much place on the slider is occupied by drive. This
         // gets scaled down based on bias.
         const DRIVE_PORTION: f32 = 1.0 / 2.0;
 
-        self.cache.options.unlimited = self.input.switch[7];
+        let original_unlimited = self.cache.options.unlimited;
+
+        if self.input.button.pressed && self.input.drive.active() {
+            self.cache.options.unlimited = self.input.drive.value() > 0.9;
+        }
+
+        let unlimited = self.cache.options.unlimited;
+        if original_unlimited != unlimited {
+            *needs_save |= true;
+            if unlimited {
+                log::info!("Enabling unlimited hysteresis");
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::HysteresisRange(Unlimited));
+            } else {
+                log::info!("Disabling unlimited hysteresis");
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::HysteresisRange(Limited));
+            }
+        }
 
         self.cache.attributes.dry_wet = calculate(
             self.input.dry_wet.value(),
