@@ -19,27 +19,35 @@ impl Store {
         );
 
         if depth.is_sign_negative() {
-            self.cache.attributes.wow = calculate(-depth, None, WOW_DEPTH_RANGE, None);
-            self.cache.attributes.flutter_depth = 0.0;
-            self.cache.attributes.flutter_chance = 0.0;
-            if self.input.wow_flut.active() {
-                self.cache
-                    .display
-                    .force_attribute(AttributeScreen::Wow(-depth));
-            }
+            self.enable_wow(depth);
         } else {
-            self.cache.attributes.wow = 0.0;
-            self.cache.attributes.flutter_depth = calculate(depth, None, FLUTTER_DEPTH_RANGE, None);
-            self.cache.attributes.flutter_chance = if depth > 0.95 {
-                1.0
-            } else {
-                calculate(depth, None, FLUTTER_CHANCE_RANGE, Some(taper::log))
-            };
-            if self.input.wow_flut.active() {
-                self.cache
-                    .display
-                    .force_attribute(AttributeScreen::Flutter(depth));
-            }
+            self.enable_flutter(depth);
         };
+    }
+
+    fn enable_wow(&mut self, depth: f32) {
+        self.cache.attributes.wow = calculate(-depth, None, WOW_DEPTH_RANGE, None);
+        self.cache.attributes.flutter_depth = 0.0;
+        self.cache.attributes.flutter_chance = 0.0;
+        if self.input.wow_flut.active() {
+            self.cache
+                .display
+                .force_attribute(AttributeScreen::Wow(-depth));
+        }
+    }
+
+    fn enable_flutter(&mut self, depth: f32) {
+        self.cache.attributes.wow = 0.0;
+        self.cache.attributes.flutter_depth = calculate(depth, None, FLUTTER_DEPTH_RANGE, None);
+        self.cache.attributes.flutter_chance = if depth > 0.95 {
+            1.0
+        } else {
+            calculate(depth, None, FLUTTER_CHANCE_RANGE, Some(taper::log))
+        };
+        if self.input.wow_flut.active() {
+            self.cache
+                .display
+                .force_attribute(AttributeScreen::Flutter(depth));
+        }
     }
 }
