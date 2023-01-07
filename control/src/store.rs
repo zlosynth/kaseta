@@ -1007,7 +1007,7 @@ mod tests {
             store.tick();
             assert_relative_eq!(store.cache.attributes.speed, 2.0);
 
-            input.speed = 0.5;
+            input.speed = 0.1;
             for _ in 0..4 {
                 store.apply_input_snapshot(input);
                 store.tick();

@@ -1,10 +1,7 @@
-use super::{calculate, taper};
 use crate::cache::display::{AltAttributeScreen, SpeedRange};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::log;
 use crate::Store;
-
-const LENGTH_LONG_RANGE: (f32, f32) = (5.0 * 60.0, 0.02);
 
 impl Store {
     pub fn reconcile_speed(&mut self, needs_save: &mut bool) {
@@ -59,14 +56,21 @@ impl Store {
                 let frequency = a * libm::powf(2.0, voct);
                 1.0 / frequency
             } else {
-                calculate(
+                let sum = super::sum(
                     self.input.speed.value(),
                     self.control_value_for_attribute(AttributeIdentifier::Speed)
                         .map(|x| x / 5.0),
-                    LENGTH_LONG_RANGE,
-                    // TODO: Use flatter linear ramp for the faster half of long range, then go log
-                    Some(taper::reverse_log),
-                )
+                );
+                const MIN: f32 = 0.01;
+                const MIDDLE: f32 = 10.0;
+                const MAX: f32 = 5.0 * 60.0;
+                if sum < 0.5 {
+                    let phase = sum * 2.0;
+                    MIDDLE + (1.0 - phase) * (MAX - MIDDLE)
+                } else {
+                    let phase = (sum - 0.5) * 2.0;
+                    MIN + (1.0 - phase) * (MIDDLE - MIN)
+                }
             };
         }
     }

@@ -44,6 +44,7 @@ pub fn log(position: f32) -> f32 {
     value + delta_to_next * remainder
 }
 
+#[allow(unused)]
 pub fn reverse_log(position: f32) -> f32 {
     1.0 - log(1.0 - position)
 }
