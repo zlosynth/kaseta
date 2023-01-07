@@ -13,6 +13,7 @@ backwards compatibility.
 * Prevent clipping of internal oscillator.
 * Implement visualization for: Octave offset, oscillator frequency,
   pre-amp strength.
+* Fix control input scaling.
 
 ## 0.6.0
 
