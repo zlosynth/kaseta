@@ -14,7 +14,7 @@ impl Store {
         let depth = calculate(
             self.input.wow_flut.value(),
             self.control_value_for_attribute(AttributeIdentifier::WowFlut)
-                .map(|x| x / 5.0),
+                .map(|x| x / 10.0),
             (-1.0, 1.0),
             None,
         );
@@ -34,6 +34,10 @@ impl Store {
             self.cache
                 .display
                 .force_attribute(AttributeScreen::Wow(-depth));
+        } else {
+            self.cache
+                .display
+                .update_attribute(AttributeScreen::Wow(-depth));
         }
     }
 
@@ -49,6 +53,10 @@ impl Store {
             self.cache
                 .display
                 .force_attribute(AttributeScreen::Flutter(depth));
+        } else {
+            self.cache
+                .display
+                .update_attribute(AttributeScreen::Flutter(depth));
         }
     }
 }
