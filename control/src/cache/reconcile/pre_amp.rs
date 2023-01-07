@@ -18,6 +18,15 @@ impl Store {
 
         if self.input.button.pressed && self.input.pre_amp.active() {
             self.cache.options.enable_oscillator = self.input.pre_amp.value() > 0.5;
+            if self.cache.options.enable_oscillator {
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::PreAmpMode(PreAmpMode::Oscillator));
+            } else {
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::PreAmpMode(PreAmpMode::PreAmp));
+            }
         }
 
         let enable_oscillator = self.cache.options.enable_oscillator;
@@ -25,14 +34,8 @@ impl Store {
             *needs_save |= true;
             if enable_oscillator {
                 log::info!("Enabling pre-amp oscillator");
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::PreAmpMode(PreAmpMode::Oscillator));
             } else {
                 log::info!("Disabling pre-amp oscillator");
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::PreAmpMode(PreAmpMode::PreAmp));
             }
         }
 

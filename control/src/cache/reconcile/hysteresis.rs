@@ -25,6 +25,15 @@ impl Store {
 
         if self.input.button.pressed && self.input.drive.active() {
             self.cache.options.unlimited = self.input.drive.value() > 0.9;
+            if self.cache.options.unlimited {
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::HysteresisRange(Unlimited));
+            } else {
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::HysteresisRange(Limited));
+            }
         }
 
         let unlimited = self.cache.options.unlimited;
@@ -32,14 +41,8 @@ impl Store {
             *needs_save |= true;
             if unlimited {
                 log::info!("Enabling unlimited hysteresis");
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::HysteresisRange(Unlimited));
             } else {
                 log::info!("Disabling unlimited hysteresis");
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::HysteresisRange(Limited));
             }
         }
     }
