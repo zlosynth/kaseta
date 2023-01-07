@@ -7,7 +7,7 @@ use core::mem;
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Display {
-    pub prioritized: [Option<Screen>; 5],
+    pub prioritized: [Option<Screen>; 6],
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -86,6 +86,9 @@ pub enum AttributeScreen {
     OctaveOffset(usize),
     OscillatorTone(f32),
     PreAmp(f32),
+    Drive(f32),
+    Bias(f32),
+    DryWet(f32),
 }
 
 pub type Positions = ([bool; 4], [bool; 4]);
@@ -94,6 +97,7 @@ impl Default for Display {
     fn default() -> Self {
         Self {
             prioritized: [
+                None,
                 None,
                 None,
                 None,
@@ -148,22 +152,6 @@ impl Display {
         self.set_screen(4, Screen::Attribute(0, attribute));
     }
 
-    pub fn set_attribute(&mut self, attribute: AttributeScreen) {
-        let same_type_or_empty = 'block: {
-            if let Some(Screen::Attribute(_, current_attribute)) = self.prioritized[4] {
-                if mem::discriminant(&current_attribute) == mem::discriminant(&attribute) {
-                    break 'block true;
-                }
-            } else {
-                break 'block true;
-            }
-            false
-        };
-        if same_type_or_empty {
-            self.set_screen(4, Screen::Attribute(0, attribute));
-        }
-    }
-
     pub fn update_attribute(&mut self, attribute: AttributeScreen) {
         let (same_type, age) = 'block: {
             if let Some(Screen::Attribute(age, current_attribute)) = self.prioritized[4] {
@@ -176,6 +164,10 @@ impl Display {
         if same_type {
             self.set_screen(4, Screen::Attribute(age, attribute));
         }
+    }
+
+    pub fn set_fallback_attribute(&mut self, attribute: AttributeScreen) {
+        self.set_screen(5, Screen::Attribute(0, attribute));
     }
 
     fn set_screen(&mut self, priority: usize, screen: Screen) {
@@ -397,8 +389,11 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
             leds[offset + 4] = true;
             leds
         }
-        AttributeScreen::OscillatorTone(tone) => phase_to_leds(tone),
-        AttributeScreen::PreAmp(phase) => phase_to_leds(phase),
+        AttributeScreen::OscillatorTone(phase)
+        | AttributeScreen::PreAmp(phase)
+        | AttributeScreen::Drive(phase)
+        | AttributeScreen::Bias(phase)
+        | AttributeScreen::DryWet(phase) => phase_to_leds(phase),
     }
 }
 

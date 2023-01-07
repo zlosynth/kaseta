@@ -168,7 +168,7 @@ impl Store {
 
         self.cache
             .display
-            .set_attribute(self.cache.screen_for_heads());
+            .set_fallback_attribute(self.cache.screen_for_heads());
 
         if needs_save {
             Some(self.cache.save())
@@ -1352,6 +1352,7 @@ mod tests {
             // not affecting following asserts.
             for _ in 0..4 {
                 store.apply_input_snapshot(input);
+                store.tick();
             }
         }
 

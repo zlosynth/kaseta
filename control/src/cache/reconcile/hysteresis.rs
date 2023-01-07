@@ -1,6 +1,7 @@
 use super::calculate;
 use super::taper;
 use crate::cache::display::AltAttributeScreen;
+use crate::cache::display::AttributeScreen;
 use crate::cache::display::HysteresisRange::{Limited, Unlimited};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::log;
@@ -13,10 +14,13 @@ const BIAS_RANGE: (f32, f32) = (0.01, 1.0);
 
 impl Store {
     pub fn reconcile_hysteresis(&mut self, needs_save: &mut bool) {
-        // Maximum limit of how much place on the slider is occupied by drive. This
-        // gets scaled down based on bias.
-        const DRIVE_PORTION: f32 = 1.0 / 2.0;
+        self.reconcile_range_limitation(needs_save);
+        self.reconcile_dry_wet();
+        self.reconcile_drive_and_saturation();
+        self.reconcile_bias();
+    }
 
+    fn reconcile_range_limitation(&mut self, needs_save: &mut bool) {
         let original_unlimited = self.cache.options.unlimited;
 
         if self.input.button.pressed && self.input.drive.active() {
@@ -38,23 +42,29 @@ impl Store {
                     .set_alt_menu(AltAttributeScreen::HysteresisRange(Limited));
             }
         }
+    }
 
-        self.cache.attributes.dry_wet = calculate(
+    fn reconcile_dry_wet(&mut self) {
+        let dry_wet_sum = super::sum(
             self.input.dry_wet.value(),
             self.control_value_for_attribute(AttributeIdentifier::DryWet)
                 .map(|x| x / 5.0),
-            DRY_WET_RANGE,
-            None,
         );
+        self.display_dry_wet(dry_wet_sum);
+        self.cache.attributes.dry_wet = super::calculate_from_sum(dry_wet_sum, DRY_WET_RANGE, None);
+    }
 
-        let drive_input = calculate(
+    fn reconcile_drive_and_saturation(&mut self) {
+        // Maximum limit of how much place on the slider is occupied by drive. This
+        // gets scaled down based on bias.
+        const DRIVE_PORTION: f32 = 1.0 / 2.0;
+
+        let drive_input = super::sum(
             self.input.drive.value(),
             self.control_value_for_attribute(AttributeIdentifier::Drive)
                 .map(|x| x / 5.0),
-            (0.0, 1.0),
-            None,
         );
-
+        self.display_drive(drive_input);
         let drive = calculate(
             (drive_input / DRIVE_PORTION).min(1.0),
             None,
@@ -69,19 +79,58 @@ impl Store {
             SATURATION_RANGE,
             None,
         );
+    }
 
+    fn reconcile_bias(&mut self) {
         let max_bias = if self.cache.options.unlimited {
             BIAS_RANGE.1
         } else {
-            max_bias_for_drive(drive).clamp(BIAS_RANGE.0, BIAS_RANGE.1)
+            max_bias_for_drive(self.cache.attributes.drive).clamp(BIAS_RANGE.0, BIAS_RANGE.1)
         };
-        self.cache.attributes.bias = calculate(
+        let bias_sum = super::sum(
             self.input.bias.value(),
             self.control_value_for_attribute(AttributeIdentifier::Bias)
                 .map(|x| x / 5.0),
-            (0.01, max_bias),
-            Some(taper::log),
         );
+        self.display_bias(bias_sum);
+        self.cache.attributes.bias =
+            super::calculate_from_sum(bias_sum, (0.01, max_bias), Some(taper::log));
+    }
+
+    fn display_dry_wet(&mut self, dry_wet_sum: f32) {
+        if self.input.dry_wet.active() {
+            self.cache
+                .display
+                .force_attribute(AttributeScreen::DryWet(dry_wet_sum));
+        } else {
+            self.cache
+                .display
+                .update_attribute(AttributeScreen::DryWet(dry_wet_sum));
+        }
+    }
+
+    fn display_drive(&mut self, drive_input: f32) {
+        if self.input.drive.active() {
+            self.cache
+                .display
+                .force_attribute(AttributeScreen::Drive(drive_input));
+        } else {
+            self.cache
+                .display
+                .update_attribute(AttributeScreen::Drive(drive_input));
+        }
+    }
+
+    fn display_bias(&mut self, bias_sum: f32) {
+        if self.input.bias.active() {
+            self.cache
+                .display
+                .force_attribute(AttributeScreen::Bias(bias_sum));
+        } else {
+            self.cache
+                .display
+                .update_attribute(AttributeScreen::Bias(bias_sum));
+        }
     }
 }
 
