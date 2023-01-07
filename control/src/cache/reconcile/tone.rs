@@ -1,21 +1,30 @@
 use super::calculate;
 use crate::cache::display::{AltAttributeScreen, TonePosition};
 use crate::cache::mapping::AttributeIdentifier;
+use crate::log;
 use crate::Store;
 
 impl Store {
-    pub fn reconcile_tone(&mut self) {
+    pub fn reconcile_tone(&mut self, needs_save: &mut bool) {
+        let original_filter_feedback = self.cache.options.filter_feedback;
+
         if self.input.button.pressed && self.input.tone.active() {
-            if self.input.tone.value() > 0.5 {
-                self.cache.options.filter_feedback = false;
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::TonePosition(TonePosition::Volume));
-            } else {
-                self.cache.options.filter_feedback = true;
+            self.cache.options.filter_feedback = self.input.tone.value() < 0.5;
+        }
+
+        let filter_feedback = self.cache.options.filter_feedback;
+        if filter_feedback != original_filter_feedback {
+            *needs_save |= true;
+            if filter_feedback {
+                log::info!("Positioning tone filter=feedback");
                 self.cache
                     .display
                     .set_alt_menu(AltAttributeScreen::TonePosition(TonePosition::Feedback));
+            } else {
+                log::info!("Positioning tone filter=volume");
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::TonePosition(TonePosition::Volume));
             }
         }
 

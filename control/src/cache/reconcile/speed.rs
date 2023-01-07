@@ -2,21 +2,30 @@ use super::calculate;
 use super::taper;
 use crate::cache::display::{AltAttributeScreen, SpeedRange};
 use crate::cache::mapping::AttributeIdentifier;
+use crate::log;
 use crate::Store;
 
 const LENGTH_LONG_RANGE: (f32, f32) = (5.0 * 60.0, 0.02);
 const LENGTH_SHORT_RANGE: (f32, f32) = (1.0, 1.0 / 400.0);
 
 impl Store {
-    pub fn reconcile_speed(&mut self) {
+    pub fn reconcile_speed(&mut self, needs_save: &mut bool) {
+        let original_short_delay_range = self.cache.options.short_delay_range;
+
         if self.input.button.pressed && self.input.speed.active() {
-            if self.input.speed.value() < 0.5 {
-                self.cache.options.short_delay_range = true;
+            self.cache.options.short_delay_range = self.input.speed.value() < 0.5;
+        }
+
+        let short_delay_range = self.cache.options.short_delay_range;
+        if short_delay_range != original_short_delay_range {
+            *needs_save |= true;
+            if short_delay_range {
+                log::info!("Setting delay range=short");
                 self.cache
                     .display
                     .set_alt_menu(AltAttributeScreen::SpeedRange(SpeedRange::Short));
             } else {
-                self.cache.options.short_delay_range = false;
+                log::info!("Setting delay range=long");
                 self.cache
                     .display
                     .set_alt_menu(AltAttributeScreen::SpeedRange(SpeedRange::Long));

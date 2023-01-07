@@ -162,7 +162,7 @@ impl Store {
         };
 
         self.reconcile_detectors();
-        self.reconcile_attributes();
+        self.reconcile_attributes(&mut needs_save);
 
         self.cache
             .display
@@ -399,12 +399,12 @@ impl Store {
         self.cache.mapping.iter().position(|a| *a == attribute)
     }
 
-    fn reconcile_attributes(&mut self) {
-        self.reconcile_pre_amp();
+    fn reconcile_attributes(&mut self, needs_save: &mut bool) {
+        self.reconcile_pre_amp(needs_save);
         self.reconcile_hysteresis();
         self.reconcile_wow_flutter();
-        self.reconcile_tone();
-        self.reconcile_speed();
+        self.reconcile_tone(needs_save);
+        self.reconcile_speed(needs_save);
         self.reconcile_heads();
     }
 
@@ -476,6 +476,7 @@ impl From<Save> for Store {
         let mut store = Self::new();
         store.cache.mapping = save.mapping;
         store.cache.calibrations = save.calibrations;
+        store.cache.options = save.options;
         store.cache.configuration = save.configuration;
         store.cache.tapped_tempo = save.tapped_tempo;
         store

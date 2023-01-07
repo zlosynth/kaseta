@@ -57,7 +57,7 @@ pub type ClockDetectors = [ClockDetector; 4];
 /// They are meant to provide a quick access to some common extended features
 /// such as quantization, rewind, etc.
 #[allow(clippy::struct_excessive_bools)]
-#[derive(Debug, Default)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Options {
     pub quantize_8: bool,
@@ -193,6 +193,7 @@ impl Cache {
         Save {
             mapping: self.mapping,
             calibrations: self.calibrations,
+            options: self.options,
             configuration: self.configuration,
             tapped_tempo: self.tapped_tempo,
         }

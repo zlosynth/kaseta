@@ -3,7 +3,7 @@ use core::mem;
 use crc::{Crc, CRC_16_USB};
 
 use crate::cache::mapping::Mapping;
-use crate::cache::{Calibrations, Configuration, TappedTempo};
+use crate::cache::{Calibrations, Configuration, Options, TappedTempo};
 
 /// Subset of control structures needed for recovery after restart.
 #[derive(Debug, Default, Clone, Copy, PartialEq)]
@@ -11,6 +11,7 @@ use crate::cache::{Calibrations, Configuration, TappedTempo};
 pub struct Save {
     pub mapping: Mapping,
     pub calibrations: Calibrations,
+    pub options: Options,
     pub configuration: Configuration,
     pub tapped_tempo: TappedTempo,
 }
