@@ -363,7 +363,7 @@ fn leds_for_alt_attribute(alt_attribute: AltAttributeScreen) -> [bool; 8] {
             PreAmpMode::Oscillator => [false, false, true, true, false, false, true, true],
         },
         AltAttributeScreen::SpeedRange(range) => match range {
-            SpeedRange::Short => [true, false, false, false, true, false, false, false],
+            SpeedRange::Short => [false, false, false, true, false, false, false, true],
             SpeedRange::Long => [true, true, true, true, true, true, true, true],
         },
         AltAttributeScreen::TonePosition(position) => match position {

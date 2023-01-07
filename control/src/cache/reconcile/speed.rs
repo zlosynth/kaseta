@@ -1,19 +1,26 @@
-use super::calculate;
-use super::taper;
+use super::{calculate, taper};
 use crate::cache::display::{AltAttributeScreen, SpeedRange};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::log;
 use crate::Store;
 
 const LENGTH_LONG_RANGE: (f32, f32) = (5.0 * 60.0, 0.02);
-const LENGTH_SHORT_RANGE: (f32, f32) = (1.0, 1.0 / 400.0);
 
 impl Store {
     pub fn reconcile_speed(&mut self, needs_save: &mut bool) {
         let original_short_delay_range = self.cache.options.short_delay_range;
 
         if self.input.button.pressed && self.input.speed.active() {
-            self.cache.options.short_delay_range = self.input.speed.value() < 0.5;
+            self.cache.options.short_delay_range = self.input.speed.value() > 0.8;
+            if self.cache.options.short_delay_range {
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::SpeedRange(SpeedRange::Short));
+            } else {
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::SpeedRange(SpeedRange::Long));
+            }
         }
 
         let short_delay_range = self.cache.options.short_delay_range;
@@ -21,14 +28,8 @@ impl Store {
             *needs_save |= true;
             if short_delay_range {
                 log::info!("Setting delay range=short");
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::SpeedRange(SpeedRange::Short));
             } else {
                 log::info!("Setting delay range=long");
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::SpeedRange(SpeedRange::Long));
             }
         }
 
@@ -47,16 +48,26 @@ impl Store {
         } else if let Some(tapped_tempo) = self.cache.tapped_tempo {
             self.cache.attributes.speed = tapped_tempo;
         } else {
-            self.cache.attributes.speed = calculate(
-                self.input.speed.value(),
-                self.control_value_for_attribute(AttributeIdentifier::Speed),
-                if self.cache.options.short_delay_range {
-                    LENGTH_SHORT_RANGE
-                } else {
-                    LENGTH_LONG_RANGE
-                },
-                Some(taper::log),
-            );
+            self.cache.attributes.speed = if self.cache.options.short_delay_range {
+                let sum = super::sum(
+                    self.input.speed.value(),
+                    self.control_value_for_attribute(AttributeIdentifier::Speed)
+                        .map(|x| x / 5.0),
+                );
+                let voct = sum * 7.0;
+                let a = 13.73;
+                let frequency = a * libm::powf(2.0, voct);
+                1.0 / frequency
+            } else {
+                calculate(
+                    self.input.speed.value(),
+                    self.control_value_for_attribute(AttributeIdentifier::Speed)
+                        .map(|x| x / 5.0),
+                    LENGTH_LONG_RANGE,
+                    // TODO: Use flatter linear ramp for the faster half of long range, then go log
+                    Some(taper::reverse_log),
+                )
+            };
         }
     }
 }
