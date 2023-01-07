@@ -216,7 +216,7 @@ impl Cache {
         output
     }
 
-    pub fn unmap_controls(&mut self, unplugged_controls: &Vec<usize, 4>) {
+    pub fn unmap_controls(&mut self, unplugged_controls: &Vec<usize, 4>, needs_save: &mut bool) {
         for i in unplugged_controls {
             let attribute = self.mapping[*i];
             if !attribute.is_none() {
@@ -226,6 +226,7 @@ impl Cache {
                     *i + 1
                 );
                 self.mapping[*i] = AttributeIdentifier::None;
+                *needs_save |= true;
             }
         }
     }

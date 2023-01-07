@@ -8,6 +8,8 @@ backwards compatibility.
 
 * Extend maximum delay length to 5 minutes.
 * Save after tapped tempo is overridden.
+* Fix backup of alternative options.
+* Unmap controls disconnected while shut down.
 
 ## 0.6.0
 

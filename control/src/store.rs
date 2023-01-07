@@ -139,12 +139,14 @@ impl Store {
     }
 
     fn converge_internal_state(&mut self) -> Option<Save> {
+        let mut needs_save = false;
+
+        let empty_controls = self.empty_controls();
+        self.cache.unmap_controls(&empty_controls, &mut needs_save);
+
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
-        self.cache.unmap_controls(&unplugged_controls);
         self.dequeue_controls(&unplugged_controls);
         self.enqueue_controls(&plugged_controls);
-
-        let mut needs_save = false;
 
         match self.state {
             State::Normal => {
@@ -173,6 +175,18 @@ impl Store {
         } else {
             None
         }
+    }
+
+    fn empty_controls(&self) -> Vec<usize, 4> {
+        let mut disconnected = Vec::new();
+        for (i, cv) in self.input.control.iter().enumerate() {
+            if !cv.is_plugged {
+                // NOTE: This is safe since the number of controls is equal to the
+                // size of the Vec.
+                let _ = disconnected.push(i);
+            }
+        }
+        disconnected
     }
 
     fn plugged_and_unplugged_controls(&self) -> (Vec<usize, 4>, Vec<usize, 4>) {
@@ -755,6 +769,33 @@ mod tests {
         store.apply_input_snapshot(input);
 
         assert_eq!(store.state, State::Mapping(StateMapping { input: 1 }));
+    }
+
+    #[test]
+    fn given_save_if_control_was_unplugged_since_it_gets_unmapped() {
+        let mut store = Store::new();
+        let mut input = InputSnapshot::default();
+
+        input.control[1] = None;
+        store.apply_input_snapshot(input);
+
+        input.control[1] = Some(1.0);
+        store.apply_input_snapshot(input);
+
+        input.drive = 0.1;
+        store.apply_input_snapshot(input);
+
+        let save = store.cache.save();
+        let mut store = Store::from(save);
+
+        input.control[1] = None;
+        for _ in 0..40 {
+            store.warm_up(input);
+        }
+        store.apply_input_snapshot(input);
+
+        assert!(store.cache.mapping[1].is_none());
+        assert_eq!(store.state, State::Normal);
     }
 
     #[test]
