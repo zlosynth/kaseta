@@ -12,7 +12,7 @@ backwards compatibility.
 * Unmap controls disconnected while shut down.
 * Prevent clipping of internal oscillator.
 * Implement visualization for: octave offset, oscillator frequency,
-  pre-amp strength, drive, bias, dry/wet.
+  pre-amp strength, drive, bias, dry/wet, wow/flutter.
 * Fix control input scaling.
 * Replace DIP switch with alt button and potentiomenter for:
   hysteresis range limitation.

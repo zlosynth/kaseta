@@ -89,6 +89,8 @@ pub enum AttributeScreen {
     Drive(f32),
     Bias(f32),
     DryWet(f32),
+    Wow(f32),
+    Flutter(f32),
 }
 
 pub type Positions = ([bool; 4], [bool; 4]);
@@ -394,6 +396,8 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
         | AttributeScreen::Drive(phase)
         | AttributeScreen::Bias(phase)
         | AttributeScreen::DryWet(phase) => phase_to_leds(phase),
+        AttributeScreen::Wow(phase) => wow_to_leds(phase),
+        AttributeScreen::Flutter(phase) => flutter_to_leds(phase),
     }
 }
 
@@ -405,6 +409,26 @@ fn phase_to_leds(phase: f32) -> [bool; 8] {
     [
         leds[1], leds[3], leds[5], leds[7], leds[0], leds[2], leds[4], leds[6],
     ]
+}
+
+fn flutter_to_leds(phase: f32) -> [bool; 8] {
+    let mut leds = [false; 8];
+    if phase > 0.05 {
+        for led in leds.iter_mut().take((phase * 3.9) as usize + 1) {
+            *led = true;
+        }
+    }
+    leds
+}
+
+fn wow_to_leds(phase: f32) -> [bool; 8] {
+    let mut leds = [false; 8];
+    if phase > 0.05 {
+        for i in 0..=(phase * 3.9) as usize {
+            leds[leds.len() - 1 - i] = true;
+        }
+    }
+    leds
 }
 
 fn leds_for_clipping(cycles: u32) -> [bool; 8] {
