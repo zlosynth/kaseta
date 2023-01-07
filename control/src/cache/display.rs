@@ -394,8 +394,8 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
         AttributeScreen::OscillatorTone(phase)
         | AttributeScreen::PreAmp(phase)
         | AttributeScreen::Drive(phase)
-        | AttributeScreen::Bias(phase)
-        | AttributeScreen::DryWet(phase) => phase_to_leds(phase),
+        | AttributeScreen::Bias(phase) => phase_to_leds(phase),
+        AttributeScreen::DryWet(phase) => dry_wet_to_leds(phase),
         AttributeScreen::Wow(phase) => wow_to_leds(phase),
         AttributeScreen::Flutter(phase) => flutter_to_leds(phase),
     }
@@ -409,6 +409,21 @@ fn phase_to_leds(phase: f32) -> [bool; 8] {
     [
         leds[1], leds[3], leds[5], leds[7], leds[0], leds[2], leds[4], leds[6],
     ]
+}
+
+fn dry_wet_to_leds(phase: f32) -> [bool; 8] {
+    let mut leds = [false; 8];
+
+    let wet_len = (phase * 4.9) as usize;
+
+    for led in leds.iter_mut().take(4 - wet_len) {
+        *led = true;
+    }
+    for i in 0..wet_len {
+        leds[leds.len() - 1 - i] = true;
+    }
+
+    leds
 }
 
 fn flutter_to_leds(phase: f32) -> [bool; 8] {
