@@ -1,6 +1,6 @@
 use super::calculate;
 use super::taper;
-use crate::cache::display::{AltMenuScreen, Screen, SpeedRange};
+use crate::cache::display::{AltAttributeScreen, SpeedRange};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
@@ -12,16 +12,14 @@ impl Store {
         if self.input.button.pressed && self.input.speed.active() {
             if self.input.speed.value() < 0.5 {
                 self.cache.options.short_delay_range = true;
-                self.cache.display.set_alt_menu(Screen::AltMenu(
-                    0,
-                    AltMenuScreen::SpeedRange(SpeedRange::Short),
-                ));
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::SpeedRange(SpeedRange::Short));
             } else {
                 self.cache.options.short_delay_range = false;
-                self.cache.display.set_alt_menu(Screen::AltMenu(
-                    0,
-                    AltMenuScreen::SpeedRange(SpeedRange::Long),
-                ));
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::SpeedRange(SpeedRange::Long));
             }
         }
 

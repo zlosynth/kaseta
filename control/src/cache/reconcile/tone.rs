@@ -1,5 +1,5 @@
 use super::calculate;
-use crate::cache::display::{AltMenuScreen, Screen, TonePosition};
+use crate::cache::display::{AltAttributeScreen, TonePosition};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
@@ -8,16 +8,14 @@ impl Store {
         if self.input.button.pressed && self.input.tone.active() {
             if self.input.tone.value() > 0.5 {
                 self.cache.options.filter_feedback = false;
-                self.cache.display.set_alt_menu(Screen::AltMenu(
-                    0,
-                    AltMenuScreen::TonePosition(TonePosition::Volume),
-                ));
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::TonePosition(TonePosition::Volume));
             } else {
                 self.cache.options.filter_feedback = true;
-                self.cache.display.set_alt_menu(Screen::AltMenu(
-                    0,
-                    AltMenuScreen::TonePosition(TonePosition::Feedback),
-                ));
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::TonePosition(TonePosition::Feedback));
             }
         }
 

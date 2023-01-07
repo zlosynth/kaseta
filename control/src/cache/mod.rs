@@ -16,11 +16,12 @@ use kaseta_dsp::processor::{Attributes as DSPAttributes, AttributesHead as DSPAt
 use self::calibration::Calibration;
 use self::clock_detector::ClockDetector;
 pub use self::configuration::Configuration;
-use self::display::{Display, Screen};
+use self::display::{AttributeScreen, Display};
 use self::led::Led;
 use self::mapping::{AttributeIdentifier, Mapping};
 use self::tap_detector::TapDetector;
 use self::trigger::Trigger;
+use crate::log;
 use crate::output::DesiredOutput;
 use crate::save::Save;
 
@@ -152,10 +153,10 @@ impl Cache {
         }
     }
 
-    pub fn screen_for_heads(&self) -> Screen {
+    pub fn screen_for_heads(&self) -> AttributeScreen {
         let ordered_heads = self.heads_ordered_by_position();
 
-        Screen::Heads(
+        AttributeScreen::Positions((
             [
                 ordered_heads[0].volume > 0.05,
                 ordered_heads[1].volume > 0.05,
@@ -168,7 +169,7 @@ impl Cache {
                 ordered_heads[2].feedback > 0.05,
                 ordered_heads[3].feedback > 0.05,
             ],
-        )
+        ))
     }
 
     fn heads_ordered_by_position(&self) -> [&AttributesHead; 4] {
@@ -216,7 +217,15 @@ impl Cache {
 
     pub fn unmap_controls(&mut self, unplugged_controls: &Vec<usize, 4>) {
         for i in unplugged_controls {
-            self.mapping[*i] = AttributeIdentifier::None;
+            let attribute = self.mapping[*i];
+            if !attribute.is_none() {
+                log::info!(
+                    "Unmapping attribute={:?} from control={:?}",
+                    attribute,
+                    *i + 1
+                );
+                self.mapping[*i] = AttributeIdentifier::None;
+            }
         }
     }
 }

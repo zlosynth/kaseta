@@ -2,7 +2,7 @@ use libm::powf;
 
 use super::calculate;
 use super::taper;
-use crate::cache::display::{AltMenuScreen, PreAmpMode, Screen};
+use crate::cache::display::{AltAttributeScreen, PreAmpMode};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
@@ -14,16 +14,14 @@ impl Store {
         if self.input.button.pressed && self.input.pre_amp.active() {
             if self.input.pre_amp.value() > 0.5 {
                 self.cache.options.enable_oscillator = true;
-                self.cache.display.set_alt_menu(Screen::AltMenu(
-                    0,
-                    AltMenuScreen::PreAmpMode(PreAmpMode::Oscillator),
-                ));
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::PreAmpMode(PreAmpMode::Oscillator));
             } else {
                 self.cache.options.enable_oscillator = false;
-                self.cache.display.set_alt_menu(Screen::AltMenu(
-                    0,
-                    AltMenuScreen::PreAmpMode(PreAmpMode::PreAmp),
-                ));
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::PreAmpMode(PreAmpMode::PreAmp));
             }
         }
 

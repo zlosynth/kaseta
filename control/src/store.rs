@@ -9,7 +9,7 @@ use kaseta_dsp::processor::{Attributes as DSPAttributes, Reaction as DSPReaction
 
 use crate::action::{ControlAction, Queue};
 use crate::cache::calibration::Calibration;
-use crate::cache::display::{ConfigurationScreen, Screen};
+use crate::cache::display::{ConfigurationScreen, DialogScreen, Screen};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::cache::{Cache, Configuration};
 use crate::input::snapshot::Snapshot as InputSnapshot;
@@ -119,7 +119,7 @@ impl Store {
         }
 
         if dsp_reaction.hysteresis_clipping {
-            self.cache.display.set_clipping(Screen::Clipping(0));
+            self.cache.display.set_clipping();
         }
     }
 
@@ -130,9 +130,9 @@ impl Store {
 
     fn sustain_alt_menu(&mut self) {
         if self.input.button.pressed {
-            if let Some(Screen::AltMenu(age, menu)) = self.cache.display.prioritized[2] {
+            if let Some(Screen::AltAttribute(age, menu)) = self.cache.display.prioritized[2] {
                 if age <= 1 {
-                    self.cache.display.set_alt_menu(Screen::AltMenu(0, menu));
+                    self.cache.display.set_alt_menu(menu);
                 }
             }
         }
@@ -140,12 +140,6 @@ impl Store {
 
     fn converge_internal_state(&mut self) -> Option<Save> {
         let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
-        if !plugged_controls.is_empty() {
-            log::info!("PLUGGED: {:?}", plugged_controls);
-        }
-        if !unplugged_controls.is_empty() {
-            log::info!("UNPLUGGED: {:?}", unplugged_controls);
-        }
         self.cache.unmap_controls(&unplugged_controls);
         self.dequeue_controls(&unplugged_controls);
         self.enqueue_controls(&plugged_controls);
@@ -170,7 +164,9 @@ impl Store {
         self.reconcile_detectors();
         self.reconcile_attributes();
 
-        self.cache.display.set_heads(self.cache.screen_for_heads());
+        self.cache
+            .display
+            .set_attribute(self.cache.screen_for_heads());
 
         if needs_save {
             Some(self.cache.save())
@@ -217,26 +213,26 @@ impl Store {
     fn converge_from_normal_state(&mut self, needs_save: &mut bool) {
         self.detect_tapped_tempo(needs_save);
         if self.button_is_long_held_without_pot_activity() {
-            log::info!("ENTERING CONFIGURATION");
+            log::info!("Entering configuration menu");
             self.state = State::configuring_from_draft(self.cache.configuration);
-            self.cache
-                .display
-                .set_configuration(Screen::configuration());
+            self.cache.display.set_dialog(DialogScreen::configuration());
         } else if let Some(action) = self.queue.pop() {
             match action {
                 ControlAction::Calibrate(i) => {
-                    log::info!("ENTERING CALIBRATION");
+                    log::info!("Entering calibration menu for control={:?}", i + 1);
                     self.state = State::calibrating_octave_1(i);
-                    self.cache.display.set_calibration(Screen::calibration_1(i));
+                    self.cache
+                        .display
+                        .set_dialog(DialogScreen::calibration_1(i));
                 }
                 ControlAction::Map(i) => {
-                    log::info!("ENTERING MAPPING");
+                    log::info!("Entering mapping menu for control={:?}", i + 1);
                     self.state = State::mapping(i);
-                    self.cache.display.set_mapping(Screen::mapping(i));
+                    self.cache.display.set_dialog(DialogScreen::mapping(i));
                 }
             }
         } else {
-            self.cache.display.reset_screen(1);
+            self.cache.display.reset_dialog();
         }
     }
 
@@ -244,13 +240,13 @@ impl Store {
         if let Some(detected_tempo) = self.cache.tap_detector.detected_tempo() {
             let tapped_tempo = detected_tempo as f32 / 1000.0;
             if self.cache.tapped_tempo != Some(tapped_tempo) {
-                log::info!("SETTING TAPPED TEMPO");
+                log::info!("Setting tapped tempo={:?}", tapped_tempo);
                 *needs_save = true;
                 self.cache.tapped_tempo = Some(tapped_tempo);
             }
         }
         if self.cache.tapped_tempo.is_some() && self.input.speed.active() {
-            log::info!("RESETTING TAPPED TEMPO");
+            log::info!("Resetting tapped tempo");
             *needs_save = true;
             self.cache.tap_detector.reset();
             self.cache.tapped_tempo = None;
@@ -268,11 +264,15 @@ impl Store {
     ) {
         let destination = self.active_attribute();
         if !self.input.control[input].is_plugged {
-            log::info!("CONTROL UNPLUGGED WHILE MAPPING {:?}", input + 1);
-            self.cache.display.set_failure(Screen::failure());
+            log::info!("Unplugged control={:?} during mapping", input + 1);
+            self.cache.display.set_failure();
             self.state = State::Normal;
         } else if !destination.is_none() && !self.cache.mapping.contains(&destination) {
-            log::info!("MAPPED {:?} TO {:?}", input + 1, destination);
+            log::info!(
+                "Mapped control={:?} to attribute={:?}",
+                input + 1,
+                destination
+            );
             *needs_save = true;
             self.cache.mapping[input] = destination;
             self.state = State::Normal;
@@ -316,7 +316,7 @@ impl Store {
         needs_save: &mut bool,
     ) {
         if !self.input.control[input].is_plugged {
-            self.cache.display.set_failure(Screen::failure());
+            self.cache.display.set_failure();
             self.state = State::Normal;
         } else if self.input.button.clicked {
             match phase {
@@ -325,7 +325,7 @@ impl Store {
                     self.state = State::calibrating_octave_2(input, octave_1);
                     self.cache
                         .display
-                        .set_calibration(Screen::calibration_2(input));
+                        .set_dialog(DialogScreen::calibration_2(input));
                 }
                 CalibrationPhase::Octave2(octave_1) => {
                     let octave_2 = self.input.control[input].value();
@@ -333,7 +333,7 @@ impl Store {
                         *needs_save = true;
                         self.cache.calibrations[input] = calibration;
                     } else {
-                        self.cache.display.set_failure(Screen::failure());
+                        self.cache.display.set_failure();
                     }
                     self.state = State::Normal;
                 }
@@ -353,7 +353,9 @@ impl Store {
         } else {
             let (draft, screen) = self.updated_configuration_draft(configuring.draft);
             if let Some(screen) = screen {
-                self.cache.display.set_configuration(screen);
+                self.cache
+                    .display
+                    .set_dialog(DialogScreen::Configuration(screen));
             }
             self.state = State::Configuring(StateConfiguring { draft });
         }
@@ -362,7 +364,7 @@ impl Store {
     fn updated_configuration_draft(
         &self,
         mut draft: Configuration,
-    ) -> (Configuration, Option<Screen>) {
+    ) -> (Configuration, Option<ConfigurationScreen>) {
         for (i, head) in self.input.head.iter().enumerate() {
             let maybe_screen = update_rewind_configuration(&mut draft, i, head);
             if let Some(screen) = maybe_screen {
@@ -430,7 +432,7 @@ fn update_rewind_configuration(
     draft: &mut Configuration,
     i: usize,
     head: &InputHead,
-) -> Option<Screen> {
+) -> Option<ConfigurationScreen> {
     let screen = None;
 
     let volume_active = head.volume.active();
@@ -454,7 +456,7 @@ fn update_rewind_configuration(
 
     let tuple = (rewind_speed, fast_forward_speed);
     draft.rewind_speed[i] = tuple;
-    Some(Screen::Configuration(ConfigurationScreen::Rewind(tuple)))
+    Some(ConfigurationScreen::Rewind(tuple))
 }
 
 fn f32_to_index_of_4(x: f32) -> usize {
