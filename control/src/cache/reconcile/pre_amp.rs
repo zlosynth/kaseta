@@ -55,7 +55,13 @@ impl Store {
 
                 (octave_offset - 2.0 + control).clamp(0.0, 8.0) + 2.0
             } else {
-                self.input.pre_amp.value() * 5.0 + 2.0
+                let pot = self.input.pre_amp.value();
+                if self.input.pre_amp.active() {
+                    self.cache
+                        .display
+                        .force_attribute(AttributeScreen::OscillatorTone(pot));
+                }
+                pot * 5.0 + 2.0
             };
             let a = 27.5;
             // TODO: Pass voct, for the dsp to convert it, it is better for smoothening

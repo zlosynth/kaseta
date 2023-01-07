@@ -76,6 +76,7 @@ pub enum TonePosition {
 pub enum AttributeScreen {
     Positions(Positions),
     OctaveOffset(usize),
+    OscillatorTone(f32),
 }
 
 pub type Positions = ([bool; 4], [bool; 4]);
@@ -369,7 +370,18 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
             leds[offset + 4] = true;
             leds
         }
+        AttributeScreen::OscillatorTone(tone) => phase_to_leds(tone),
     }
+}
+
+fn phase_to_leds(phase: f32) -> [bool; 8] {
+    let mut leds = [false; 8];
+    for i in 0..=(phase * 7.9) as usize {
+        leds[i] = true;
+    }
+    [
+        leds[1], leds[3], leds[5], leds[7], leds[0], leds[2], leds[4], leds[6],
+    ]
 }
 
 fn leds_for_clipping(cycles: u32) -> [bool; 8] {
