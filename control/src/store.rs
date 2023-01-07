@@ -27,10 +27,10 @@ use crate::save::Save;
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Store {
-    pub input: Input,
     state: State,
-    pub queue: Queue,
-    pub cache: Cache,
+    pub(crate) input: Input,
+    pub(crate) queue: Queue,
+    pub(crate) cache: Cache,
 }
 
 /// The current state of the control state machine.
