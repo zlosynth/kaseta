@@ -392,7 +392,7 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
 
 fn phase_to_leds(phase: f32) -> [bool; 8] {
     let mut leds = [false; 8];
-    for led in leds.iter_mut().take((phase * 7.9) as usize) {
+    for led in leds.iter_mut().take((phase * 7.9) as usize + 1) {
         *led = true;
     }
     [

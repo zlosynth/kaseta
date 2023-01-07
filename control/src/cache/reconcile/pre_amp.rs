@@ -37,7 +37,6 @@ impl Store {
         }
 
         if self.cache.options.enable_oscillator {
-            // TODO: Smoothen transitions when controlled through pot
             let control = self.control_value_for_attribute(AttributeIdentifier::PreAmp);
             let voct = if let Some(control) = control {
                 let pot = self.input.pre_amp.value();
@@ -64,7 +63,6 @@ impl Store {
             };
 
             let a = 27.5;
-            // TODO: Pass voct, for the dsp to convert it, it is better for smoothening
             self.cache.attributes.oscillator = a * powf(2.0, voct);
         } else {
             let sum = super::sum(
