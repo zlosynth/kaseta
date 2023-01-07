@@ -77,6 +77,7 @@ pub enum AttributeScreen {
     Positions(Positions),
     OctaveOffset(usize),
     OscillatorTone(f32),
+    PreAmp(f32),
 }
 
 pub type Positions = ([bool; 4], [bool; 4]);
@@ -152,6 +153,20 @@ impl Display {
         };
         if same_type_or_empty {
             self.set_screen(4, Screen::Attribute(0, attribute));
+        }
+    }
+
+    pub fn update_attribute(&mut self, attribute: AttributeScreen) {
+        let (same_type, age) = 'block: {
+            if let Some(Screen::Attribute(age, current_attribute)) = self.prioritized[4] {
+                if mem::discriminant(&current_attribute) == mem::discriminant(&attribute) {
+                    break 'block (true, age);
+                }
+            }
+            (false, 0)
+        };
+        if same_type {
+            self.set_screen(4, Screen::Attribute(age, attribute));
         }
     }
 
@@ -240,7 +255,7 @@ fn ticked_alt_attribute(age: u32, menu: AltAttributeScreen) -> Option<Screen> {
 }
 
 fn ticked_attribute(age: u32, menu: AttributeScreen) -> Option<Screen> {
-    if age > 1000 {
+    if age > 2000 {
         None
     } else {
         Some(Screen::Attribute(age + 1, menu))
@@ -371,13 +386,14 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
             leds
         }
         AttributeScreen::OscillatorTone(tone) => phase_to_leds(tone),
+        AttributeScreen::PreAmp(phase) => phase_to_leds(phase),
     }
 }
 
 fn phase_to_leds(phase: f32) -> [bool; 8] {
     let mut leds = [false; 8];
-    for i in 0..=(phase * 7.9) as usize {
-        leds[i] = true;
+    for led in leds.iter_mut().take((phase * 7.9) as usize) {
+        *led = true;
     }
     [
         leds[1], leds[3], leds[5], leds[7], leds[0], leds[2], leds[4], leds[6],

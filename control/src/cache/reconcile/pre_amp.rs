@@ -3,7 +3,6 @@ use libm::powf;
 #[allow(unused_imports)]
 use micromath::F32Ext;
 
-use super::calculate;
 use super::taper;
 use crate::cache::display::{AltAttributeScreen, AttributeScreen, PreAmpMode};
 use crate::cache::mapping::AttributeIdentifier;
@@ -63,17 +62,29 @@ impl Store {
                 }
                 pot * 5.0 + 2.0
             };
+
             let a = 27.5;
             // TODO: Pass voct, for the dsp to convert it, it is better for smoothening
             self.cache.attributes.oscillator = a * powf(2.0, voct);
         } else {
-            self.cache.attributes.pre_amp = calculate(
+            let sum = super::sum(
                 self.input.pre_amp.value(),
                 self.control_value_for_attribute(AttributeIdentifier::PreAmp)
                     .map(|x| x / 5.0),
-                PRE_AMP_RANGE,
-                Some(taper::log),
             );
+
+            if self.input.pre_amp.active() {
+                self.cache
+                    .display
+                    .force_attribute(AttributeScreen::PreAmp(sum));
+            } else {
+                self.cache
+                    .display
+                    .update_attribute(AttributeScreen::PreAmp(sum));
+            }
+
+            self.cache.attributes.pre_amp =
+                super::calculate_from_sum(sum, PRE_AMP_RANGE, Some(taper::log));
         }
     }
 }
