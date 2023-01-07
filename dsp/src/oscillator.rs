@@ -35,7 +35,7 @@ impl Oscillator {
         for x in buffer.iter_mut() {
             let x_base = f32::sin(self.phase_base * 2.0 * PI);
             let x_sub = f32::sin(self.phase_sub * 2.0 * PI);
-            *x = (x_base + x_sub) * 1.0;
+            *x = (x_base + x_sub) * 0.9;
 
             let step = self.frequency / self.sample_rate;
             self.phase_base += step;

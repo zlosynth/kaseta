@@ -10,6 +10,7 @@ backwards compatibility.
 * Save after tapped tempo is overridden.
 * Fix backup of alternative options.
 * Unmap controls disconnected while shut down.
+* Prevent clipping of internal oscillator.
 
 ## 0.6.0
 
