@@ -1,5 +1,8 @@
 use libm::powf;
 
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 use super::calculate;
 use super::taper;
 use crate::cache::display::{AltAttributeScreen, PreAmpMode};
@@ -35,12 +38,19 @@ impl Store {
         }
 
         if self.cache.options.enable_oscillator {
-            let pot = self.input.pre_amp.value() * 5.0;
-            let control = self
-                .control_value_for_attribute(AttributeIdentifier::PreAmp)
-                .unwrap_or(0.0);
-            let voct = (pot + control).clamp(0.0, 5.0) + 2.0;
+            // TODO: Smoothen transitions when controlled through pot
+            let control = self.control_value_for_attribute(AttributeIdentifier::PreAmp);
+            let voct = if let Some(control) = control {
+                let pot = self.input.pre_amp.value();
+                // Keep the multiplier below 4, so assure that the result won't get
+                // into the 5th octave when set on the edge.
+                let octave_offset = (pot * 3.95).trunc() - 2.0;
+                (octave_offset + control).clamp(0.0, 8.0) + 2.0
+            } else {
+                self.input.pre_amp.value() * 5.0 + 2.0
+            };
             let a = 27.5;
+            // TODO: Pass voct, for the dsp to convert it, it is better for smoothening
             self.cache.attributes.oscillator = a * powf(2.0, voct);
         } else {
             self.cache.attributes.pre_amp = calculate(
