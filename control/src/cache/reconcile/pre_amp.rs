@@ -5,7 +5,7 @@ use micromath::F32Ext;
 
 use super::calculate;
 use super::taper;
-use crate::cache::display::{AltAttributeScreen, PreAmpMode};
+use crate::cache::display::{AltAttributeScreen, AttributeScreen, PreAmpMode};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::log;
 use crate::Store;
@@ -42,10 +42,18 @@ impl Store {
             let control = self.control_value_for_attribute(AttributeIdentifier::PreAmp);
             let voct = if let Some(control) = control {
                 let pot = self.input.pre_amp.value();
+
                 // Keep the multiplier below 4, so assure that the result won't get
                 // into the 5th octave when set on the edge.
-                let octave_offset = (pot * 3.95).trunc() - 2.0;
-                (octave_offset + control).clamp(0.0, 8.0) + 2.0
+                let octave_offset = (pot * 3.95).trunc();
+
+                if self.input.pre_amp.active() {
+                    self.cache
+                        .display
+                        .force_attribute(AttributeScreen::OctaveOffset(octave_offset as usize));
+                }
+
+                (octave_offset - 2.0 + control).clamp(0.0, 8.0) + 2.0
             } else {
                 self.input.pre_amp.value() * 5.0 + 2.0
             };

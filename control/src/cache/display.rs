@@ -1,3 +1,5 @@
+use core::mem;
+
 /// State machine representing 8 display LEDs of the module.
 ///
 /// This structure handles the prioritization of display modes, their
@@ -14,7 +16,7 @@ pub enum Screen {
     Dialog(DialogScreen),
     Failure(u32),
     AltAttribute(u32, AltAttributeScreen),
-    Attribute(AttributeScreen),
+    Attribute(u32, AttributeScreen),
     Clipping(u32),
 }
 
@@ -73,6 +75,7 @@ pub enum TonePosition {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum AttributeScreen {
     Positions(Positions),
+    OctaveOffset(usize),
 }
 
 pub type Positions = ([bool; 4], [bool; 4]);
@@ -85,9 +88,10 @@ impl Default for Display {
                 None,
                 None,
                 None,
-                Some(Screen::Attribute(AttributeScreen::Positions((
-                    [false; 4], [false; 4],
-                )))),
+                Some(Screen::Attribute(
+                    0,
+                    AttributeScreen::Positions(([false; 4], [false; 4])),
+                )),
             ],
         }
     }
@@ -130,8 +134,24 @@ impl Display {
         }
     }
 
+    pub fn force_attribute(&mut self, attribute: AttributeScreen) {
+        self.set_screen(4, Screen::Attribute(0, attribute));
+    }
+
     pub fn set_attribute(&mut self, attribute: AttributeScreen) {
-        self.set_screen(4, Screen::Attribute(attribute));
+        let same_type_or_empty = 'block: {
+            if let Some(Screen::Attribute(_, current_attribute)) = self.prioritized[4] {
+                if mem::discriminant(&current_attribute) == mem::discriminant(&attribute) {
+                    break 'block true;
+                }
+            } else {
+                break 'block true;
+            }
+            false
+        };
+        if same_type_or_empty {
+            self.set_screen(4, Screen::Attribute(0, attribute));
+        }
     }
 
     fn set_screen(&mut self, priority: usize, screen: Screen) {
@@ -148,8 +168,8 @@ impl Screen {
         match self {
             Self::Failure(cycles) => leds_for_failure(*cycles),
             Self::Dialog(dialog) => leds_for_dialog(dialog),
-            Self::AltAttribute(_, alt_menu) => leds_for_alt_attribute(*alt_menu),
-            Self::Attribute(attribute) => leds_for_attribute(*attribute),
+            Self::AltAttribute(_, alt_attribute) => leds_for_alt_attribute(*alt_attribute),
+            Self::Attribute(_, attribute) => leds_for_attribute(*attribute),
             Self::Clipping(cycles) => leds_for_clipping(*cycles),
         }
     }
@@ -158,8 +178,8 @@ impl Screen {
         match self {
             Screen::Failure(cycles) => ticked_failure(cycles),
             Screen::Dialog(menu) => Some(Screen::Dialog(ticked_dialog(menu))),
-            Screen::AltAttribute(age, menu) => ticked_alt_attribute(age, menu),
-            Screen::Attribute(_) => Some(self),
+            Screen::AltAttribute(age, alt_attribute) => ticked_alt_attribute(age, alt_attribute),
+            Screen::Attribute(age, attribute) => ticked_attribute(age, attribute),
             Screen::Clipping(age) => ticked_clipping(age),
         }
     }
@@ -215,6 +235,14 @@ fn ticked_alt_attribute(age: u32, menu: AltAttributeScreen) -> Option<Screen> {
         None
     } else {
         Some(Screen::AltAttribute(age + 1, menu))
+    }
+}
+
+fn ticked_attribute(age: u32, menu: AttributeScreen) -> Option<Screen> {
+    if age > 1000 {
+        None
+    } else {
+        Some(Screen::Attribute(age + 1, menu))
     }
 }
 
@@ -332,6 +360,15 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
         AttributeScreen::Positions((top, bottom)) => [
             top[0], top[1], top[2], top[3], bottom[0], bottom[1], bottom[2], bottom[3],
         ],
+        AttributeScreen::OctaveOffset(offset) => {
+            let mut leds = [false; 8];
+            if offset >= leds.len() {
+                unreachable!("The range of octave offset is limited to 4");
+            }
+            leds[offset] = true;
+            leds[offset + 4] = true;
+            leds
+        }
     }
 }
 

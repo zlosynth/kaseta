@@ -11,6 +11,7 @@ backwards compatibility.
 * Fix backup of alternative options.
 * Unmap controls disconnected while shut down.
 * Prevent clipping of internal oscillator.
+* Display selected octave offset on display.
 
 ## 0.6.0
 
