@@ -7,10 +7,8 @@ backwards compatibility.
 ## Unreleased
 
 * Extend maximum delay length to 5 minutes.
-* Implement visualization for: octave offset, oscillator frequency,
-  pre-amp strength, drive, bias, dry/wet, wow/flutter.
-* Replace DIP switch with alt button and potentiomenter for:
-  hysteresis range limitation.
+* Implement visualization for all attributes.
+* Replace DIP switch controls with alt button and potentiomenter.
 * Save after tapped tempo is overridden.
 * Fix backup of alternative options.
 * Unmap controls disconnected while shut down.

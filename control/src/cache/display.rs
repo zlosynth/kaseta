@@ -91,6 +91,7 @@ pub enum AttributeScreen {
     DryWet(f32),
     Wow(f32),
     Flutter(f32),
+    Speed(f32),
 }
 
 pub type Positions = ([bool; 4], [bool; 4]);
@@ -398,6 +399,7 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
         AttributeScreen::DryWet(phase) => dry_wet_to_leds(phase),
         AttributeScreen::Wow(phase) => wow_to_leds(phase),
         AttributeScreen::Flutter(phase) => flutter_to_leds(phase),
+        AttributeScreen::Speed(phase) => speed_to_leds(phase),
     }
 }
 
@@ -444,6 +446,16 @@ fn wow_to_leds(phase: f32) -> [bool; 8] {
         }
     }
     leds
+}
+
+fn speed_to_leds(phase: f32) -> [bool; 8] {
+    let mut leds = [false; 8];
+    for i in 0..=(phase * 7.9) as usize {
+        leds[leds.len() - 1 - i] = true;
+    }
+    [
+        leds[1], leds[3], leds[5], leds[7], leds[0], leds[2], leds[4], leds[6],
+    ]
 }
 
 fn leds_for_clipping(cycles: u32) -> [bool; 8] {

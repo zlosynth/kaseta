@@ -1,4 +1,4 @@
-use crate::cache::display::{AltAttributeScreen, SpeedRange};
+use crate::cache::display::{AltAttributeScreen, AttributeScreen, SpeedRange};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::log;
 use crate::Store;
@@ -51,6 +51,9 @@ impl Store {
                     self.control_value_for_attribute(AttributeIdentifier::Speed)
                         .map(|x| x / 5.0),
                 );
+
+                self.show_length_on_display(sum);
+
                 let voct = sum * 7.0;
                 let a = 13.73;
                 let frequency = a * libm::powf(2.0, voct);
@@ -61,6 +64,9 @@ impl Store {
                     self.control_value_for_attribute(AttributeIdentifier::Speed)
                         .map(|x| x / 5.0),
                 );
+
+                self.show_length_on_display(sum);
+
                 const MIN: f32 = 0.01;
                 const MIDDLE: f32 = 10.0;
                 const MAX: f32 = 5.0 * 60.0;
@@ -72,6 +78,18 @@ impl Store {
                     MIN + (1.0 - phase) * (MIDDLE - MIN)
                 }
             };
+        }
+    }
+
+    fn show_length_on_display(&mut self, phase: f32) {
+        if self.input.speed.active() {
+            self.cache
+                .display
+                .force_attribute(AttributeScreen::Speed(1.0 - phase));
+        } else {
+            self.cache
+                .display
+                .update_attribute(AttributeScreen::Speed(1.0 - phase));
         }
     }
 }
