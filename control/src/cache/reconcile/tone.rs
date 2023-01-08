@@ -1,5 +1,5 @@
 use super::calculate;
-use crate::cache::display::{AltAttributeScreen, TonePosition};
+use crate::cache::display::{AltAttributeScreen, AttributeScreen, TonePosition};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::log;
 use crate::Store;
@@ -28,11 +28,27 @@ impl Store {
             }
         }
 
-        self.cache.attributes.tone = calculate(
+        let phase = calculate(
             self.input.tone.value(),
             self.control_value_for_attribute(AttributeIdentifier::Tone),
             (0.0, 1.0),
             None,
         );
+
+        self.show_tone_on_display(phase);
+
+        self.cache.attributes.tone = phase;
+    }
+
+    fn show_tone_on_display(&mut self, phase: f32) {
+        if self.input.tone.active() {
+            self.cache
+                .display
+                .force_attribute(AttributeScreen::Tone(phase));
+        } else {
+            self.cache
+                .display
+                .update_attribute(AttributeScreen::Tone(phase));
+        }
     }
 }

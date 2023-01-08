@@ -92,6 +92,7 @@ pub enum AttributeScreen {
     Wow(f32),
     Flutter(f32),
     Speed(f32),
+    Tone(f32),
 }
 
 pub type Positions = ([bool; 4], [bool; 4]);
@@ -400,6 +401,7 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
         AttributeScreen::Wow(phase) => wow_to_leds(phase),
         AttributeScreen::Flutter(phase) => flutter_to_leds(phase),
         AttributeScreen::Speed(phase) => speed_to_leds(phase),
+        AttributeScreen::Tone(phase) => tone_to_leds(phase),
     }
 }
 
@@ -456,6 +458,26 @@ fn speed_to_leds(phase: f32) -> [bool; 8] {
     [
         leds[1], leds[3], leds[5], leds[7], leds[0], leds[2], leds[4], leds[6],
     ]
+}
+
+fn tone_to_leds(phase: f32) -> [bool; 8] {
+    #![allow(clippy::needless_range_loop)] // For symmetry
+
+    let mut leds = [true; 8];
+
+    if phase < 0.4 {
+        let phase = 1.0 - phase / 0.4;
+        for i in 0..=(phase * 7.9) as usize {
+            leds[leds.len() - 1 - i] = false;
+        }
+    } else if phase > 0.6 {
+        let phase = (phase - 0.6) / 0.4;
+        for i in 0..=(phase * 7.9) as usize {
+            leds[i] = false;
+        }
+    }
+
+    leds
 }
 
 fn leds_for_clipping(cycles: u32) -> [bool; 8] {
