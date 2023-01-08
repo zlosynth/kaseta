@@ -40,12 +40,6 @@ impl StateVariableFilter {
         self
     }
 
-    // pub fn pass(&mut self, signal: &[f32]) {
-    //     for x in signal.iter() {
-    //         self.tick(*x);
-    //     }
-    // }
-
     // https://www.earlevel.com/main/2003/03/02/the-digital-state-variable-filter/
     //
     //             +----------------------------------------------------------+

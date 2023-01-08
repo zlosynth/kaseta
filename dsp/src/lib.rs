@@ -28,6 +28,7 @@ pub mod wow_flutter;
 mod clipper;
 mod compressor;
 mod dc_blocker;
+mod linkwitz_riley_filter;
 mod math;
 mod pre_amp;
 mod ring_buffer;

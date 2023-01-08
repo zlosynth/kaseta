@@ -1,7 +1,7 @@
 #[allow(unused_imports)]
 use micromath::F32Ext;
 
-use crate::state_variable_filter::StateVariableFilter;
+use crate::linkwitz_riley_filter::LinkwitzRileyFilter;
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
@@ -12,8 +12,9 @@ pub struct Attributes {
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Tone {
-    position: f32,
-    filter: StateVariableFilter,
+    sample_rate: f32,
+    lpf: LinkwitzRileyFilter,
+    hpf: LinkwitzRileyFilter,
 }
 
 impl Tone {
@@ -23,25 +24,15 @@ impl Tone {
     /// unstable and the initialization will panic.
     #[must_use]
     pub fn new(sample_rate: u32) -> Self {
-        assert!(
-            sample_rate > 500,
-            "Tone may be unstable in slow sample rates"
-        );
         Self {
-            position: 0.0,
-            filter: StateVariableFilter::new(sample_rate),
+            sample_rate: sample_rate as f32,
+            lpf: LinkwitzRileyFilter::new(sample_rate as f32),
+            hpf: LinkwitzRileyFilter::new(sample_rate as f32),
         }
     }
 
     pub fn tick(&mut self, x: f32) -> f32 {
-        if self.position < 0.4 {
-            self.filter.tick(x).low_pass
-        } else if self.position > 0.6 {
-            self.filter.tick(x).high_pass
-        } else {
-            self.filter.tick(x);
-            x
-        }
+        self.lpf.tick(self.hpf.tick(x).high_pass).low_pass
     }
 
     pub fn process(&mut self, buffer: &mut [f32]) {
@@ -52,17 +43,21 @@ impl Tone {
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
         let a = 13.73;
-        self.position = attributes.tone;
-        if self.position < 0.4 {
-            let phase = self.position / 0.4;
-            let voct = phase * 9.0;
+        if attributes.tone < 0.4 {
+            self.hpf.set_frequency(0.0);
+            let phase = attributes.tone / 0.4;
+            let voct = phase * 10.645;
             let cutoff = a * libm::powf(2.0, voct);
-            self.filter.set_frequency(cutoff);
-        } else if self.position > 0.6 {
-            let phase = (self.position - 0.6) / 0.4;
-            let voct = phase * 8.0 + 1.0;
+            self.lpf.set_frequency(cutoff);
+        } else if attributes.tone < 0.6 {
+            self.lpf.set_frequency(self.sample_rate * 0.48);
+            self.hpf.set_frequency(0.0);
+        } else {
+            self.lpf.set_frequency(self.sample_rate * 0.48);
+            let phase = (attributes.tone - 0.6) / 0.4;
+            let voct = phase * 10.0;
             let cutoff = a * libm::powf(2.0, voct);
-            self.filter.set_frequency(cutoff);
+            self.hpf.set_frequency(cutoff);
         }
     }
 }
