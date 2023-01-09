@@ -166,10 +166,6 @@ impl Store {
         self.reconcile_detectors();
         self.reconcile_attributes(&mut needs_save);
 
-        self.cache
-            .display
-            .set_fallback_attribute(self.cache.screen_for_heads());
-
         if needs_save {
             Some(self.cache.save())
         } else {
@@ -1212,6 +1208,7 @@ mod tests {
 
             for _ in 0..4 {
                 store.apply_input_snapshot(input);
+                store.tick();
             }
 
             assert_animation(&mut store, &[6098]);

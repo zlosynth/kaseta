@@ -93,6 +93,9 @@ pub enum AttributeScreen {
     Flutter(f32),
     Speed(f32),
     Tone(f32),
+    Volume(usize, usize, f32),
+    Feedback(usize, usize, f32),
+    Pan(usize, usize, f32),
 }
 
 pub type Positions = ([bool; 4], [bool; 4]);
@@ -159,8 +162,19 @@ impl Display {
     pub fn update_attribute(&mut self, attribute: AttributeScreen) {
         let (same_type, age) = 'block: {
             if let Some(Screen::Attribute(age, current_attribute)) = self.prioritized[4] {
-                if mem::discriminant(&current_attribute) == mem::discriminant(&attribute) {
-                    break 'block (true, age);
+                match (attribute, current_attribute) {
+                    (AttributeScreen::Volume(i, _, _), AttributeScreen::Volume(j, _, _))
+                    | (AttributeScreen::Feedback(i, _, _), AttributeScreen::Feedback(j, _, _))
+                    | (AttributeScreen::Pan(i, _, _), AttributeScreen::Pan(j, _, _)) => {
+                        if i == j {
+                            break 'block (true, age);
+                        }
+                    }
+                    _ => {
+                        if mem::discriminant(&current_attribute) == mem::discriminant(&attribute) {
+                            break 'block (true, age);
+                        }
+                    }
                 }
             }
             (false, 0)
@@ -346,7 +360,6 @@ fn leds_for_configuration(configuration: &ConfigurationScreen) -> [bool; 8] {
         }
         ConfigurationScreen::Rewind((rewind, fast_forward)) => {
             let mut leds = [false; 8];
-            #[allow(clippy::needless_range_loop)] // Keep it symmetrical with rewind
             for i in 0..=*fast_forward {
                 leds[i] = true;
             }
@@ -402,6 +415,9 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
         AttributeScreen::Flutter(phase) => flutter_to_leds(phase),
         AttributeScreen::Speed(phase) => speed_to_leds(phase),
         AttributeScreen::Tone(phase) => tone_to_leds(phase),
+        AttributeScreen::Volume(_, position, phase) => volume_to_leds(position, phase),
+        AttributeScreen::Feedback(_, position, phase) => feedback_to_leds(position, phase),
+        AttributeScreen::Pan(_, position, phase) => pan_to_leds(position, phase),
     }
 }
 
@@ -461,8 +477,6 @@ fn speed_to_leds(phase: f32) -> [bool; 8] {
 }
 
 fn tone_to_leds(phase: f32) -> [bool; 8] {
-    #![allow(clippy::needless_range_loop)] // For symmetry
-
     let mut leds = [true; 8];
 
     if phase < 0.4 {
@@ -477,6 +491,41 @@ fn tone_to_leds(phase: f32) -> [bool; 8] {
         }
     }
 
+    leds
+}
+
+fn volume_to_leds(position: usize, phase: f32) -> [bool; 8] {
+    let mut leds = [false; 8];
+    leds[position] = true;
+    for i in 0..(phase * 4.9) as usize {
+        leds[4 + i] = true;
+    }
+    leds
+}
+
+fn feedback_to_leds(position: usize, phase: f32) -> [bool; 8] {
+    let mut leds = [false; 8];
+    leds[4 + position] = true;
+    for i in 0..(phase * 4.9) as usize {
+        leds[i] = true;
+    }
+    leds
+}
+
+fn pan_to_leds(position: usize, phase: f32) -> [bool; 8] {
+    let mut leds = [false, false, false, false, true, true, true, true];
+    leds[position] = true;
+    if phase < 0.4 {
+        let phase = 1.0 - phase / 0.4;
+        for i in 0..=(phase * 2.9) as usize {
+            leds[leds.len() - 1 - i] = false;
+        }
+    } else if phase > 0.6 {
+        let phase = (phase - 0.6) / 0.4;
+        for i in 0..=(phase * 2.9) as usize {
+            leds[4 + i] = false;
+        }
+    }
     leds
 }
 

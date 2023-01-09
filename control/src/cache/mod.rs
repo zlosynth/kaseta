@@ -16,7 +16,7 @@ use kaseta_dsp::processor::{Attributes as DSPAttributes, AttributesHead as DSPAt
 use self::calibration::Calibration;
 use self::clock_detector::ClockDetector;
 pub use self::configuration::Configuration;
-use self::display::{AttributeScreen, Display};
+use self::display::Display;
 use self::led::Led;
 use self::mapping::{AttributeIdentifier, Mapping};
 use self::tap_detector::TapDetector;
@@ -95,7 +95,7 @@ pub struct Attributes {
     pub reset_impulse: bool,
 }
 
-#[derive(Debug, Default)]
+#[derive(Clone, Copy, Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct AttributesHead {
     pub position: f32,
@@ -151,42 +151,6 @@ impl Cache {
             random_impulse: self.options.random_impulse,
             filter_feedback: self.options.filter_feedback,
         }
-    }
-
-    pub fn screen_for_heads(&self) -> AttributeScreen {
-        let ordered_heads = self.heads_ordered_by_position();
-
-        AttributeScreen::Positions((
-            [
-                ordered_heads[0].volume > 0.05,
-                ordered_heads[1].volume > 0.05,
-                ordered_heads[2].volume > 0.05,
-                ordered_heads[3].volume > 0.05,
-            ],
-            [
-                ordered_heads[0].feedback > 0.05,
-                ordered_heads[1].feedback > 0.05,
-                ordered_heads[2].feedback > 0.05,
-                ordered_heads[3].feedback > 0.05,
-            ],
-        ))
-    }
-
-    fn heads_ordered_by_position(&self) -> [&AttributesHead; 4] {
-        let mut ordered_heads = [
-            &self.attributes.head[0],
-            &self.attributes.head[1],
-            &self.attributes.head[2],
-            &self.attributes.head[3],
-        ];
-        for i in 0..ordered_heads.len() {
-            for j in 0..ordered_heads.len() - 1 - i {
-                if ordered_heads[j].position > ordered_heads[j + 1].position {
-                    ordered_heads.swap(j, j + 1);
-                }
-            }
-        }
-        ordered_heads
     }
 
     pub fn save(&self) -> Save {

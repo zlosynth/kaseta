@@ -14,6 +14,7 @@
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::explicit_iter_loop)]
 #![allow(clippy::redundant_closure_for_method_calls)]
+#![allow(clippy::needless_range_loop)]
 
 #[cfg(test)]
 #[macro_use]
