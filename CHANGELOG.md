@@ -14,6 +14,7 @@ backwards compatibility.
 * Unmap controls disconnected while shut down.
 * Prevent clipping of internal oscillator.
 * Fix control input scaling.
+* Resolve configuration reset bug.
 
 ## 0.6.0
 

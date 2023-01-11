@@ -279,12 +279,15 @@ mod app {
     }
 
     fn retrieve_save(inputs: &mut Inputs, storage: &mut Storage) -> Save {
+        // XXX: This must be called even if not used, so the storage gets
+        // initialized with the latest used version.
+        let latest_save = storage.load_save();
         if is_button_held(inputs) {
             defmt::info!("Reset was initiated");
             wait_until_button_is_released(inputs);
             Save::default()
         } else {
-            storage.load_save()
+            latest_save
         }
     }
 
