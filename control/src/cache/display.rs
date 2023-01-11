@@ -497,7 +497,10 @@ fn tone_to_leds(phase: f32) -> [bool; 8] {
 fn volume_to_leds(position: usize, phase: f32) -> [bool; 8] {
     let mut leds = [false; 8];
     leds[position] = true;
-    for i in 0..(phase * 4.9) as usize {
+    if phase < f32::EPSILON {
+        return leds;
+    }
+    for i in 0..=(phase * 3.9) as usize {
         leds[4 + i] = true;
     }
     leds
@@ -506,7 +509,10 @@ fn volume_to_leds(position: usize, phase: f32) -> [bool; 8] {
 fn feedback_to_leds(position: usize, phase: f32) -> [bool; 8] {
     let mut leds = [false; 8];
     leds[4 + position] = true;
-    for i in 0..(phase * 4.9) as usize {
+    if phase < f32::EPSILON {
+        return leds;
+    }
+    for i in 0..=(phase * 3.9) as usize {
         leds[i] = true;
     }
     leds

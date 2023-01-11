@@ -1,4 +1,4 @@
-use super::calculate;
+use super::{calculate, taper};
 use crate::cache::display::AttributeScreen;
 use crate::cache::mapping::AttributeIdentifier;
 use crate::cache::quantization::{quantize, Quantization};
@@ -36,12 +36,12 @@ impl Store {
 
     fn reconcile_volume(&mut self, i: usize, relative_position: usize) {
         let volume_sum = super::sum(
-            self.input.head[i].volume.value(),
+            (self.input.head[i].volume.value() - 0.02) / 0.98,
             self.control_value_for_attribute(AttributeIdentifier::Volume(i)),
         );
+        // The top limit is made to match compressor's treshold.
         self.cache.attributes.head[i].volume =
-            super::calculate_from_sum(volume_sum, (0.0, 1.0), None);
-
+            super::calculate_from_sum(volume_sum, (0.0, 0.25), Some(taper::log));
         let screen = AttributeScreen::Volume(i, relative_position, volume_sum);
         if self.input.head[i].volume.active() {
             self.cache.display.force_attribute(screen);
@@ -52,7 +52,7 @@ impl Store {
 
     fn reconcile_feedback(&mut self, i: usize, relative_position: usize) {
         let feedback_sum = super::sum(
-            self.input.head[i].feedback.value(),
+            (self.input.head[i].feedback.value() - 0.02) / 0.98,
             self.control_value_for_attribute(AttributeIdentifier::Feedback(i)),
         );
         self.cache.attributes.head[i].feedback =
@@ -113,16 +113,16 @@ impl Store {
 fn screen_for_positions(ordered_heads: &[(usize, AttributesHead); 4]) -> AttributeScreen {
     AttributeScreen::Positions((
         [
-            ordered_heads[0].1.volume > 0.05,
-            ordered_heads[1].1.volume > 0.05,
-            ordered_heads[2].1.volume > 0.05,
-            ordered_heads[3].1.volume > 0.05,
+            ordered_heads[0].1.volume > 0.00,
+            ordered_heads[1].1.volume > 0.00,
+            ordered_heads[2].1.volume > 0.00,
+            ordered_heads[3].1.volume > 0.00,
         ],
         [
-            ordered_heads[0].1.feedback > 0.05,
-            ordered_heads[1].1.feedback > 0.05,
-            ordered_heads[2].1.feedback > 0.05,
-            ordered_heads[3].1.feedback > 0.05,
+            ordered_heads[0].1.feedback > 0.00,
+            ordered_heads[1].1.feedback > 0.00,
+            ordered_heads[2].1.feedback > 0.00,
+            ordered_heads[3].1.feedback > 0.00,
         ],
     ))
 }

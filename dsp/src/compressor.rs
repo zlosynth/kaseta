@@ -6,7 +6,7 @@ use libm::{expf, fabsf, log10f, powf};
 
 const ATTACK_IN_SECONDS: f32 = 0.01;
 const RELEASE_IN_SECONDS: f32 = 0.14;
-const TRESHOLD: f32 = -12.0; // This is 0.5 amplitude
+const TRESHOLD: f32 = -6.0; // This is 0.5 amplitude
 const RATIO: f32 = 16.0;
 const SLOPE: f32 = 1.0 / RATIO - 1.0;
 const KNEE: f32 = 6.0;
