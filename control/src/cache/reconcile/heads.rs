@@ -56,7 +56,7 @@ impl Store {
             self.control_value_for_attribute(AttributeIdentifier::Feedback(i)),
         );
         self.cache.attributes.head[i].feedback =
-            super::calculate_from_sum(feedback_sum, (0.0, 1.0), None);
+            super::calculate_from_sum(feedback_sum, (0.0, 1.2), None);
         let screen = AttributeScreen::Feedback(i, relative_position, feedback_sum);
         if self.input.head[i].feedback.active() {
             self.cache.display.force_attribute(screen);

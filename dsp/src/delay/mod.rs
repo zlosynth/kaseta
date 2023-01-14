@@ -1,3 +1,5 @@
+mod compressor;
+mod dc_blocker;
 mod fractional;
 
 #[allow(unused_imports)]
@@ -10,6 +12,8 @@ use crate::random::Random;
 use crate::ring_buffer::RingBuffer;
 use crate::tone::Tone;
 
+use self::compressor::Compressor;
+use self::dc_blocker::DCBlocker;
 use self::fractional::{FractionalDelay, FractionalDelayAttributes};
 
 // Assuming sample rate of 48 kHz, 64 MB memory and f32 samples of 4 bytes,
@@ -27,6 +31,8 @@ pub struct Delay {
     impulse_cursor: f32,
     random_impulse: bool,
     filter_placement: FilterPlacement,
+    compressor: [Compressor; 4],
+    dc_blocker: [DCBlocker; 4],
 }
 
 #[derive(Default, Debug)]
@@ -97,6 +103,18 @@ impl Delay {
             impulse_cursor: 0.0,
             random_impulse: false,
             filter_placement: FilterPlacement::default(),
+            compressor: [
+                Compressor::new(sample_rate),
+                Compressor::new(sample_rate),
+                Compressor::new(sample_rate),
+                Compressor::new(sample_rate),
+            ],
+            dc_blocker: [
+                DCBlocker::default(),
+                DCBlocker::default(),
+                DCBlocker::default(),
+                DCBlocker::default(),
+            ],
         }
     }
 
@@ -138,6 +156,9 @@ impl Delay {
                 .heads
                 .iter_mut()
                 .map(|head| head.reader.read(&self.buffer, age) * head.feedback)
+                .enumerate()
+                .map(|(i, x)| self.compressor[i].process(self.dc_blocker[i].process(x)))
+                // .map(|(i, x)| self.dc_blocker[i].process(self.compressor[i].process(x)))
                 .sum();
             if self.filter_placement.is_feedback() {
                 feedback = tone.tick(feedback);

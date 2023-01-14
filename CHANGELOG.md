@@ -15,6 +15,7 @@ backwards compatibility.
 * Prevent clipping of internal oscillator.
 * Fix control input scaling.
 * Resolve configuration reset bug.
+* Compress feedback to avoid inaudible feedback loops.
 
 ## 0.6.0
 
