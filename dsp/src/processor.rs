@@ -2,7 +2,7 @@
 
 use sirena::memory_manager::MemoryManager;
 
-use crate::clipper::Clipper;
+use crate::clipper::{Clipper, Reaction as ClipperReaction};
 use crate::compressor::Compressor;
 use crate::dc_blocker::DCBlocker;
 use crate::delay::{
@@ -80,6 +80,7 @@ pub struct AttributesHead {
 pub struct Reaction {
     pub hysteresis_clipping: bool,
     pub delay_impulse: bool,
+    pub output_clipping: bool,
 }
 
 impl Processor {
@@ -150,8 +151,8 @@ impl Processor {
 
         self.dc_blocker.process(&mut buffer_left, &mut buffer_right);
         self.compressor.process(&mut buffer_left, &mut buffer_right);
-        Clipper::process(&mut buffer_left);
-        Clipper::process(&mut buffer_right);
+        Clipper::process(&mut buffer_left).notify(&mut reaction);
+        Clipper::process(&mut buffer_right).notify(&mut reaction);
 
         for (i, (l, r)) in block.iter_mut().enumerate() {
             *l = buffer_left[i];
@@ -278,5 +279,11 @@ impl HysteresisReaction {
 impl DelayReaction {
     fn notify(&mut self, reaction: &mut Reaction) {
         reaction.delay_impulse = self.impulse;
+    }
+}
+
+impl ClipperReaction {
+    fn notify(&mut self, reaction: &mut Reaction) {
+        reaction.output_clipping |= self.clipping;
     }
 }

@@ -158,7 +158,6 @@ impl Delay {
                 .map(|head| head.reader.read(&self.buffer, age) * head.feedback)
                 .enumerate()
                 .map(|(i, x)| self.compressor[i].process(self.dc_blocker[i].process(x)))
-                // .map(|(i, x)| self.dc_blocker[i].process(self.compressor[i].process(x)))
                 .sum();
             if self.filter_placement.is_feedback() {
                 feedback = tone.tick(feedback);
