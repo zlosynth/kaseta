@@ -16,6 +16,7 @@ backwards compatibility.
 * Fix control input scaling.
 * Resolve configuration reset bug.
 * Compress feedback to avoid inaudible feedback loops.
+* Remove relative ordering of head display.
 
 ## 0.6.0
 

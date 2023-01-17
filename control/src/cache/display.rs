@@ -93,9 +93,9 @@ pub enum AttributeScreen {
     Flutter(f32),
     Speed(f32),
     Tone(f32),
-    Volume(usize, usize, f32),
-    Feedback(usize, usize, f32),
-    Pan(usize, usize, f32),
+    Volume(usize, f32),
+    Feedback(usize, f32),
+    Pan(usize, f32),
 }
 
 pub type Positions = ([bool; 4], [bool; 4]);
@@ -163,9 +163,9 @@ impl Display {
         let (same_type, age) = 'block: {
             if let Some(Screen::Attribute(age, current_attribute)) = self.prioritized[4] {
                 match (attribute, current_attribute) {
-                    (AttributeScreen::Volume(i, _, _), AttributeScreen::Volume(j, _, _))
-                    | (AttributeScreen::Feedback(i, _, _), AttributeScreen::Feedback(j, _, _))
-                    | (AttributeScreen::Pan(i, _, _), AttributeScreen::Pan(j, _, _)) => {
+                    (AttributeScreen::Volume(i, _), AttributeScreen::Volume(j, _))
+                    | (AttributeScreen::Feedback(i, _), AttributeScreen::Feedback(j, _))
+                    | (AttributeScreen::Pan(i, _), AttributeScreen::Pan(j, _)) => {
                         if i == j {
                             break 'block (true, age);
                         }
@@ -415,9 +415,9 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
         AttributeScreen::Flutter(phase) => flutter_to_leds(phase),
         AttributeScreen::Speed(phase) => speed_to_leds(phase),
         AttributeScreen::Tone(phase) => tone_to_leds(phase),
-        AttributeScreen::Volume(_, position, phase) => volume_to_leds(position, phase),
-        AttributeScreen::Feedback(_, position, phase) => feedback_to_leds(position, phase),
-        AttributeScreen::Pan(_, position, phase) => pan_to_leds(position, phase),
+        AttributeScreen::Volume(position, phase) => volume_to_leds(position, phase),
+        AttributeScreen::Feedback(position, phase) => feedback_to_leds(position, phase),
+        AttributeScreen::Pan(position, phase) => pan_to_leds(position, phase),
     }
 }
 

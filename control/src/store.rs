@@ -1184,35 +1184,6 @@ mod tests {
 
             assert_eq!(store.cache.mapping[0], AttributeIdentifier::None);
         }
-
-        #[test]
-        fn it_displays_enabled_volume_and_feedback_based_on_head_order() {
-            let mut store = init_store();
-            let mut input = InputSnapshot::default();
-
-            input.head[0].position = 1.0;
-            input.head[0].volume = 1.0;
-            input.head[0].feedback = 1.0;
-
-            input.head[1].position = 0.4;
-            input.head[1].volume = 0.0;
-            input.head[1].feedback = 0.2;
-
-            input.head[2].position = 0.8;
-            input.head[2].volume = 0.7;
-            input.head[2].feedback = 0.0;
-
-            input.head[3].position = 0.7;
-            input.head[3].volume = 0.0;
-            input.head[3].feedback = 0.0;
-
-            for _ in 0..4 {
-                store.apply_input_snapshot(input);
-                store.tick();
-            }
-
-            assert_animation(&mut store, &[6098]);
-        }
     }
 
     #[cfg(test)]
