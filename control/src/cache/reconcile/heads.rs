@@ -20,9 +20,11 @@ impl Store {
     }
 
     fn reconcile_position(&mut self, i: usize) {
+        // TODO: Only update the position if CV has changed significantly (above noise
+        // level) from the last value.
         self.cache.attributes.head[i].position = quantize(
             calculate(
-                self.input.head[i].position.value(),
+                self.input.head[i].position.last_value_above_noise,
                 self.control_value_for_attribute(AttributeIdentifier::Position(i)),
                 (0.0, 1.0),
                 None,

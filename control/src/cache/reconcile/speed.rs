@@ -47,7 +47,7 @@ impl Store {
         } else {
             self.cache.attributes.speed = if self.cache.options.short_delay_range {
                 let sum = super::sum(
-                    self.input.speed.value(),
+                    self.input.speed.last_value_above_noise,
                     self.control_value_for_attribute(AttributeIdentifier::Speed)
                         .map(|x| x / 5.0),
                 );
@@ -60,7 +60,7 @@ impl Store {
                 1.0 / frequency
             } else {
                 let sum = super::sum(
-                    self.input.speed.value(),
+                    self.input.speed.last_value_above_noise,
                     self.control_value_for_attribute(AttributeIdentifier::Speed)
                         .map(|x| x / 5.0),
                 );

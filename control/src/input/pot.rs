@@ -14,20 +14,30 @@ use super::buffer::Buffer;
 pub struct Pot {
     buffer: Buffer<4>,
     pub last_activation_movement: u32,
+    pub last_value_above_noise: f32,
 }
 
 impl Pot {
     pub fn update(&mut self, value: f32) {
+        // TODO: This should be protected by noise cancellation instead
         self.buffer.write(value);
+
         self.last_activation_movement = if self.traveled_more_than(0.01) {
             0
         } else {
             self.last_activation_movement.saturating_add(1)
+        };
+
+        let value = self.buffer.read();
+        let diff = (self.last_value_above_noise - value).abs();
+        if diff > 0.002 {
+            self.last_value_above_noise = value;
         }
     }
 
     pub fn value(&self) -> f32 {
         self.buffer.read()
+        // self.last_value_above_noise
     }
 
     pub fn activation_movement(&self) -> bool {
