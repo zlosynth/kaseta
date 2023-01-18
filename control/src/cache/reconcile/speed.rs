@@ -7,7 +7,7 @@ impl Store {
     pub fn reconcile_speed(&mut self, needs_save: &mut bool) {
         let original_short_delay_range = self.cache.options.short_delay_range;
 
-        if self.input.button.pressed && self.input.speed.active() {
+        if self.input.button.pressed && self.input.speed.activation_movement() {
             self.cache.options.short_delay_range = self.input.speed.value() > 0.8;
             if self.cache.options.short_delay_range {
                 self.cache
@@ -82,7 +82,7 @@ impl Store {
     }
 
     fn show_length_on_display(&mut self, phase: f32) {
-        if self.input.speed.active() {
+        if self.input.speed.activation_movement() {
             self.cache
                 .display
                 .force_attribute(AttributeScreen::Speed(1.0 - phase));

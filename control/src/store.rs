@@ -259,7 +259,7 @@ impl Store {
                 self.cache.tapped_tempo = Some(tapped_tempo);
             }
         }
-        if self.cache.tapped_tempo.is_some() && self.input.speed.active() {
+        if self.cache.tapped_tempo.is_some() && self.input.speed.activation_movement() {
             log::info!("Resetting tapped tempo");
             *needs_save = true;
             self.cache.tap_detector.reset();
@@ -303,7 +303,7 @@ impl Store {
             (&self.input.speed, AttributeIdentifier::Speed),
             (&self.input.tone, AttributeIdentifier::Tone),
         ] {
-            if pot.active() {
+            if pot.activation_movement() {
                 return identifier;
             }
         }
@@ -315,7 +315,7 @@ impl Store {
                 (&head.feedback, AttributeIdentifier::Feedback(i)),
                 (&head.pan, AttributeIdentifier::Pan(i)),
             ] {
-                if pot.active() {
+                if pot.activation_movement() {
                     return identifier;
                 }
             }
@@ -449,8 +449,8 @@ fn update_rewind_configuration(
 ) -> Option<ConfigurationScreen> {
     let screen = None;
 
-    let volume_active = head.volume.active();
-    let feedback_active = head.feedback.active();
+    let volume_active = head.volume.activation_movement();
+    let feedback_active = head.feedback.activation_movement();
 
     if !volume_active && !feedback_active {
         return screen;

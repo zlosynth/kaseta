@@ -16,7 +16,7 @@ impl Store {
     pub fn reconcile_pre_amp(&mut self, needs_save: &mut bool) {
         let original_enable_oscillator = self.cache.options.enable_oscillator;
 
-        if self.input.button.pressed && self.input.pre_amp.active() {
+        if self.input.button.pressed && self.input.pre_amp.activation_movement() {
             self.cache.options.enable_oscillator = self.input.pre_amp.value() > 0.5;
             if self.cache.options.enable_oscillator {
                 self.cache
@@ -55,7 +55,7 @@ impl Store {
             // into the 5th octave when set on the edge.
             let octave_offset = (pot * 3.95).trunc();
 
-            if self.input.pre_amp.active() {
+            if self.input.pre_amp.activation_movement() {
                 self.cache
                     .display
                     .force_attribute(AttributeScreen::OctaveOffset(octave_offset as usize));
@@ -64,7 +64,7 @@ impl Store {
             (octave_offset - 2.0 + control).clamp(0.0, 8.0) + 2.0
         } else {
             let pot = self.input.pre_amp.value();
-            if self.input.pre_amp.active() {
+            if self.input.pre_amp.activation_movement() {
                 self.cache
                     .display
                     .force_attribute(AttributeScreen::OscillatorTone(pot));
@@ -81,7 +81,7 @@ impl Store {
             self.control_value_for_attribute(AttributeIdentifier::PreAmp)
                 .map(|x| x / 5.0),
         );
-        if self.input.pre_amp.active() {
+        if self.input.pre_amp.activation_movement() {
             self.cache
                 .display
                 .force_attribute(AttributeScreen::PreAmp(sum));

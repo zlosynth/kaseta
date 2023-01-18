@@ -62,21 +62,21 @@ impl Store {
 
     pub fn latest_pot_activity(&self) -> u32 {
         [
-            self.pre_amp.last_active,
-            self.drive.last_active,
-            self.bias.last_active,
-            self.dry_wet.last_active,
-            self.wow_flut.last_active,
-            self.speed.last_active,
-            self.tone.last_active,
+            self.pre_amp.last_activation_movement,
+            self.drive.last_activation_movement,
+            self.bias.last_activation_movement,
+            self.dry_wet.last_activation_movement,
+            self.wow_flut.last_activation_movement,
+            self.speed.last_activation_movement,
+            self.tone.last_activation_movement,
             self.head
                 .iter()
                 .map(|h| {
                     [
-                        h.position.last_active,
-                        h.volume.last_active,
-                        h.feedback.last_active,
-                        h.pan.last_active,
+                        h.position.last_activation_movement,
+                        h.volume.last_activation_movement,
+                        h.feedback.last_activation_movement,
+                        h.pan.last_activation_movement,
                     ]
                     .into_iter()
                     .min()

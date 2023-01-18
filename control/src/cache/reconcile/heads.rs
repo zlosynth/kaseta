@@ -40,7 +40,7 @@ impl Store {
         self.cache.attributes.head[i].volume =
             super::calculate_from_sum(volume_sum, (0.0, 0.25), Some(taper::log));
         let screen = AttributeScreen::Volume(i, volume_sum);
-        if self.input.head[i].volume.active() {
+        if self.input.head[i].volume.activation_movement() {
             self.cache.display.force_attribute(screen);
         } else {
             self.cache.display.update_attribute(screen);
@@ -55,7 +55,7 @@ impl Store {
         self.cache.attributes.head[i].feedback =
             super::calculate_from_sum(feedback_sum, (0.0, 1.2), None);
         let screen = AttributeScreen::Feedback(i, feedback_sum);
-        if self.input.head[i].feedback.active() {
+        if self.input.head[i].feedback.activation_movement() {
             self.cache.display.force_attribute(screen);
         } else {
             self.cache.display.update_attribute(screen);
@@ -69,7 +69,7 @@ impl Store {
         );
         self.cache.attributes.head[i].pan = super::calculate_from_sum(pan_sum, (0.0, 1.0), None);
         let screen = AttributeScreen::Pan(i, pan_sum);
-        if self.input.head[i].pan.active() {
+        if self.input.head[i].pan.activation_movement() {
             self.cache.display.force_attribute(screen);
         } else {
             self.cache.display.update_attribute(screen);
@@ -78,7 +78,11 @@ impl Store {
 
     fn set_screen_for_positions(&mut self) {
         let screen_for_positions = self.screen_for_positions();
-        let touched_position = self.input.head.iter().any(|h| h.position.active());
+        let touched_position = self
+            .input
+            .head
+            .iter()
+            .any(|h| h.position.activation_movement());
         if touched_position {
             self.cache.display.force_attribute(screen_for_positions);
         } else {

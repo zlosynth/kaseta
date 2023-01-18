@@ -23,7 +23,7 @@ impl Store {
     fn reconcile_range_limitation(&mut self, needs_save: &mut bool) {
         let original_unlimited = self.cache.options.unlimited;
 
-        if self.input.button.pressed && self.input.drive.active() {
+        if self.input.button.pressed && self.input.drive.activation_movement() {
             self.cache.options.unlimited = self.input.drive.value() > 0.9;
             if self.cache.options.unlimited {
                 self.cache
@@ -101,7 +101,7 @@ impl Store {
     }
 
     fn display_dry_wet(&mut self, dry_wet_sum: f32) {
-        if self.input.dry_wet.active() {
+        if self.input.dry_wet.activation_movement() {
             self.cache
                 .display
                 .force_attribute(AttributeScreen::DryWet(dry_wet_sum));
@@ -113,7 +113,7 @@ impl Store {
     }
 
     fn display_drive(&mut self, drive_input: f32) {
-        if self.input.drive.active() {
+        if self.input.drive.activation_movement() {
             self.cache
                 .display
                 .force_attribute(AttributeScreen::Drive(drive_input));
@@ -125,7 +125,7 @@ impl Store {
     }
 
     fn display_bias(&mut self, bias_sum: f32) {
-        if self.input.bias.active() {
+        if self.input.bias.activation_movement() {
             self.cache
                 .display
                 .force_attribute(AttributeScreen::Bias(bias_sum));

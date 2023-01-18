@@ -13,16 +13,16 @@ use super::buffer::Buffer;
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Pot {
     buffer: Buffer<4>,
-    pub last_active: u32,
+    pub last_activation_movement: u32,
 }
 
 impl Pot {
     pub fn update(&mut self, value: f32) {
         self.buffer.write(value);
-        self.last_active = if self.active_with_toleration(0.01) {
+        self.last_activation_movement = if self.traveled_more_than(0.01) {
             0
         } else {
-            self.last_active.saturating_add(1)
+            self.last_activation_movement.saturating_add(1)
         }
     }
 
@@ -30,11 +30,11 @@ impl Pot {
         self.buffer.read()
     }
 
-    pub fn active(&self) -> bool {
-        self.last_active == 0
+    pub fn activation_movement(&self) -> bool {
+        self.last_activation_movement == 0
     }
 
-    fn active_with_toleration(&self, toleration: f32) -> bool {
+    fn traveled_more_than(&self, toleration: f32) -> bool {
         self.buffer.traveled().abs() > toleration
     }
 }

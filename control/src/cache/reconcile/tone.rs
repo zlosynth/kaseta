@@ -8,7 +8,7 @@ impl Store {
     pub fn reconcile_tone(&mut self, needs_save: &mut bool) {
         let original_filter_feedback = self.cache.options.filter_feedback;
 
-        if self.input.button.pressed && self.input.tone.active() {
+        if self.input.button.pressed && self.input.tone.activation_movement() {
             self.cache.options.filter_feedback = self.input.tone.value() < 0.5;
             if self.cache.options.filter_feedback {
                 self.cache
@@ -44,7 +44,7 @@ impl Store {
     }
 
     fn show_tone_on_display(&mut self, phase: f32) {
-        if self.input.tone.active() {
+        if self.input.tone.activation_movement() {
             self.cache
                 .display
                 .force_attribute(AttributeScreen::Tone(phase));

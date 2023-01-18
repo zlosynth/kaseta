@@ -30,7 +30,7 @@ impl Store {
         self.cache.attributes.wow = calculate(-depth, None, WOW_DEPTH_RANGE, None);
         self.cache.attributes.flutter_depth = 0.0;
         self.cache.attributes.flutter_chance = 0.0;
-        if self.input.wow_flut.active() {
+        if self.input.wow_flut.activation_movement() {
             self.cache
                 .display
                 .force_attribute(AttributeScreen::Wow(-depth));
@@ -49,7 +49,7 @@ impl Store {
         } else {
             calculate(depth, None, FLUTTER_CHANCE_RANGE, Some(taper::log))
         };
-        if self.input.wow_flut.active() {
+        if self.input.wow_flut.activation_movement() {
             self.cache
                 .display
                 .force_attribute(AttributeScreen::Flutter(depth));
