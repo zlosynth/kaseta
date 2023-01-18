@@ -10,6 +10,15 @@ impl Store {
 
         if self.input.button.pressed && self.input.tone.active() {
             self.cache.options.filter_feedback = self.input.tone.value() < 0.5;
+            if self.cache.options.filter_feedback {
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::TonePosition(TonePosition::Feedback));
+            } else {
+                self.cache
+                    .display
+                    .set_alt_menu(AltAttributeScreen::TonePosition(TonePosition::Volume));
+            }
         }
 
         let filter_feedback = self.cache.options.filter_feedback;
@@ -17,14 +26,8 @@ impl Store {
             *needs_save |= true;
             if filter_feedback {
                 log::info!("Positioning tone filter=feedback");
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::TonePosition(TonePosition::Feedback));
             } else {
                 log::info!("Positioning tone filter=volume");
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::TonePosition(TonePosition::Volume));
             }
         }
 
