@@ -17,6 +17,7 @@ backwards compatibility.
 * Resolve configuration reset bug.
 * Compress feedback to avoid inaudible feedback loops.
 * Remove relative ordering of head display.
+* Delay start to prevent pops.
 
 ## 0.6.0
 

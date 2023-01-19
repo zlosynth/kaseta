@@ -92,6 +92,9 @@ mod app {
 
         defmt::info!("Initialization was completed, starting tasks");
 
+        // Avoid clicks on boot.
+        cortex_m::asm::delay(480_000_000);
+
         audio.spawn();
         blink::spawn(true, BLINKS).unwrap();
         control::spawn().unwrap();
