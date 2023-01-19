@@ -31,7 +31,7 @@ pub struct Processor {
     delay: Delay,
     tone: Tone,
     compressor: Compressor,
-    dc_blocker: DCBlocker,
+    dc_blocker: [DCBlocker; 3],
     first_stage: FirstStage,
 }
 
@@ -101,7 +101,11 @@ impl Processor {
             delay: Delay::new(fs, sdram_manager),
             tone: Tone::new(fs as u32),
             compressor: Compressor::new(fs),
-            dc_blocker: DCBlocker::default(),
+            dc_blocker: [
+                DCBlocker::default(),
+                DCBlocker::default(),
+                DCBlocker::default(),
+            ],
             first_stage: FirstStage::PreAmp,
         };
 
@@ -139,6 +143,7 @@ impl Processor {
 
         let mut buffer_left = [0.0; 32];
         let mut buffer_right = [0.0; 32];
+        self.dc_blocker[0].process(&mut buffer[..]);
         self.delay
             .process(
                 &mut buffer[..],
@@ -149,7 +154,8 @@ impl Processor {
             )
             .notify(&mut reaction);
 
-        self.dc_blocker.process(&mut buffer_left, &mut buffer_right);
+        self.dc_blocker[1].process(&mut buffer_left);
+        self.dc_blocker[2].process(&mut buffer_right);
         self.compressor.process(&mut buffer_left, &mut buffer_right);
         Clipper::process(&mut buffer_left).notify(&mut reaction);
         Clipper::process(&mut buffer_right).notify(&mut reaction);

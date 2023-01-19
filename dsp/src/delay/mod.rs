@@ -1,5 +1,4 @@
 mod compressor;
-mod dc_blocker;
 mod fractional;
 
 #[allow(unused_imports)]
@@ -7,13 +6,13 @@ use micromath::F32Ext as _;
 
 use sirena::memory_manager::MemoryManager;
 
+use crate::dc_blocker::DCBlocker;
 use crate::math;
 use crate::random::Random;
 use crate::ring_buffer::RingBuffer;
 use crate::tone::Tone;
 
 use self::compressor::Compressor;
-use self::dc_blocker::DCBlocker;
 use self::fractional::{FractionalDelay, FractionalDelayAttributes};
 
 // Assuming sample rate of 48 kHz, 64 MB memory and f32 samples of 4 bytes,
@@ -157,7 +156,7 @@ impl Delay {
                 .iter_mut()
                 .map(|head| head.reader.read(&self.buffer, age) * head.feedback)
                 .enumerate()
-                .map(|(i, x)| self.compressor[i].process(self.dc_blocker[i].process(x)))
+                .map(|(i, x)| self.compressor[i].process(self.dc_blocker[i].tick(x)))
                 .sum();
             if self.filter_placement.is_feedback() {
                 feedback = tone.tick(feedback);
