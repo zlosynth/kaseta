@@ -33,7 +33,11 @@ impl Store {
 
         let phase = calculate(
             self.input.tone.value(),
-            self.control_value_for_attribute(AttributeIdentifier::Tone),
+            // NOTE: Divide -5 to +5 V by 10. This way, when the pot is on its lowest,
+            // fully open ADSR would open the filter fully. When the pot is on its max,
+            // the same can be done with inverted ADSR.
+            self.control_value_for_attribute(AttributeIdentifier::Tone)
+                .map(|x| x / 10.0),
             (0.0, 1.0),
             None,
         );
