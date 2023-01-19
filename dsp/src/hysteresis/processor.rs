@@ -61,7 +61,7 @@ impl State {
             *x = clamped;
             let dry = *x * (1.0 - self.dry_wet);
             let wet = self.simulation.process(*x) * self.makeup * self.dry_wet;
-            *x = dry + wet;
+            *x = dry + wet * 0.5;
         }
         reaction
     }
