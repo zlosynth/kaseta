@@ -25,7 +25,8 @@ impl Store {
         self.cache.attributes.head[i].position = quantize(
             calculate(
                 self.input.head[i].position.last_value_above_noise,
-                self.control_value_for_attribute(AttributeIdentifier::Position(i)),
+                self.control_value_for_attribute(AttributeIdentifier::Position(i))
+                    .map(|x| x / 5.0),
                 (0.0, 1.0),
                 None,
             ),
@@ -36,7 +37,8 @@ impl Store {
     fn reconcile_volume(&mut self, i: usize) {
         let volume_sum = super::sum(
             (self.input.head[i].volume.value() - 0.02) / 0.98,
-            self.control_value_for_attribute(AttributeIdentifier::Volume(i)),
+            self.control_value_for_attribute(AttributeIdentifier::Volume(i))
+                .map(|x| x / 5.0),
         );
         // The top limit is made to match compressor's treshold.
         self.cache.attributes.head[i].volume =
@@ -52,7 +54,8 @@ impl Store {
     fn reconcile_feedback(&mut self, i: usize) {
         let feedback_sum = super::sum(
             (self.input.head[i].feedback.value() - 0.02) / 0.98,
-            self.control_value_for_attribute(AttributeIdentifier::Feedback(i)),
+            self.control_value_for_attribute(AttributeIdentifier::Feedback(i))
+                .map(|x| x / 5.0),
         );
         self.cache.attributes.head[i].feedback =
             super::calculate_from_sum(feedback_sum, (0.0, 1.2), None);
@@ -67,7 +70,8 @@ impl Store {
     fn reconcile_pan(&mut self, i: usize) {
         let pan_sum = super::sum(
             self.input.head[i].pan.value(),
-            self.control_value_for_attribute(AttributeIdentifier::Pan(i)),
+            self.control_value_for_attribute(AttributeIdentifier::Pan(i))
+                .map(|x| x / 5.0),
         );
         self.cache.attributes.head[i].pan = super::calculate_from_sum(pan_sum, (0.0, 1.0), None);
         let screen = AttributeScreen::Pan(i, pan_sum);
