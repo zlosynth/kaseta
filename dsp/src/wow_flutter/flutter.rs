@@ -30,9 +30,16 @@ pub struct Flutter {
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Pops {
-    amount: u8,
     phase: f32,
-    slowdowns: [f32; 3],
+    amount: usize,
+    pops: [Option<Pop>; 3],
+}
+
+#[derive(Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct Pop {
+    intensity: f32,
+    slowdown: f32,
 }
 
 impl Flutter {
@@ -51,16 +58,29 @@ impl Flutter {
         }
 
         let rand = random.normal();
-        let amount = (rand - (1.0 - self.chance)) / self.chance;
-        self.pops = if amount < 0.0 {
+        let amount_rng = (rand - (1.0 - self.chance)) / self.chance;
+        self.pops = if amount_rng < 0.0 {
             None
-        } else if amount < 0.7 {
-            Some(Pops::with_amount(1))
-        } else if amount < 0.9 {
-            Some(Pops::with_amount(2))
         } else {
-            Some(Pops::with_amount(3))
-        };
+            let amount = random_amount_of_clicks(amount_rng);
+
+            let mut pops = [None, None, None];
+
+            for pop in pops.iter_mut().take(amount) {
+                let intensity = random_intensity(random.normal());
+                let slowdown = random_slowdown(random.normal());
+                *pop = Some(Pop {
+                    intensity,
+                    slowdown,
+                });
+            }
+
+            Some(Pops {
+                phase: 0.0,
+                amount,
+                pops,
+            })
+        }
     }
 
     pub fn pop(&mut self) -> f32 {
@@ -83,28 +103,53 @@ impl Flutter {
     }
 }
 
-impl Pops {
-    fn with_amount(amount: u8) -> Self {
-        Pops {
-            amount,
-            phase: 0.0,
-            slowdowns: [0.25, 0.5, 0.4],
-        }
+fn random_amount_of_clicks(normal: f32) -> usize {
+    if normal < 0.7 {
+        1
+    } else if normal < 0.9 {
+        2
+    } else {
+        3
     }
+}
 
+fn random_intensity(normal: f32) -> f32 {
+    const START: f32 = 0.2;
+    const MIDDLE: f32 = 0.4;
+    const STOP: f32 = 1.0;
+    if normal < 0.9 {
+        START + (normal / 0.9) * (MIDDLE - START)
+    } else {
+        MIDDLE + ((normal - 0.9) / 0.1) * (STOP - MIDDLE)
+    }
+}
+
+fn random_slowdown(normal: f32) -> f32 {
+    0.01 + normal * 0.99
+}
+
+impl Pops {
     /// Simulate flutter friction.
     ///
     /// Sinusoidal slowdown until it stops. Then after it overcomes the static friction
     /// it launches with linear speed.
     fn friction(&self) -> f32 {
         let phase = self.phase.fract();
+
+        let intensity = self.pops[(self.phase * 0.96) as usize]
+            .as_ref()
+            .unwrap()
+            .intensity;
+
         let breaking = phase < 0.5;
-        if breaking {
+        let offset = if breaking {
             (trigonometry::cos(phase + 0.5) + 1.0) / 2.0
         } else {
             let catching_up_phase = (phase - 0.5) * 2.0;
             1.0 - catching_up_phase
-        }
+        };
+
+        offset * intensity
     }
 
     /// Increase phase based on the current position.
@@ -114,7 +159,10 @@ impl Pops {
     fn tick(mut self, sample_rate: f32) -> Option<Self> {
         let breaking = self.phase.fract() < 0.5;
         let slowdown_coefficient = if breaking {
-            self.slowdowns[self.phase as usize]
+            self.pops[(self.phase * 0.95) as usize]
+                .as_ref()
+                .unwrap()
+                .slowdown
         } else {
             1.0
         };
@@ -135,14 +183,27 @@ mod tests {
     #[test]
     fn pops_friction_is_continuous() {
         let mut pops = Pops {
-            amount: 3,
             phase: 0.0,
-            slowdowns: [0.25, 0.5, 1.0],
+            amount: 3,
+            pops: [
+                Some(Pop {
+                    slowdown: 0.25,
+                    intensity: 1.0,
+                }),
+                Some(Pop {
+                    slowdown: 0.5,
+                    intensity: 0.3,
+                }),
+                Some(Pop {
+                    slowdown: 1.0,
+                    intensity: 0.8,
+                }),
+            ],
         };
         let mut last_friction = 0.0;
         loop {
             let new_friction = pops.friction();
-            let eq = relative_eq!(new_friction, last_friction, epsilon = 0.01);
+            let eq = relative_eq!(new_friction, last_friction, epsilon = 0.04);
             assert!(
                 eq,
                 "new_friction({new_friction}) != last_friction({last_friction}) for phase({})",

@@ -19,6 +19,7 @@ backwards compatibility.
 * Remove relative ordering of head display.
 * Delay start to prevent pops.
 * Increase pot buffer to prevent clicks.
+* Randomize intensity and spacing of flutter.
 
 ## 0.6.0
 

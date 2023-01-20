@@ -5,7 +5,7 @@ use crate::cache::mapping::AttributeIdentifier;
 use crate::Store;
 
 const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 0.2);
-const FLUTTER_DEPTH_RANGE: (f32, f32) = (0.0, 0.002);
+const FLUTTER_DEPTH_RANGE: (f32, f32) = (0.0, 0.006);
 // Once in 6 seconds to once a second.
 const FLUTTER_CHANCE_RANGE: (f32, f32) = (0.0001, 0.0008);
 
