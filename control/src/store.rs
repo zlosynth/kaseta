@@ -704,7 +704,7 @@ mod tests {
         let mut store = Store::from(save.unwrap());
         let mut input = InputSnapshot::default();
         input.speed = 0.5;
-        for _ in 0..10 {
+        for _ in 0..50 {
             store.warm_up(input);
         }
         store.apply_input_snapshot(input);
@@ -899,23 +899,27 @@ mod tests {
 
         input.head[0].volume = 1.0;
         input.head[0].feedback = 1.0;
-        for _ in 0..4 {
+        for _ in 0..32 {
             store.apply_input_snapshot(input);
+            store.tick();
         }
         input.head[1].volume = 1.0;
         input.head[1].feedback = 1.0;
-        for _ in 0..4 {
+        for _ in 0..32 {
             store.apply_input_snapshot(input);
+            store.tick();
         }
         input.head[2].volume = 1.0;
         input.head[2].feedback = 1.0;
-        for _ in 0..4 {
+        for _ in 0..32 {
             store.apply_input_snapshot(input);
+            store.tick();
         }
         input.head[3].volume = 1.0;
         input.head[3].feedback = 1.0;
-        for _ in 0..4 {
+        for _ in 0..32 {
             store.apply_input_snapshot(input);
+            store.tick();
         }
 
         let save = click_button(&mut store, input);
@@ -942,7 +946,7 @@ mod tests {
             let mut store = Store::new();
             let input = InputSnapshot::default();
 
-            for _ in 0..4 {
+            for _ in 0..32 {
                 tap_button(&mut store, input, 2000);
             }
 
@@ -1008,7 +1012,7 @@ mod tests {
             assert_relative_eq!(store.cache.attributes.speed, 2.0);
 
             input.speed = 0.1;
-            for _ in 0..4 {
+            for _ in 0..32 {
                 store.apply_input_snapshot(input);
                 store.tick();
             }
@@ -1204,10 +1208,11 @@ mod tests {
         }
 
         fn apply_input_snapshot(store: &mut Store, input: InputSnapshot) {
-            // NOTE: Applying it 4 times makes sure that pot smoothening is
+            // NOTE: Applying it 32 times makes sure that pot smoothening is
             // not affecting following asserts.
-            for _ in 0..4 {
+            for _ in 0..32 {
                 store.apply_input_snapshot(input);
+                store.tick();
             }
         }
 
@@ -1320,9 +1325,9 @@ mod tests {
         }
 
         fn apply_input_snapshot(store: &mut Store, input: InputSnapshot) {
-            // NOTE: Applying it 4 times makes sure that pot smoothening is
+            // NOTE: Applying it 32 times makes sure that pot smoothening is
             // not affecting following asserts.
-            for _ in 0..4 {
+            for _ in 0..32 {
                 store.apply_input_snapshot(input);
                 store.tick();
             }
@@ -1492,10 +1497,11 @@ mod tests {
         }
 
         fn apply_input_snapshot(store: &mut Store, input: InputSnapshot) {
-            // NOTE: Applying it 4 times makes sure that control smoothening is
+            // NOTE: Applying it 32 times makes sure that control smoothening is
             // not affecting following asserts.
-            for _ in 0..4 {
+            for _ in 0..32 {
                 store.apply_input_snapshot(input);
+                store.tick();
             }
         }
 
@@ -1812,14 +1818,17 @@ mod tests {
         // Initialize
         input.control[1] = None;
         store.apply_input_snapshot(input);
+        store.tick();
 
         // Plug in
         input.control[1] = Some(0.5);
         store.apply_input_snapshot(input);
+        store.tick();
 
         // Turn knob to map control
         input.speed = 0.5;
         store.apply_input_snapshot(input);
+        store.tick();
 
         // Send clock signal to control
         clock_trigger(&mut store, 1, input, 2000);
@@ -1829,7 +1838,7 @@ mod tests {
 
         fn check(store: &mut Store, mut input: InputSnapshot, pot: f32, speed: f32) {
             input.speed = pot;
-            for _ in 0..5 {
+            for _ in 0..33 {
                 store.apply_input_snapshot(input);
                 store.tick();
             }
@@ -1893,19 +1902,23 @@ mod tests {
         // Initialize
         input.control[1] = None;
         store.apply_input_snapshot(input);
+        store.tick();
 
         // Plug in
         input.control[1] = Some(0.5);
         store.apply_input_snapshot(input);
+        store.tick();
 
         // Turn knob to map control
         input.speed = 0.5;
         store.apply_input_snapshot(input);
+        store.tick();
 
         // Move it to neutral position
         input.speed = 0.0;
-        for _ in 0..5 {
+        for _ in 0..32 {
             store.apply_input_snapshot(input);
+            store.tick();
         }
 
         let original_speed = store.apply_input_snapshot(input).dsp_attributes.speed;

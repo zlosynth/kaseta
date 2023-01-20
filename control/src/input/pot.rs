@@ -56,7 +56,7 @@ mod tests {
         let mut pot = Pot::default();
 
         let mut value = pot.value();
-        for _ in 0..20 {
+        for _ in 0..32 {
             pot.update(1.0);
             let new_value = pot.value();
             assert!(new_value > value);
