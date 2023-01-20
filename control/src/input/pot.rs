@@ -12,14 +12,13 @@ use super::buffer::Buffer;
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Pot {
-    buffer: Buffer<4>,
+    buffer: Buffer<32>,
     pub last_activation_movement: u32,
     pub last_value_above_noise: f32,
 }
 
 impl Pot {
     pub fn update(&mut self, value: f32) {
-        // TODO: This should be protected by noise cancellation instead
         self.buffer.write(value);
 
         self.last_activation_movement = if self.traveled_more_than(0.01) {
@@ -37,7 +36,6 @@ impl Pot {
 
     pub fn value(&self) -> f32 {
         self.buffer.read()
-        // self.last_value_above_noise
     }
 
     pub fn activation_movement(&self) -> bool {

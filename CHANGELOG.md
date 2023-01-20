@@ -18,6 +18,7 @@ backwards compatibility.
 * Compress feedback to avoid inaudible feedback loops.
 * Remove relative ordering of head display.
 * Delay start to prevent pops.
+* Increase pot buffer to prevent clicks.
 
 ## 0.6.0
 
