@@ -18,9 +18,7 @@ use hal::time::Hertz;
 use systick_monotonic::Systick;
 
 use self::audio::Audio;
-use self::inputs::{
-    CVsPins, Config as InputsConfig, Inputs, MultiplexerPins, PotsPins, SwitchesPins,
-};
+use self::inputs::{CVsPins, Config as InputsConfig, Inputs, MultiplexerPins, PotsPins};
 use self::outputs::{Config as OutputsConfig, LedsPins, Outputs};
 use self::randomizer::Randomizer;
 
@@ -88,11 +86,6 @@ impl System {
                 multiplexer_3: pins.GPIO.PIN_C3.into_analog(),
             },
             button: pins.GPIO.PIN_B9.into_floating_input(),
-            switches: SwitchesPins {
-                switch_1: pins.GPIO.PIN_D5.into_floating_input(),
-                multiplexed_switches_2_to_9: pins.GPIO.PIN_A2.into_floating_input(),
-                switch_10: pins.GPIO.PIN_B10.into_floating_input(),
-            },
             multiplexer: MultiplexerPins {
                 address_a: pins.GPIO.PIN_A3.into_push_pull_output(),
                 address_b: pins.GPIO.PIN_A8.into_push_pull_output(),

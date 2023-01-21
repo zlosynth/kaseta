@@ -4,7 +4,6 @@ use super::button::Button;
 use super::control::Control;
 use super::pot::Pot;
 use super::snapshot::Snapshot;
-use super::switch::Switch;
 
 /// Stateful store of raw inputs.
 ///
@@ -25,7 +24,6 @@ pub struct Store {
     pub tone: Pot,
     pub head: [Head; 4],
     pub control: [Control; 4],
-    pub switch: [Switch; 10],
     pub button: Button,
 }
 
@@ -56,7 +54,6 @@ impl Store {
         for (i, control) in self.control.iter_mut().enumerate() {
             control.update(snapshot.control[i]);
         }
-        self.switch = snapshot.switch;
         self.button.update(snapshot.button);
     }
 
@@ -134,7 +131,6 @@ mod tests {
                 },
             ],
             control: [Some(0.25), Some(0.26), Some(0.27), Some(0.28)],
-            switch: [true; 10],
             button: true,
         });
 
@@ -170,10 +166,6 @@ mod tests {
         ] {
             assert!(value > previous, "{value} !> {previous}");
             previous = value;
-        }
-
-        for switch in &inputs.switch {
-            assert!(switch);
         }
 
         assert!(inputs.button.clicked);

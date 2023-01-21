@@ -22,10 +22,6 @@ name = "pots"
 harness = false
 
 [[test]]
-name = "switches"
-harness = false
-
-[[test]]
 name = "leds"
 harness = false
 

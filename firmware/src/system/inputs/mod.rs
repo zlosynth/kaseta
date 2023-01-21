@@ -12,7 +12,6 @@ mod debounced;
 mod multiplexer;
 pub mod pots;
 mod probe;
-mod switches;
 
 use kaseta_control::{InputSnapshot as Snapshot, InputSnapshotHead as SnapshotHead};
 
@@ -27,8 +26,6 @@ pub use self::multiplexer::Pins as MultiplexerPins;
 pub use self::pots::Pins as PotsPins;
 use self::pots::Pots;
 use self::probe::{Broadcaster as ProbeBroadcaster, BroadcasterPin as ProbeBroadcasterPin};
-pub use self::switches::Pins as SwitchesPins;
-use self::switches::Switches;
 
 // To avoid crosstalk, it is necessary to let multiplexer settle after
 // the source was changed. With 3 ticks crosstalk gets down to 0.5 %,
@@ -39,7 +36,6 @@ pub struct Inputs {
     pub cvs: CVs,
     pub pots: Pots,
     pub button: Button,
-    pub switches: Switches,
     multiplexer: Multiplexer,
     probe: ProbeBroadcaster,
     adc_1: Adc<ADC1, Enabled>,
@@ -52,7 +48,6 @@ pub struct Config {
     pub cvs: CVsPins,
     pub pots: PotsPins,
     pub button: ButtonPin,
-    pub switches: SwitchesPins,
     pub multiplexer: MultiplexerPins,
     pub probe: ProbeBroadcasterPin,
     pub adc_1: Adc<ADC1, Enabled>,
@@ -65,7 +60,6 @@ impl Inputs {
             cvs: CVs::new(config.cvs),
             pots: Pots::new(config.pots),
             button: Button::new(config.button),
-            switches: Switches::new(config.switches),
             multiplexer: Multiplexer::new(config.multiplexer),
             probe: ProbeBroadcaster::new(config.probe),
             adc_1: config.adc_1,
@@ -83,7 +77,6 @@ impl Inputs {
         if self.stabilization == STABILIZATION_TICKS {
             self.stabilization = 0;
 
-            self.switches.sample(self.cycle);
             self.pots
                 .sample(self.cycle, &mut self.adc_1, &mut self.adc_2);
 
@@ -103,11 +96,6 @@ impl Inputs {
         let mut control = [None; 4];
         for (i, cv) in self.cvs.cv.iter().enumerate() {
             control[i] = cv.value;
-        }
-
-        let mut switch = [false; 10];
-        for (i, sw) in self.switches.switch.iter().enumerate() {
-            switch[i] = sw.value;
         }
 
         let mut head = [SnapshotHead::default(); 4];
@@ -130,7 +118,6 @@ impl Inputs {
             tone: self.pots.tone,
             head,
             control,
-            switch,
             button: self.button.active,
         }
     }

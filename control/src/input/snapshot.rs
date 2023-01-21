@@ -19,7 +19,6 @@ pub struct Snapshot {
     pub tone: f32,
     pub head: [SnapshotHead; 4],
     pub control: [Option<f32>; 4],
-    pub switch: [bool; 10],
     pub button: bool,
 }
 

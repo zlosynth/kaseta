@@ -53,7 +53,7 @@ pub type ClockDetectors = [ClockDetector; 4];
 
 /// Easy to access modifications of the default module behavior.
 ///
-/// Options are configured using the DIP switch on the front of the module.
+/// Options are set by holding the button while turning module's pots.
 /// They are meant to provide a quick access to some common extended features
 /// such as quantization, rewind, etc.
 #[allow(clippy::struct_excessive_bools)]

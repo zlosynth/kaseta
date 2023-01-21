@@ -6,7 +6,7 @@ backwards compatibility.
 
 ## Unreleased
 
-* Remove DIP switch from the PCB.
+* Remove DIP switch from the PCB and firmware.
 
 ## 0.7.0
 
