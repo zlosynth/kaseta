@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+## 0.7.0
+
 * Extend maximum delay length to 5 minutes.
 * Implement visualization for all attributes.
 * Replace DIP switch controls with alt button and potentiomenter.

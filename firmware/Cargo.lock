@@ -327,7 +327,7 @@ dependencies = [
 
 [[package]]
 name = "kaseta-control"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "crc",
  "defmt",
@@ -339,7 +339,7 @@ dependencies = [
 
 [[package]]
 name = "kaseta-dsp"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "defmt",
  "libm",
@@ -349,7 +349,7 @@ dependencies = [
 
 [[package]]
 name = "kaseta-firmware"
-version = "0.6.0"
+version = "0.7.0"
 dependencies = [
  "cortex-m",
  "cortex-m-rtic",
