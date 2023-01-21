@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* Remove DIP switch from the PCB.
+
 ## 0.7.0
 
 * Extend maximum delay length to 5 minutes.
