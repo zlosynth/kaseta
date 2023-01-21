@@ -3,9 +3,15 @@ use micromath::F32Ext as _;
 
 use super::ornstein_uhlenbeck::OrnsteinUhlenbeck;
 use super::wavefolder;
+use crate::one_pole_filter::OnePoleFilter;
 use crate::random::Random;
 use crate::state_variable_filter::StateVariableFilter;
 use crate::trigonometry;
+
+// Smoothening of the depth attribute to make sure that wow does not
+// scroll to the present too abruptly, causing pops when hitting 0.
+const DEPTH_CUTOFF: f32 = 0.1;
+const CONTROL_SAMPLE_RATE: f32 = 1000.0;
 
 // These constants were obtained through design in hack/wow.py and
 // experimentation with sound.
@@ -25,9 +31,10 @@ pub struct Attributes {
 pub struct Wow {
     sample_rate: f32,
     depth: f32,
+    depth_filter: OnePoleFilter,
     phase: f32,
     ornstein_uhlenbeck: OrnsteinUhlenbeck,
-    filter: StateVariableFilter,
+    modulation_filter: StateVariableFilter,
 }
 
 impl Wow {
@@ -36,10 +43,11 @@ impl Wow {
             sample_rate > 500,
             "Wow may be unstable for low sample rates"
         );
-        let filter = {
-            let mut filter = StateVariableFilter::new(sample_rate);
-            filter.set_frequency(MODULATION_CUTOFF);
-            filter
+        let depth_filter = OnePoleFilter::new(CONTROL_SAMPLE_RATE, DEPTH_CUTOFF);
+        let modulation_filter = {
+            let mut modulation_filter = StateVariableFilter::new(sample_rate);
+            modulation_filter.set_frequency(MODULATION_CUTOFF);
+            modulation_filter
         };
         let ornstein_uhlenbeck = {
             let mut ornstein_uhlenbeck = OrnsteinUhlenbeck::new(sample_rate as f32);
@@ -50,9 +58,10 @@ impl Wow {
         Self {
             sample_rate: sample_rate as f32,
             depth: 0.0,
+            depth_filter,
             phase: 0.5, // Start the offset sine wave on 0.0
             ornstein_uhlenbeck,
-            filter,
+            modulation_filter,
         }
     }
 
@@ -68,11 +77,11 @@ impl Wow {
 
             x
         };
-        wavefolder::fold(self.filter.tick(target).low_pass, 0.0, 1000.0)
+        wavefolder::fold(self.modulation_filter.tick(target).low_pass, 0.0, 1000.0)
     }
 
     pub fn set_attributes(&mut self, attributes: &Attributes) {
-        self.depth = attributes.depth;
+        self.depth = self.depth_filter.tick(attributes.depth);
     }
 }
 
@@ -96,7 +105,11 @@ mod tests {
     #[test]
     fn it_spans_in_expected_range() {
         let mut wow = Wow::new(SAMPLE_RATE);
-        wow.set_attributes(&Attributes { depth: 1.0 });
+
+        // Depth is filtered, let it reach the destination.
+        for _ in 0..10000 {
+            wow.set_attributes(&Attributes { depth: 1.0 });
+        }
 
         let x = wow.pop(&mut TestRandom);
         let (mut min, mut max) = (x, x);

@@ -2,6 +2,7 @@
 //!
 //! Based on <https://ccrma.stanford.edu/~jos/fp/DC_Blocker_Software_Implementations.html>.
 
+// XXX: Assuming 48 kHz sample rate.
 const POLE: f32 = 0.995;
 
 #[derive(Default, Debug)]

@@ -20,6 +20,7 @@ backwards compatibility.
 * Delay start to prevent pops.
 * Increase pot buffer to prevent clicks.
 * Randomize intensity and spacing of flutter.
+* Smoothen wow depth control.
 
 ## 0.6.0
 

@@ -30,6 +30,7 @@ mod compressor;
 mod dc_blocker;
 mod linkwitz_riley_filter;
 mod math;
+mod one_pole_filter;
 mod pre_amp;
 mod ring_buffer;
 mod state_variable_filter;
