@@ -6,6 +6,20 @@ Saturating tape delay and feedback sculptor module for Eurorack.
    <img src="panel.svg" alt="Panel illustration"/>
 </p>
 
+* Delay with 4 reading heads
+* Tape saturation simulation
+* Wow and flutter effects
+* Stereo output
+* Up to five minutes of recording
+* Internal oscillator
+* Trigger sequencer
+* LEDs visualizing dialed parameters
+* Based around Electro-Smith's [Daisy Patch SM](https://www.electro-smith.com/daisy/patch-sm) platform
+* Programmed in Rust
+
+Find more details about the module, including a feature overview video and a
+user manual, on its [website](https://zlosynth.com/kaseta).
+
 # Development
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) to find some basic commands to interact
