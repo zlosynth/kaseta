@@ -2,6 +2,10 @@
 
 Saturating tape delay and feedback sculptor module for Eurorack.
 
+<p align="center">
+   <img src="panel.svg" alt="Panel illustration"/>
+</p>
+
 # Development
 
 See [DEVELOPMENT.md](DEVELOPMENT.md) to find some basic commands to interact
