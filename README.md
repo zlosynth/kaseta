@@ -35,7 +35,10 @@ Schematics and PCB layout are distributed under the terms of Creative Commons
 BY-SA. See [LICENSE-HARDWARE](LICENSE-HARDWARE) for details.
 
 The manual is also distributed under the terms of Creative Commons BY-SA. See
-[LICENSE-MANUAL](LICENSE-MANUAL) for details.
+[LICENSE-MANUAL](LICENSE-MANUAL) for details. To build flow diagrams present in
+the manual, the project includes Matthias Hotz's
+[tikz-dsp](https://texample.net/tikz/examples/fir-filter/) library under the
+terms of Creative Commons BY 2.5.
 
 # Changelog
 

@@ -9,6 +9,8 @@
 \usepackage{textcomp} % for textminus
 \usepackage{pagecolor} % background color for the first page
 \usepackage{afterpage} % ditto ^^
+\usepackage{tikz} % flow graph
+\usetikzlibrary{dsp,chains}
 \usepackage[a4paper, landscape, margin=1.5cm]{geometry} % basic geometry
 \fboxsep=5mm % minibox spacing
 \pagenumbering{gobble} % disable page numbering
@@ -113,15 +115,11 @@ with free-moving delays, trigger sequencing, and an internal oscillator.
 % Left column
 \begin{minipage}[t]{0.35\textwidth}
 
-\section {Warranty}
-
-Bla bla.
-
 \section{Installation}
 
 Kaseta is 20 HP wide. It is powered by a +12V/{\textminus}12V 2\texttimes5
-connector. The red stripe (\textminus12V) must be connected on the side of the
-board marked with the white line. The module must be mounted in a Eurorack case.
+connector. The red stripe (\textminus12V) has to be connected on the side of the
+board marked with the white line. The module must be mounted in a eurorack case.
 
 \end{minipage}%
 \begin{minipage}{0.05\textwidth}
@@ -159,6 +157,158 @@ How to use CV input.
 \section{Calibration}
 
 \end{minipage}
+
+\newpage
+
+\section{Signal flow}
+
+\vspace{2.5cm}
+\begin{figure*}[ht]
+    \center
+    \begin{tikzpicture}
+        \matrix (m1) [row sep=6mm, column sep=12mm]
+        {
+            &
+            \node[dspnodeopen,dsp/label=above] (pre-amp-control)     {Pre-amp};     &
+            &
+            \node[dspnodeopen,dsp/label=above] (drive-bias-control)  {Drive+Bias};  &
+            \node[dspnodeopen,dsp/label=above] (dry-wet-control)     {Dry/Wet};     &
+            \node[dspnodeopen,dsp/label=above] (wow-flutter-control) {Wow/Flutter}; &
+            \node[dspnodeopen,dsp/label=above] (tone-control)        {Tone};        &
+            \\
+            %-------------------------------------------------------------------
+            \node[dspnodeopen,dsp/label=left] (input)             {Input};       &
+            \node[dspmultiplier]              (pre-amp)           {};            &
+            \node[dspnodefull]                (dry-wet-split)     {};            &
+            \node[dspsquare]                  (hysteresis)        {Hysteresis};  &
+            \node[dspmixer]                   (dry-wet-mix)       {};            &
+            \node[dspsquare]                  (time-effect)       {Time effect}; &
+            \node[dspsquare]                  (filter)            {Filter};      &
+            \node[coordinate]                 (filter-to-write-a) {};            \\
+            %-------------------------------------------------------------------
+            &
+            &
+            \node[coordinate] (dry-wet-bypass-a) {}; &
+            &
+            \node[coordinate] (dry-wet-bypass-b) {}; &
+            &
+            &
+            \\
+            %-------------------------------------------------------------------
+            \node[coordinate] (feedback-mixer-to-write) {};      &
+            \node[dspsquare]  (write)                   {Write}; &
+            &
+            &
+            &
+            &
+            &
+            \node[coordinate] (route-to-write-b)        {};      \\
+            %-------------------------------------------------------------------
+            &
+            \node[coordinate] (delay-nw) {}; &
+            &
+            &
+            &
+            &
+            \node[coordinate] (delay-ne) {}; &
+            \\
+            %-------------------------------------------------------------------
+            &
+            \node[coordinate] (delay-sw)   {}; &
+            &
+            &
+            &
+            \node[coordinate] (read-point) {}; &
+            \node[coordinate] (delay-se)   {}; &
+            \\
+            %-------------------------------------------------------------------
+            \node[dspmixer]                    (feedback-mixer)         {};                   &
+            &
+            &
+            &
+            \node[dspmultiplier]               (feedback)               {};                   &
+            \node[dspsquare]                   (read)                   {Read N};             &
+            \node[dspnodeopen,dsp/label=right] (position-speed-control) {Position N / Speed}; \\
+            %-------------------------------------------------------------------
+            \node[dspnodefull,dsp/label=below] (other-feedback)     {\textit{Other heads}}; &
+            &
+            &
+            &
+            \node[dspnodeopen,dsp/label=below] (feedback-control)   {Feedback N};           &
+            \node[dspmultiplier]               (volume-pan)         {};                     &
+            \node[dspnodeopen,dsp/label=right] (volume-pan-control) {Volume N + Pan N};     \\
+            %-------------------------------------------------------------------
+            & & & & & & \\ % Spacing
+            %-------------------------------------------------------------------
+            &
+            &
+            &
+            &
+            &
+            \node[dspmixer]                    (playback-mixer) {};                     &
+            \node[dspnodefull,dsp/label=right] (other-playback) {\textit{Other heads}}; \\
+            %-------------------------------------------------------------------
+            &
+            &
+            &
+            &
+            &
+            \node[dspnodeopen,dsp/label=below] (outputs) {Outputs}; &
+            \\
+            %---------------------------------------------------------------
+            & & & & & & \\ % Spacing
+        };
+        % First row of flow
+        \draw[dspflow]         (input) -- (pre-amp);
+        \draw[dspflow]       (pre-amp) -- (dry-wet-split);
+        \draw[dspflow] (dry-wet-split) -- (hysteresis);
+        \draw[dspflow]    (hysteresis) -- (dry-wet-mix);
+        \draw[dspflow]   (dry-wet-mix) -- (time-effect);
+        \draw[dspflow]   (time-effect) -- (filter);
+
+        % Controls
+        \draw[dspconn]        (pre-amp-control) -- (pre-amp);
+        \draw[dspconn]     (drive-bias-control) -- (hysteresis);
+        \draw[dspconn]        (dry-wet-control) -- (dry-wet-mix);
+        \draw[dspconn]    (wow-flutter-control) -- (time-effect);
+        \draw[dspconn]           (tone-control) -- (filter);
+        \draw[dspconn]     (volume-pan-control) -- (volume-pan);
+        \draw[dspconn]       (feedback-control) -- (feedback);
+        \draw[dspconn] (position-speed-control) -- (read);
+
+        % Dry/wet bypass
+        \draw[dspline]    (dry-wet-split) -- (dry-wet-bypass-a);
+        \draw[dspflow] (dry-wet-bypass-a) -- (dry-wet-bypass-b);
+        \draw[dspline] (dry-wet-bypass-b) -- (dry-wet-mix);
+
+        % Route to the write head
+        \draw[dspline]            (filter) -- (filter-to-write-a);
+        \draw[dspline] (filter-to-write-a) -- (route-to-write-b);
+        \draw[dspflow]  (route-to-write-b) -- (write);
+
+        % Delay block
+        \draw[line width=0.7mm] (delay-nw) -- (delay-sw) -- (delay-se) -- (delay-ne) -- cycle;
+
+        % Writing and reading heads
+        \draw[dspflow] (write) -- (delay-nw);
+        \draw[dspflow] (read-point) -- (read);
+
+        % Feedback flow
+        \draw[dspflow]                    (read) -- (feedback);
+        \draw[dspflow]                (feedback) -- (feedback-mixer);
+        \draw[dspflow]          (feedback-mixer) -- (feedback-mixer-to-write);
+        \draw[dspflow]          (other-feedback) -- (feedback-mixer);
+        \draw[dspflow] (feedback-mixer-to-write) -- (write);
+
+        % Playback flow
+        \draw[dspflow]            (read) -- (volume-pan);
+        \draw[dspflows]     (volume-pan) -- (playback-mixer);
+        \draw[dspflows] (other-playback) -- (playback-mixer);
+        \draw[dspflows] (playback-mixer) -- (outputs);
+    \end{tikzpicture}
+    \caption{\label{flowchart}{\it
+      Signal flow within the module. Only a single reading head is shown for clarity.}}
+\end{figure*}
 
 \newpage
 
@@ -330,19 +480,21 @@ Find a better name.
 
 
 \noindent
-\begin{minipage}[t]{0.3\textwidth}
-\section{Configuration}
-\end{minipage}%
-\begin{minipage}{0.05\textwidth}
-\phantom{ }
-\end{minipage}%
-% Center column
-\begin{minipage}[t]{0.3\textwidth}
-\section{Changelog}
-\end{minipage}
-\begin{minipage}{0.05\textwidth}
-\phantom{ }
-\end{minipage}%
+% NOTE: Configuration is not exposed yet.
+% \begin{minipage}[t]{0.3\textwidth}
+% \section{Configuration}
+% \end{minipage}%
+% \begin{minipage}{0.05\textwidth}
+% \phantom{ }
+% \end{minipage}%
+% % Center column
+% NOTE: This will be introduced with the first patch release.
+% \begin{minipage}[t]{0.3\textwidth}
+% \section{Changelog}
+% \end{minipage}
+% \begin{minipage}{0.05\textwidth}
+% \phantom{ }
+% \end{minipage}%
 % Right column
 \begin{minipage}[t]{0.3\textwidth}
 \section{Questions?}
