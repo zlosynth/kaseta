@@ -11,6 +11,7 @@
 \usepackage{afterpage} % ditto ^^
 \usepackage{tikz} % flow graph
 \usetikzlibrary{dsp,chains}
+\usepackage{parskip} % vertical paragraph spacing
 \usepackage[a4paper, landscape, margin=1.5cm]{geometry} % basic geometry
 \fboxsep=5mm % minibox spacing
 \pagenumbering{gobble} % disable page numbering
@@ -114,6 +115,7 @@ with free-moving delays, trigger sequencing, and an internal oscillator.
 
 % Left column
 \begin{minipage}[t]{0.35\textwidth}
+\setlength{\parskip}{6pt}
 
 \section{Installation}
 
@@ -127,34 +129,53 @@ board marked with the white line. The module must be mounted in a eurorack case.
 \end{minipage}%
 % Right column
 \begin{minipage}[t]{0.55\textwidth}
+\setlength{\parskip}{6pt}
 
 \section{Controls, inputs and outputs}
 
-Pre-amp
-Tone
-Saturation/drive
-Bias
-Wow
-Flutter
-Delay length
-Head position
-Head playback
-Head feedback
-Head pan
+Audio input, two outputs.
 
-What is each pot doing.
+5 knobs on left.
 
-How is the display used.
+2 speed and tone.
 
-What is the button for.
+4 rows of identical pots controlling delay reading heads.
 
-How are delay heads grouped.
+Control inputs than can be mapped to any of those attributes.
 
-How to use CV input.
+Display.
+
+Button for tempo tap and access to alt attributes.
+
+Y impulse, signalizing output of trigger sequencer IMPULSE.
 
 \section{Mapping}
 
+Each of the 4 multi-purpose control inputs can be mapped to any of the
+knobs:
+
+\begin{packed_enumerate}
+  \item Plug a cable into one of the control inputs.
+  \item Display will signalize mapping.
+  \item Turn the desired target knob.
+\end{packed_enumerate}
+
+The mapping is persisted between restarts. Disconnect a cable to unmap it.
+
 \section{Calibration}
+
+Some of the attributes are following 1V/oct standard. To increase accuracy,
+calibrate each of the control inputs.
+
+\begin{packed_enumerate}
+  \item While holding the button, connect a jack to an input.
+  \item The first and second LED should light up.
+  \item Play note C on the CV source and press the button.
+  \item Now, the third and fourth LED should light up.
+  \item Play C one octave higher and press the button again.
+\end{packed_enumerate}
+
+The calibration is persisted between restarts and disconnects.
 
 \end{minipage}
 
