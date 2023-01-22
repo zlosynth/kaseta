@@ -125,27 +125,44 @@ board marked with the white line. The module must be mounted in a eurorack case.
 
 \section{Controls, inputs and outputs}
 
-The main peripherals are the audio input IN and outputs LEFT and RIGHT.
+There is one audio input IN and stereo outputs LEFT and RIGHT.
 
 The button (B) serves for tempo tap-in and access to secondary attributes.
 
-PRE-AMP knob attenuates or amplifies the input signal. Turning this knob to the max while holding the button enables an internal oscillator. The knob sets its pitch.
+PRE-AMP knob attenuates or amplifies the input signal. Turning this knob to the
+max while holding the button enables an internal oscillator. The knob sets its
+pitch.
 
-DRIVE and BIAS are affecting the character of the tape saturation simulation. DRY/WET blends between clear and saturated signals. Turning DRIVE to the max while holding the button enables unstable distortion mode.
+DRIVE and BIAS are affecting the character of the tape saturation simulation.
+DRY/WET blends between clear and saturated signals. Turning DRIVE to the max
+while holding the button enables unstable distortion mode.
 
-WOW/FLUT is controlling time effects. When the pot is at its 12 hours, the effect is disabled. Turning it to the left or right enables wow or flutter, respectively.
+WOW/FLUT is controlling time effects. When the pot is at its 12 hours, the
+effect is disabled. Turning it to the left or right enables wow or flutter,
+respectively.
 
-TONE applies a filter on the incoming signal. When the pot is at its 12 hours, the filter is disabled. Turning it to the left or right enables a low-pass or high-pass filter, respectively. Turning this knob to the max while holding the button moves the filter to delay feedback.
+TONE applies a filter on the incoming signal. When the pot is at its 12 hours,
+the filter is disabled. Turning it to the left or right enables a low-pass or
+high-pass filter, respectively. Turning this knob to the max while holding the
+button moves the filter to delay feedback.
 
-SPEED sets the length of the delay. Turning this knob to the max while holding the button shortens the delay to the audio range.
+SPEED sets the length of the delay. Turning this knob to the max while holding
+the button shortens the delay to the audio range.
 
-There are four delay reading heads, each controlled by four knobs (H). POSITION sets the relative position in the delay. VOL controls how much of the signal will be fed into the output, with PAN controlling the balance between LEFT and RIGHT. FEEDBACK controls how much of the signal is written back to the beginning of the delay.
+There are four delay reading heads, each controlled by four knobs (H). POSITION
+sets the relative position in the delay. VOL controls how much of the signal
+will be fed into the output, with PAN controlling the balance between LEFT and
+RIGHT. FEEDBACK controls how much of the signal is written back to the beginning
+of the delay.
 
-The four CONTROL inputs accept CV from \textminus5 to +5 V and can be mapped to any of the knobs. Values set by the knob and the control input are summed together.
+The four CONTROL inputs accept CV from \textminus5 to +5 V and can be mapped to
+any of the knobs. Values set by the knob and the control input are summed
+together.
 
 The display (X) visualizes dialed-in parameters, warnings and configuration.
 
-The LED (Y) and IMPULSE output are triggered at intervals controlled by the delay heads.
+The LED (Y) and IMPULSE output are triggered at intervals controlled by the
+delay heads.
 
 \end{minipage}%
 \begin{minipage}{0.05\textwidth}
@@ -167,9 +184,12 @@ Each of the four multi-purpose control inputs can be mapped to any of the knobs:
 
 The mapping is persisted between restarts. Disconnect a cable to unmap it.
 
+\vspace{1.3cm}
+
 \section{Calibration}
 
-Some of the attributes follow the 1V/oct standard. Calibrate each of the control inputs to increase the accuracy.
+Some of the attributes follow the 1V/oct standard. Calibrate each of the control
+inputs to increase the accuracy.
 
 \begin{packed_enumerate}
   \item While holding the button, connect a jack to an input.
@@ -181,9 +201,13 @@ Some of the attributes follow the 1V/oct standard. Calibrate each of the control
 
 The calibration is persisted between restarts and disconnects.
 
+\vspace{1.3cm}
+
 \section{Reset}
 
-Calibration, mapping and all secondary parameters are persisted between restarts of the module. To reset their values, hold the button pressed while powering on the module.
+Calibration, mapping and all secondary parameters are persisted between restarts
+of the module. To reset their values, hold the button pressed while powering on
+the module.
 
 \end{minipage}
 
@@ -341,31 +365,45 @@ Calibration, mapping and all secondary parameters are persisted between restarts
 
 \newpage
 
+\begin{minipage}[t]{0.45\textwidth}
+\setlength{\parskip}{6pt}
 \section{Pre-amp}
 
-What is the range. What is it good for. What signalizes clipping.
+The PRE-AMP attribute attenuates or amplifies the signal received via INPUT between silence and +28 dB. If the input signal is boosted too hard and starts clipping, the display will start blinking.
 
-Nothing plugged in, use tone as amp, some other as frequency control, play sine on input.
+\section{Internal oscillator}
 
-\section{Saturation}
+The INPUT signal can be replaced with an internal oscillator. This oscillator consists of two sine waves, one of which is a slightly detuned sub-octave.
 
-About the maths behind, what it does on real tape.
+To enable this feature, turn the PRE-AMP knob to the max while holding the button. The PRE-AMP knob controls the pitch. If a control input is mapped to the pitch, it will follow the 1V/oct standard.
+
+\section{Hysteresis}
+
+About the maths behind, what it does on real tape. Model. Kudos. 3rd harmonics
 
 Image of what happens to the sound.
 
 Explanation of bias.
 
-Explanation of the sweet spot with pre-amp.
-
-Bias is most pronounced on weak input signal without distortion.
+Explanation of the sweet spot with pre-amp. Pronounced differently based on input strength and bias/drive ratio.
 
 Danger zone.
+
+\end{minipage}%
+\begin{minipage}{0.05\textwidth}
+\phantom{ }
+\end{minipage}%
+% Right column
+\begin{minipage}[t]{0.35\textwidth}
+\setlength{\parskip}{6pt}
 
 \section{Delay}
 
 Heads. Feedback vs blend. Ranges. Clock in. Gate out.
 
 Longest delay is. Switchable ranges.
+
+Low input leaves more space for loud feedback.
 
 Image illusatration of the signal flow.
 
@@ -385,25 +423,13 @@ Explanation on how it is applied per head.
 
 Mention of the switch setting it for feedback/all.
 
+\end{minipage}
+
 \section{Wow and flutter}
 
 Wow: Oscillation or change in pitch, caused by warped tape, low frequency, <4Hz
 
 Flutter: Simulates scratched tape or friction, causes inconsistent information, vibration in frequency spectrum, high frequency, >4Hz
-
-\section{Compression}
-
-Explanation of what happens with output (saturation). Also can enable compression instead, using switch.
-
-\section{Options}
-
-Delay echo vs. audio rate
-Quantization 1/8
-Quantization 1/6
-Wow cyclic vs. random
-Flutter cyclic vs. random
-Danger zone
-Rewind/speed
 
 \newpage
 

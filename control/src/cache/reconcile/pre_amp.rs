@@ -9,7 +9,7 @@ use crate::cache::mapping::AttributeIdentifier;
 use crate::log;
 use crate::Store;
 
-// Pre-amp scales between -20 to +28 dB.
+// Pre-amp scales up to +28 dB.
 const PRE_AMP_RANGE: (f32, f32) = (0.0, 25.0);
 
 impl Store {
