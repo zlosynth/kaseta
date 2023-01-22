@@ -17,6 +17,12 @@ makers
 rm -rf release
 mkdir release
 
+pushd eurorack && cargo objcopy --release -- -O binary ../release/kaseta-firmware-${version}.bin && popd
+
+make manual
+cp manual/user/manual.pdf release/kaseta-user-manual.pdf
+# cp manual/build/manual.pdf release/kaseta-build-manual.pdf
+
 export CHANGES=$(awk "/## ${version}/{flag=1;next}/## */{flag=0}flag" CHANGELOG.md | awk 'NF')
 
 envsubst < hack/release.tmpl.md > release/notes.md
