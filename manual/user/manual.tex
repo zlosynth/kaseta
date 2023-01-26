@@ -112,7 +112,7 @@ with free-moving delays, trigger sequencing, and an internal oscillator.
 
 \end{minipage}
 
-% Start of the second page
+% Start of the quick start page
 \newpage
 \color{black}
 
@@ -214,6 +214,7 @@ the module.
 
 \end{minipage}
 
+% Start of the signal flow page
 \newpage
 
 \section{Signal flow}
@@ -366,6 +367,7 @@ the module.
       Signal flow within the module. Only a single reading head is shown for clarity.}}
 \end{figure*}
 
+% Start of features deep dive page
 \newpage
 
 \begin{minipage}[t]{0.45\textwidth}
@@ -457,50 +459,57 @@ Gate out.
 \newpage
 \section{Patch book}
 
-Some basic combinations to get you started. TODO: Custom wow/flutter using position modulation.
+Some basic combinations to get you started.
 
-\vspace{5mm}
-\noindent
-\begin{minipage}[t]{0.45\textwidth}
+\noindent\begin{minipage}[t]{0.45\textwidth}\setlength{\parskip}{6pt}
 
-\subsection{Warm saturation}
+\subsection{Clean slate}
 
-\vspace{5mm}
-\begin{center}
-  \includegraphics[width=0.7\textwidth]{schema-inverted.pdf}
-\end{center}
+\vspace{5mm}\begin{center}\includegraphics[width=0.7\textwidth]{patch-clean-slate.pdf}\vspace{5mm}\end{center}
 
-* Basic hysteresis.
-* Warm soft saturation on piano is nice.
+Pass through clean unaffected singal.
 
-\end{minipage}%
-\begin{minipage}{0.05\textwidth}
-\phantom{ }
-\end{minipage}%
-% Right column
-\begin{minipage}[t]{0.45\textwidth}
-\subsection{Wow and flutter}
+\end{minipage}\begin{minipage}{0.05\textwidth}\phantom{ }\end{minipage}\begin{minipage}[t]{0.45\textwidth}\setlength{\parskip}{6pt}
 
-\vspace{5mm}
-\begin{center}
-  \includegraphics[width=0.7\textwidth]{schema-inverted.pdf}
-\end{center}
+\subsection{Saturation}
 
-Find a better name.
+\vspace{5mm}\begin{center}\includegraphics[width=0.7\textwidth]{patch-saturation.pdf}\vspace{5mm}\end{center}
 
-* Basic flutter with disabled hysteresis.
+Saturated signal without any delay or effects. Play with the PRE-AMP, DRIVE,
+BIAS and DRY/WET controls to achieve the desired sound. Try different input
+sources.
+
+Stronger PRE-AMP usually produces more pronounced saturation, but be careful
+not to let it clip.
+
+\end{minipage}
+
+\newpage
+\noindent\begin{minipage}[t]{0.45\textwidth}\vspace{1cm}\setlength{\parskip}{6pt}
+
+\subsection{Ping pong echo}
+
+\vspace{5mm}\begin{center}\includegraphics[width=0.7\textwidth]{patch-ping-pong-echo.pdf}\vspace{5mm}\end{center}
+
+Main voice followed by three echos in even intervals set through POSITION.
+The three echoing heads we placed left and right using PAN. Note that VOL of
+each reading head is reduced to avoid compression or clipping.
+
+Increase FEEDBACK of the bottom-most head to produce infinite echo.
+
+\end{minipage}\begin{minipage}{0.05\textwidth}\phantom{ }\end{minipage}\begin{minipage}[t]{0.45\textwidth}\vspace{1cm}\setlength{\parskip}{6pt}
+
+\subsection{Almost reverb}
+
+\vspace{5mm}\begin{center}\includegraphics[width=0.7\textwidth]{patch-saturation.pdf}\vspace{5mm}\end{center}
+
+Feedback close, low pass set on feedback.
+
 \end{minipage}
 
 \newpage
 
 
-\subsection{Clean sound}
-
-* How to reset to a clean position.
-
-\subsection{Simple echo}
-
-* Basic evenly spread one time delay.
 
 \subsection{Feedback pads}
 
@@ -516,49 +525,21 @@ Find a better name.
 * Plain sine. All four heads playing in a small distance from each other.
   Producing reverb. Add flutter to make it forever moving and changing.
 
-\subsection{Tremolo}
-
-* Basic tremolo, just cyclic flutter.
-
-\subsection{Rhytmical echo}
-
-* Delays comming back, with some heads close, some far to repeat way later.
-
 \subsection{Rhythm sequencer}
 
 * Percussion rhythm.
-
-\subsection{Almost sidechaining}
-
-* When bass drum and single oscillator tone play at the same time with high
-  saturation and low bias, it works like sidechaining.
-
-\subsection{Cutting cymbals}
-
-* Short cybmals, low bias cuts weak signal.
-
-\subsection{Ping pong echo}
-
-* Ping pong snare. Like Daughter's New Ways.
 
 \subsection{Samples from the past}
 
 * With non-warping delay, CV S and H input to delay value, selecting samples from
   the past.
 
-\subsection{Rewind}
+\subsection{Haas effect}
 
-* Playing a mellow song, slow speed. Fading when approaching end, switch to another head.
+\subsection{Karplus strong}
 
-\subsection{Distortion unchained}
-
-* Hardcore distortion
-
+% Start of the last page
 \newpage
-
-
-
-
 
 \noindent
 \begin{minipage}[t]{0.3\textwidth}
@@ -609,7 +590,7 @@ And last but not least, Hainbach%
 and his contaigious enthusiasm about tape machines. Which sparked my initial
 ideas to create this module.
 
-\vspace{3cm}
+\vspace{2.5cm}
 
 \end{minipage}
 \begin{minipage}{0.05\textwidth}
