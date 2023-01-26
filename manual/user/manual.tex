@@ -12,9 +12,12 @@
 \usepackage{tikz} % flow graph
 \usetikzlibrary{dsp,chains}
 \usepackage{parskip} % vertical paragraph spacing
+\usepackage{hyperref} % links
 \usepackage[a4paper, landscape, margin=1.5cm]{geometry} % basic geometry
 \fboxsep=5mm % minibox spacing
 \pagenumbering{gobble} % disable page numbering
+\renewcommand{\thefootnote}{\arabic{footnote}} % use numbers for footnotes
+\renewcommand{\thempfootnote}{\arabic{mpfootnote}} % ditto for minipages
 
 % Style for a simple numbered list
 \newenvironment{packed_enumerate}{
@@ -125,7 +128,7 @@ board marked with the white line. The module must be mounted in a eurorack case.
 
 \section{Controls, inputs and outputs}
 
-There is one audio input IN and stereo outputs LEFT and RIGHT.
+There is one AC coupled audio input IN and two stereo outputs LEFT and RIGHT.
 
 The button (B) serves for tempo tap-in and access to secondary attributes.
 
@@ -159,7 +162,7 @@ The four CONTROL inputs accept CV from \textminus5 to +5 V and can be mapped to
 any of the knobs. Values set by the knob and the control input are summed
 together.
 
-The display (X) visualizes dialed-in parameters, warnings and configuration.
+The display (X) visualizes dialed-in attributes, warnings and configuration.
 
 The LED (Y) and IMPULSE output are triggered at intervals controlled by the
 delay heads.
@@ -205,7 +208,7 @@ The calibration is persisted between restarts and disconnects.
 
 \section{Reset}
 
-Calibration, mapping and all secondary parameters are persisted between restarts
+Calibration, mapping and all secondary attributes are persisted between restarts
 of the module. To reset their values, hold the button pressed while powering on
 the module.
 
@@ -369,61 +372,65 @@ the module.
 \setlength{\parskip}{6pt}
 \section{Pre-amp}
 
-The PRE-AMP attribute attenuates or amplifies the signal received via INPUT between silence and +28 dB. If the input signal is boosted too hard and starts clipping, the display will start blinking.
+The PRE-AMP attribute attenuates or amplifies the signal received via INPUT
+between silence and +28 dB. If the input signal is boosted too hard and starts
+clipping, the display will start blinking.
 
 \section{Internal oscillator}
 
-The INPUT signal can be replaced with an internal oscillator. This oscillator consists of two sine waves, one of which is a slightly detuned sub-octave.
+The INPUT signal can be replaced with an internal oscillator. This oscillator
+consists of two sine waves, one of which is a slightly detuned sub-octave.
 
-To enable this feature, turn the PRE-AMP knob to the max while holding the button. The PRE-AMP knob controls the pitch. If a control input is mapped to the pitch, it will follow the 1V/oct standard.
+To enable this feature, turn the PRE-AMP knob to the max while holding the
+button. The PRE-AMP knob controls the pitch. If a control input is mapped to the
+pitch, it will follow the 1V/oct standard.
 
 \section{Hysteresis}
 
-About the maths behind, what it does on real tape. Model. Kudos. 3rd harmonics
+TODO: Extend with https://jatinchowdhury18.medium.com/complex-nonlinearities-episode-3-hysteresis-fdeb2cd3e3f6
 
-Image of what happens to the sound.
+To replicate the warm tape saturation, the modules leverages Jiles-Atherton
+magnetization model \footnote{
+  Implementation of this algorithm is based on Jatin Chowdhury's paper
+  \url{https://raw.githubusercontent.com/jatinchowdhury18/AnalogTapeModel/master/Paper/420_paper.pdf}
+}. This effect is controlled using two attributes, DRIVE and BIAS.
+
+In the module, it is contorlled by two inputs, DRIVE and BIAS. They are
+intertwined. 
+
+About the maths behind, what it does on real tape. Model. Kudos. 3rd harmonics
+Assymetrical. 
 
 Explanation of bias.
 
 Explanation of the sweet spot with pre-amp. Pronounced differently based on input strength and bias/drive ratio.
 
-Danger zone.
+The character of hysteresis is strongly affected by the loudness of the input
+signal. Experiment with the pre-amp strength.
+
+The range of drive and bias is carefully limitted to keep the underlying
+algorithm stable. This limitation can be disabled to reach far harsher
+distortions, clicks and pops. Just turn the DRIVE knob to the max while holding
+the button.
 
 \end{minipage}%
 \begin{minipage}{0.05\textwidth}
 \phantom{ }
 \end{minipage}%
 % Right column
-\begin{minipage}[t]{0.35\textwidth}
+\begin{minipage}[t]{0.45\textwidth}
 \setlength{\parskip}{6pt}
-
-\section{Delay}
-
-Heads. Feedback vs blend. Ranges. Clock in. Gate out.
-
-Longest delay is. Switchable ranges.
-
-Low input leaves more space for loud feedback.
-
-Image illusatration of the signal flow.
-
-Switch to make volume a chance for the gate.
-
-Tap-in, regular or clock signal in mapped control.
-
-Image 
-
-How to recover from feedback loop.
 
 \section{Tone}
 
-Images with low-pass, all-pass, high-pass positions.
+Images with low-pass, all-pass, high-pass positions. How strong the filter is.
 
 Explanation on how it is applied per head.
 
 Mention of the switch setting it for feedback/all.
 
-\end{minipage}
+CV offset brings it to the middle. So setting the knob to minimum and then sending
+full 5V CV would fully open the filter, acting like a VCA.
 
 \section{Wow and flutter}
 
@@ -431,8 +438,23 @@ Wow: Oscillation or change in pitch, caused by warped tape, low frequency, <4Hz
 
 Flutter: Simulates scratched tape or friction, causes inconsistent information, vibration in frequency spectrum, high frequency, >4Hz
 
-\newpage
+\section{Delay}
 
+Heads. Feedback vs blend. Ranges.
+
+Longest delay is. Switchable ranges.
+
+Tap-in, regular or clock signal in mapped control.
+
+How to recover from feedback loop.
+
+Low input leaves more space for loud feedback.
+
+Gate out.
+
+\end{minipage}
+
+\newpage
 \section{Patch book}
 
 Some basic combinations to get you started. TODO: Custom wow/flutter using position modulation.
@@ -539,21 +561,60 @@ Find a better name.
 
 
 \noindent
-% NOTE: Configuration is not exposed yet.
-% \begin{minipage}[t]{0.3\textwidth}
-% \section{Configuration}
-% \end{minipage}%
-% \begin{minipage}{0.05\textwidth}
-% \phantom{ }
-% \end{minipage}%
-% % Center column
-% NOTE: This will be introduced with the first patch release.
-% \begin{minipage}[t]{0.3\textwidth}
-% \section{Changelog}
-% \end{minipage}
-% \begin{minipage}{0.05\textwidth}
-% \phantom{ }
-% \end{minipage}%
+\begin{minipage}[t]{0.3\textwidth}
+\section{Changelog}
+
+\begin{tabular}{@{}rl@{}}
+  v1.0 & The status LED blinks once
+\end{tabular}
+
+\end{minipage}%
+\begin{minipage}{0.05\textwidth}
+\phantom{ }
+\end{minipage}%
+% Center column
+\begin{minipage}[t]{0.3\textwidth}
+\setlength{\parskip}{6pt}
+\section{Acknowledgments}
+
+Kudos to all the eurorack, DSP, and embedded programming communities online.
+Here are some of the valuable resources that helped shape this module:
+
+Jatin Chowdhury's white papers
+\textit{Real-time physical modelling for analog tape machines\footnote{
+  \url{https://ccrma.stanford.edu/~jatin/420/tape/TapeModel_DAFx.pdf}
+}}
+and
+\textit{Complex nonlinearities for audio signal processing\footnote{
+  \url{https://ccrma.stanford.edu/~jatin/papers/Complex_NLs.pdf}
+}},
+and his open-source plugin
+\textit{ChowTape\footnote{
+  \url{https://github.com/jatinchowdhury18/AnalogTapeModel/}
+}}. These materials served as the base for Kaseta's hysteresis model.
+
+Nigel Redmon's blog
+\textit{EarLevel Engineering\footnote{
+  \url{https://www.earlevel.com/}
+}}
+and specifically his series about oversampling%
+\footnote{\url{https://www.earlevel.com/main/category/digital-audio/sample-rate-conversion/}}.
+
+mhampton's implementation%
+\footnote{\url{https://github.com/mhampton/ZetaCarinaeModules}}
+of the Ornstein-Uhlenbeck algorithm, which was used as part of the wow effect.
+
+And last but not least, Hainbach%
+\footnote{\url{https://www.youtube.com/@Hainbach}}
+and his contaigious enthusiasm about tape machines. Which sparked my initial
+ideas to create this module.
+
+\vspace{3cm}
+
+\end{minipage}
+\begin{minipage}{0.05\textwidth}
+\phantom{ }
+\end{minipage}%
 % Right column
 \begin{minipage}[t]{0.3\textwidth}
 \section{Questions?}
