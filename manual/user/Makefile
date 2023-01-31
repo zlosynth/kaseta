@@ -1,7 +1,8 @@
 PATCHES = \
 	patch-clean-slate.pdf \
+	patch-saturation.pdf \
 	patch-ping-pong-echo.pdf \
-	patch-saturation.pdf
+	patch-almost-reverb.pdf
 
 .PHONY: pdf
 pdf: clean pdf-images

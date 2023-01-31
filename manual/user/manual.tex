@@ -144,7 +144,7 @@ WOW/FLUT is controlling time effects. When the pot is at its 12 hours, the
 effect is disabled. Turning it to the left or right enables wow or flutter,
 respectively.
 
-TONE applies a filter on the incoming signal. When the pot is at its 12 hours,
+TONE applies a filter on the saturated signal. When the pot is at its 12 hours,
 the filter is disabled. Turning it to the left or right enables a low-pass or
 high-pass filter, respectively. Turning this knob to the max while holding the
 button moves the filter to delay feedback.
@@ -154,9 +154,9 @@ the button shortens the delay to the audio range.
 
 There are four delay reading heads, each controlled by four knobs (H). POSITION
 sets the relative position in the delay. VOL controls how much of the signal
-will be fed into the output, with PAN controlling the balance between LEFT and
-RIGHT. FEEDBACK controls how much of the signal is written back to the beginning
-of the delay.
+will be sent into the output, with PAN controlling the balance between LEFT and
+RIGHT. FEEDBACK controls how much of the signal is fed back to the beginning of
+the delay.
 
 The four CONTROL inputs accept CV from \textminus5 to +5 V and can be mapped to
 any of the knobs. Values set by the knob and the control input are summed
@@ -237,7 +237,7 @@ the module.
             \node[dspnodeopen,dsp/label=left] (input)             {Input};       &
             \node[dspmultiplier]              (pre-amp)           {};            &
             \node[dspnodefull]                (dry-wet-split)     {};            &
-            \node[dspsquare]                  (hysteresis)        {Hysteresis};  &
+            \node[dspsquare]                  (saturation)        {Saturation};  &
             \node[dspmixer]                   (dry-wet-mix)       {};            &
             \node[dspsquare]                  (time-effect)       {Time effect}; &
             \node[dspsquare]                  (filter)            {Filter};      &
@@ -285,7 +285,7 @@ the module.
             &
             \node[dspmultiplier]               (feedback)               {};                   &
             \node[dspsquare]                   (read)                   {Read N};             &
-            \node[dspnodeopen,dsp/label=right] (position-speed-control) {Position N / Speed}; \\
+            \node[dspnodeopen,dsp/label=right] (position-speed-control) {Position N + Speed}; \\
             %-------------------------------------------------------------------
             \node[dspnodefull,dsp/label=below] (other-feedback)     {\textit{Other heads}}; &
             &
@@ -318,14 +318,14 @@ the module.
         % First row of flow
         \draw[dspflow]         (input) -- (pre-amp);
         \draw[dspflow]       (pre-amp) -- (dry-wet-split);
-        \draw[dspflow] (dry-wet-split) -- (hysteresis);
-        \draw[dspflow]    (hysteresis) -- (dry-wet-mix);
+        \draw[dspflow] (dry-wet-split) -- (saturation);
+        \draw[dspflow]    (saturation) -- (dry-wet-mix);
         \draw[dspflow]   (dry-wet-mix) -- (time-effect);
         \draw[dspflow]   (time-effect) -- (filter);
 
         % Controls
         \draw[dspconn]        (pre-amp-control) -- (pre-amp);
-        \draw[dspconn]     (drive-bias-control) -- (hysteresis);
+        \draw[dspconn]     (drive-bias-control) -- (saturation);
         \draw[dspconn]        (dry-wet-control) -- (dry-wet-mix);
         \draw[dspconn]    (wow-flutter-control) -- (time-effect);
         \draw[dspconn]           (tone-control) -- (filter);
@@ -457,7 +457,7 @@ Gate out.
 \end{minipage}
 
 \newpage
-\section{Patch book}
+\section{Examples}
 
 Some basic combinations to get you started.
 
@@ -467,7 +467,7 @@ Some basic combinations to get you started.
 
 \vspace{5mm}\begin{center}\includegraphics[width=0.7\textwidth]{patch-clean-slate.pdf}\vspace{5mm}\end{center}
 
-Pass through clean unaffected singal.
+Pass through clean unaffected signal.
 
 \end{minipage}\begin{minipage}{0.05\textwidth}\phantom{ }\end{minipage}\begin{minipage}[t]{0.45\textwidth}\setlength{\parskip}{6pt}
 
@@ -487,73 +487,38 @@ not to let it clip.
 \newpage
 \noindent\begin{minipage}[t]{0.45\textwidth}\vspace{1cm}\setlength{\parskip}{6pt}
 
-\subsection{Ping pong echo}
+\subsection{Ping pong delay}
 
 \vspace{5mm}\begin{center}\includegraphics[width=0.7\textwidth]{patch-ping-pong-echo.pdf}\vspace{5mm}\end{center}
 
-Main voice followed by three echos in even intervals set through POSITION.
-The three echoing heads we placed left and right using PAN. Note that VOL of
-each reading head is reduced to avoid compression or clipping.
+The two top-most heads play the incoming signal with a delay set via POSITION.
+They are placed left and right using PAN.
+Note that VOL of both of these heads is reduced to avoid compression or
+clipping.
 
-Increase FEEDBACK of the bottom-most head to produce infinite echo.
+The last head is enabled with FEEDBACK, feeding the signal back to the beginning
+to sustain the echo.
 
 \end{minipage}\begin{minipage}{0.05\textwidth}\phantom{ }\end{minipage}\begin{minipage}[t]{0.45\textwidth}\vspace{1cm}\setlength{\parskip}{6pt}
 
-\subsection{Almost reverb}
+\subsection{Haas effect and reverb}
 
-\vspace{5mm}\begin{center}\includegraphics[width=0.7\textwidth]{patch-saturation.pdf}\vspace{5mm}\end{center}
+\vspace{5mm}\begin{center}\includegraphics[width=0.7\textwidth]{patch-almost-reverb.pdf}\vspace{5mm}\end{center}
 
-Feedback close, low pass set on feedback.
+The first two heads, playing left and right with a short delay in between, model
+a Haas effect. This effect makes the mono input sound wide in the stereo output.
+
+The two other heads are enabled with FEEDBACK. The feedback signal is filtered
+with a low-pass filter configured using TONE. This produces a very simple
+reverb. If the output sound grows into a loud feedback loop, set TONE or
+FEEDBACK a little lower.
 
 \end{minipage}
-
-\newpage
-
-
-
-\subsection{Feedback pads}
-
-* Basic feedback delay. Single head, slightly delayed.
-
-\subsection{Comb filter}
-
-* Audio level delay. Just one slightly delayed head playing and feeding back.
-  Perhaps on specific tones.
-
-\subsection{Thickiening of basic sine}
-
-* Plain sine. All four heads playing in a small distance from each other.
-  Producing reverb. Add flutter to make it forever moving and changing.
-
-\subsection{Rhythm sequencer}
-
-* Percussion rhythm.
-
-\subsection{Samples from the past}
-
-* With non-warping delay, CV S and H input to delay value, selecting samples from
-  the past.
-
-\subsection{Haas effect}
-
-\subsection{Karplus strong}
 
 % Start of the last page
 \newpage
 
 \noindent
-\begin{minipage}[t]{0.3\textwidth}
-\section{Changelog}
-
-\begin{tabular}{@{}rl@{}}
-  v1.0 & The status LED blinks once
-\end{tabular}
-
-\end{minipage}%
-\begin{minipage}{0.05\textwidth}
-\phantom{ }
-\end{minipage}%
-% Center column
 \begin{minipage}[t]{0.3\textwidth}
 \setlength{\parskip}{6pt}
 \section{Acknowledgments}
@@ -591,6 +556,18 @@ and his contaigious enthusiasm about tape machines. Which sparked my initial
 ideas to create this module.
 
 \vspace{2.5cm}
+
+\end{minipage}%
+\begin{minipage}{0.05\textwidth}
+\phantom{ }
+\end{minipage}%
+% Center column
+\begin{minipage}[t]{0.3\textwidth}
+\section{Changelog}
+
+\begin{tabular}{@{}rl@{}}
+  v1.0 & The status LED blinks once
+\end{tabular}
 
 \end{minipage}
 \begin{minipage}{0.05\textwidth}
