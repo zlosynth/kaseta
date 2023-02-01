@@ -117,7 +117,7 @@ with free-moving delays, trigger sequencing, and an internal oscillator.
 \color{black}
 
 % Left column
-\begin{minipage}[t]{0.55\textwidth}
+\begin{minipage}[t]{0.45\textwidth}
 \setlength{\parskip}{6pt}
 
 \section{Installation}
@@ -128,39 +128,33 @@ board marked with the white line. The module must be mounted in a eurorack case.
 
 \section{Controls, inputs and outputs}
 
-There is one AC coupled audio input IN and two stereo outputs LEFT and RIGHT.
+There is one AC coupled audio input IN, and two stereo outputs LEFT and RIGHT.
+They all operate in the range from \textminus5 to +5 V.
 
-The button (B) serves for tempo tap-in and access to secondary attributes.
+There is a total of 23 knobs. With the four identical rows (H) controlling four
+independent delay reading heads.
 
-PRE-AMP knob attenuates or amplifies the input signal. Turning this knob to the
-max while holding the button enables an internal oscillator. The knob sets its
-pitch.
+The button (B) serves for tempo tap-in and access to secondary attributes of
+some knobs.
 
-DRIVE and BIAS are affecting the character of the tape saturation simulation.
-DRY/WET blends between clear and saturated signals. Turning DRIVE to the max
-while holding the button enables unstable distortion mode.
+The secondary attributes are: Position of a filter set through TONE, unlimited
+hysteresis enabled through DRIVE, and internal oscillator enabled through
+PRE-AMP.
 
-WOW/FLUT is controlling time effects. When the pot is at its 12 hours, the
-effect is disabled. Turning it to the left or right enables wow or flutter,
-respectively.
+The four CONTROL inputs accept voltage from \textminus5 to +5 V and can be
+mapped to any of the knobs. Values set by the knob and the control input are
+summed together.
 
-TONE applies a filter on the saturated signal. When the pot is at its 12 hours,
-the filter is disabled. Turning it to the left or right enables a low-pass or
-high-pass filter, respectively. Turning this knob to the max while holding the
-button moves the filter to delay feedback.
+For most attributes, summing the minimal value of the knob with +5 V control
+input would produce the maximum value of the attribute. 0 V on the control input
+would not affect the attribute, and \textminus with maximum value on the knob
+would lead to the minimum value of the attribute.
 
-SPEED sets the length of the delay. Turning this knob to the max while holding
-the button shortens the delay to the audio range.
+For TONE and WOW/FLUT, the maximum control input would only offset the
+value to its middle point.
 
-There are four delay reading heads, each controlled by four knobs (H). POSITION
-sets the relative position in the delay. VOL controls how much of the signal
-will be sent into the output, with PAN controlling the balance between LEFT and
-RIGHT. FEEDBACK controls how much of the signal is fed back to the beginning of
-the delay.
-
-The four CONTROL inputs accept CV from \textminus5 to +5 V and can be mapped to
-any of the knobs. Values set by the knob and the control input are summed
-together.
+For the internal oscillator, the control input follows the 1V/oct standard, with
+the knob adding an offset of \textminus2 to +2 octaves.
 
 The display (X) visualizes dialed-in attributes, warnings and configuration.
 
@@ -172,7 +166,7 @@ delay heads.
 \phantom{ }
 \end{minipage}%
 % Right column
-\begin{minipage}[t]{0.35\textwidth}
+\begin{minipage}[t]{0.45\textwidth}
 \setlength{\parskip}{6pt}
 
 \section{Mapping}
@@ -378,6 +372,10 @@ The PRE-AMP attribute attenuates or amplifies the signal received via INPUT
 between silence and +28 dB. If the input signal is boosted too hard and starts
 clipping, the display will start blinking.
 
+% PRE-AMP knob attenuates or amplifies the input signal. Turning this knob to the
+% max while holding the button enables an internal oscillator. The knob sets its
+% pitch.
+
 \section{Internal oscillator}
 
 The INPUT signal can be replaced with an internal oscillator. This oscillator
@@ -388,6 +386,10 @@ button. The PRE-AMP knob controls the pitch. If a control input is mapped to the
 pitch, it will follow the 1V/oct standard.
 
 \section{Hysteresis}
+
+% DRIVE and BIAS are affecting the character of the tape saturation simulation.
+% DRY/WET blends between clear and saturated signals. Turning DRIVE to the max
+% while holding the button enables unstable distortion mode.
 
 TODO: Extend with https://jatinchowdhury18.medium.com/complex-nonlinearities-episode-3-hysteresis-fdeb2cd3e3f6
 
@@ -425,6 +427,11 @@ the button.
 
 \section{Tone}
 
+% TONE applies a filter on the saturated signal. When the pot is at its 12 hours,
+% the filter is disabled. Turning it to the left or right enables a low-pass or
+% high-pass filter, respectively. Turning this knob to the max while holding the
+% button moves the filter to delay feedback.
+
 Images with low-pass, all-pass, high-pass positions. How strong the filter is.
 
 Explanation on how it is applied per head.
@@ -436,11 +443,24 @@ full 5V CV would fully open the filter, acting like a VCA.
 
 \section{Wow and flutter}
 
+% WOW/FLUT is controlling time effects. When the pot is at its 12 hours, the
+% effect is disabled. Turning it to the left or right enables wow or flutter,
+% respectively.
+
 Wow: Oscillation or change in pitch, caused by warped tape, low frequency, <4Hz
 
 Flutter: Simulates scratched tape or friction, causes inconsistent information, vibration in frequency spectrum, high frequency, >4Hz
 
 \section{Delay}
+
+% SPEED sets the length of the delay. Turning this knob to the max while holding
+% the button shortens the delay to the audio range.
+
+% There are four delay reading heads, each controlled by four knobs (H). POSITION
+% sets the relative position in the delay. VOL controls how much of the signal
+% will be sent into the output, with PAN controlling the balance between LEFT and
+% RIGHT. FEEDBACK controls how much of the signal is fed back to the beginning of
+% the delay.
 
 Heads. Feedback vs blend. Ranges.
 
