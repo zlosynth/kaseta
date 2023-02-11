@@ -126,6 +126,8 @@ Kaseta is 20 HP wide. It is powered by a +12V/{\textminus}12V 2\texttimes5
 connector. The red stripe (\textminus12V) has to be connected on the side of the
 board marked with the white line. The module must be mounted in a eurorack case.
 
+\vspace{1cm}
+
 \section{Controls, inputs and outputs}
 
 There is one AC coupled audio input IN, and two stereo outputs LEFT and RIGHT.
@@ -135,11 +137,10 @@ There is a total of 23 knobs. With the four identical rows (H) controlling four
 independent delay reading heads.
 
 The button (B) serves for tempo tap-in and access to secondary attributes of
-some knobs.
-
-The secondary attributes are: Position of a filter set through TONE, unlimited
-hysteresis enabled through DRIVE, and internal oscillator enabled through
-PRE-AMP.
+some knobs:
+Position of a filter set through TONE,
+unlimited hysteresis enabled through DRIVE,
+and internal oscillator enabled through PRE-AMP.
 
 The four CONTROL inputs accept voltage from \textminus5 to +5 V and can be
 mapped to any of the knobs. Values set by the knob and the control input are
@@ -147,7 +148,7 @@ summed together.
 
 For most attributes, summing the minimal value of the knob with +5 V control
 input would produce the maximum value of the attribute. 0 V on the control input
-would not affect the attribute, and \textminus with maximum value on the knob
+would not affect the attribute, and \textminus5 with maximum value on the knob
 would lead to the minimum value of the attribute.
 
 For TONE and WOW/FLUT, the maximum control input would only offset the
@@ -357,7 +358,7 @@ the module.
         \draw[dspflows] (other-playback) -- (playback-mixer);
         \draw[dspflows] (playback-mixer) -- (outputs);
     \end{tikzpicture}
-    \caption{\label{flowchart}{\it
+    \caption{\label{fig:flowchart}{\it
       Signal flow within the module. Only a single reading head is shown for clarity.}}
 \end{figure*}
 
@@ -372,10 +373,6 @@ The PRE-AMP attribute attenuates or amplifies the signal received via INPUT
 between silence and +28 dB. If the input signal is boosted too hard and starts
 clipping, the display will start blinking.
 
-% PRE-AMP knob attenuates or amplifies the input signal. Turning this knob to the
-% max while holding the button enables an internal oscillator. The knob sets its
-% pitch.
-
 \section{Internal oscillator}
 
 The INPUT signal can be replaced with an internal oscillator. This oscillator
@@ -387,35 +384,27 @@ pitch, it will follow the 1V/oct standard.
 
 \section{Hysteresis}
 
-% DRIVE and BIAS are affecting the character of the tape saturation simulation.
-% DRY/WET blends between clear and saturated signals. Turning DRIVE to the max
-% while holding the button enables unstable distortion mode.
-
-TODO: Extend with https://jatinchowdhury18.medium.com/complex-nonlinearities-episode-3-hysteresis-fdeb2cd3e3f6
-
 To replicate the warm tape saturation, the modules leverages Jiles-Atherton
-magnetization model \footnote{
+magnetization model\footnote{
   Implementation of this algorithm is based on Jatin Chowdhury's paper
-  \url{https://raw.githubusercontent.com/jatinchowdhury18/AnalogTapeModel/master/Paper/420_paper.pdf}
-}. This effect is controlled using two attributes, DRIVE and BIAS.
+  \url{https://ccrma.stanford.edu/~jatin/420/tape/TapeModel_DAFx.pdf}
+}. DRIVE and BIAS are affecting the character of the saturation. DRY/WET blends
+between clear and saturated signals.
 
-In the module, it is contorlled by two inputs, DRIVE and BIAS. They are
-intertwined. 
+The range of drive and bias is limitted to keep the simulation stable. This
+limitation can be disabled to reach far harsher distortions, clicks and pops.
+Disable it by turning the DRIVE knob to the max while holding the button.
 
-About the maths behind, what it does on real tape. Model. Kudos. 3rd harmonics
-Assymetrical. 
+\section{Tone}
 
-Explanation of bias.
+TONE applies a filter on the saturated signal. When the pot is at its 12 hours,
+the filter is disabled. Turning it to the left or right enables a low-pass or
+high-pass filter, respectively.
 
-Explanation of the sweet spot with pre-amp. Pronounced differently based on input strength and bias/drive ratio.
+Turning this knob to the max while holding the button makes it so the filter
+gets applied on the feedback of each of the delay heads.
 
-The character of hysteresis is strongly affected by the loudness of the input
-signal. Experiment with the pre-amp strength.
-
-The range of drive and bias is carefully limitted to keep the underlying
-algorithm stable. This limitation can be disabled to reach far harsher
-distortions, clicks and pops. Just turn the DRIVE knob to the max while holding
-the button.
+\vspace{5mm}
 
 \end{minipage}%
 \begin{minipage}{0.05\textwidth}
@@ -425,54 +414,47 @@ the button.
 \begin{minipage}[t]{0.45\textwidth}
 \setlength{\parskip}{6pt}
 
-\section{Tone}
-
-% TONE applies a filter on the saturated signal. When the pot is at its 12 hours,
-% the filter is disabled. Turning it to the left or right enables a low-pass or
-% high-pass filter, respectively. Turning this knob to the max while holding the
-% button moves the filter to delay feedback.
-
-Images with low-pass, all-pass, high-pass positions. How strong the filter is.
-
-Explanation on how it is applied per head.
-
-Mention of the switch setting it for feedback/all.
-
-CV offset brings it to the middle. So setting the knob to minimum and then sending
-full 5V CV would fully open the filter, acting like a VCA.
-
 \section{Wow and flutter}
 
-% WOW/FLUT is controlling time effects. When the pot is at its 12 hours, the
-% effect is disabled. Turning it to the left or right enables wow or flutter,
-% respectively.
+The module simulates two phenomena known from the physical medium:
+Wow, a slow fluctuation of the playback speed, causing the pitch to move up or
+down.
+And flutter, abrupt changes of the playback speed, resulting in faster momentary
+increases of pitch.
 
-Wow: Oscillation or change in pitch, caused by warped tape, low frequency, <4Hz
-
-Flutter: Simulates scratched tape or friction, causes inconsistent information, vibration in frequency spectrum, high frequency, >4Hz
+WOW/FLUT is controlling these time effects. When the pot is at its 12 hours, the
+effect is disabled. Turning it to the left or right enables wow or flutter,
+respectively.
 
 \section{Delay}
 
-% SPEED sets the length of the delay. Turning this knob to the max while holding
-% the button shortens the delay to the audio range.
+The input signal gets recorded on an imaginary tape by a writing head, to be
+then, after a set interval, played back by a reading head. See the figure 
+\ref{fig:flowchart}.
 
-% There are four delay reading heads, each controlled by four knobs (H). POSITION
-% sets the relative position in the delay. VOL controls how much of the signal
-% will be sent into the output, with PAN controlling the balance between LEFT and
-% RIGHT. FEEDBACK controls how much of the signal is fed back to the beginning of
-% the delay.
+There are four such reading heads, each controlled by four knobs (H). POSITION
+sets the relative position in the delay. VOL controls how much of the signal
+will be sent into the output, with PAN controlling the balance between LEFT and
+RIGHT. FEEDBACK controls how much of the signal is fed back to the beginning of
+the delay.
 
-Heads. Feedback vs blend. Ranges.
+SPEED controls the velocity in which the imaginary tape loops around, or in
+other words, the length of the delay. By default, this length is between 10 ms
+and 5 minutes. Turning this knob to the maximum while holding the button
+switches the range to audio range from 14 Hz to 1.8 kHz.
 
-Longest delay is. Switchable ranges.
+Alternatively, tap the button four times to set the desired tempo.
+Similarly, if a clock signal is detected in control input, it would set the
+tempo, with the SPEED knob acting as a multiplier.
 
-Tap-in, regular or clock signal in mapped control.
+The IMPULSE trigger output will fire in the pattern set through head positions.
+It is synchronized with the tap-in or clock-in.
 
-How to recover from feedback loop.
+When the signal written to the tape is too loud, it will not allow any feedback
+to fit in. To allow stronger feedback, reduce the pre-amp or drive.
 
-Low input leaves more space for loud feedback.
-
-Gate out.
+When the combined strength of all feedback gets too strong, the module may enter
+into a feedback loop. To get out of this loop, reduce the feedback.
 
 \end{minipage}
 
@@ -595,7 +577,13 @@ ideas to create this module.
 \end{minipage}%
 % Right column
 \begin{minipage}[t]{0.3\textwidth}
+\setlength{\parskip}{6pt}
 \section{Questions?}
+
+You can find more information about the module on
+\url{https://zlosynth.com/kaseta}.
+
+\vspace{3mm}
 
 \begin{center}
 petr@zlosynth.com

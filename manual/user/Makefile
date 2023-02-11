@@ -7,6 +7,7 @@ PATCHES = \
 .PHONY: pdf
 pdf: clean pdf-images
 	pdflatex manual.tex
+	pdflatex manual.tex
 
 .PHONY: pdf-images
 pdf-images: $(PATCHES)
