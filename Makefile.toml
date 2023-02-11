@@ -42,7 +42,7 @@ script = "python3 -m black hack/"
 
 [tasks.manual]
 workspace = false
-script = "make -C manual/user"
+script = "make -C manual/user && make -C manual/build"
 
 [tasks.flash]
 workspace = false
