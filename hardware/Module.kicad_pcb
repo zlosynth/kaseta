@@ -4116,7 +4116,7 @@
   (gr_text "Blue\npot" (at 78.44 78.63) (layer "B.SilkS") (tstamp 96ab3e4b-0ab4-456d-8343-be217dafc51c)
     (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
   )
-  (gr_text "through\nthe\ncenter" (at 86.28 41.72) (layer "B.SilkS") (tstamp 9f31644e-5b74-44c4-9836-640416fe1e84)
+  (gr_text "near\nthe line" (at 86.29 40.67) (layer "B.SilkS") (tstamp 9f31644e-5b74-44c4-9836-640416fe1e84)
     (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
   )
   (gr_text "Blue\npot\nw/\ncenter\ndetent" (at 53.53 66.8) (layer "B.SilkS") (tstamp a2c37922-2d2e-480f-b856-0299dcbc6c5b)
