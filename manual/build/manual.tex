@@ -21,16 +21,17 @@
    /Title  (Kaseta - Build Manual)
 }
 
-\pretitle{%
-  \begin{center}
-  \Huge
-}
-\posttitle{%
-  \\
-  \vspace{2cm}
-  \includegraphics[width=16cm]{schema.pdf}
-  \end{center}
-}
+% TODO: Bring this back. It is commented out to fix syntax highlighting
+% \pretitle{%
+%   \begin{center}
+%   \Huge
+% }
+% \posttitle{%
+%   \\
+%   \vspace{2cm}
+%   \includegraphics[width=16cm]{schema.pdf}
+%   \end{center}
+% }
 
 \begin{document}
 
@@ -76,14 +77,13 @@ Start by unpacking all baggies into a bowl so you don't lose any components.
   1 \texttimes & Front panel \\
   1 \texttimes & PCB (the black board) \\
   1 \texttimes & Daisy Patch Submodule (the yellow board) \\
-  4 \texttimes & Green potentiometer without detent \\
-  1 \texttimes & Green potentiometer with center detent \\
+  4 \texttimes & Green D-shaped pot without detent \\
+  1 \texttimes & Green D-shaped pot with center detent \\
   5 \texttimes & M7 nut and washer \\
-  5 \texttimes & Small knob \\
-  4 \texttimes & Slider potentiometer \\
-  4 \texttimes & Slider cap \\
-  9 \texttimes & Blue potentiometer without detent \\
-  5 \texttimes & Blue potentiometer with center detent \\
+  5 \texttimes & Knob \\
+  4 \texttimes & Slider potentiometer and cap \\
+  9 \texttimes & Blue trim pot without detent \\
+  5 \texttimes & Blue trim pot with center detent \\
   8 \texttimes & 3.5mm jack socket, M6 nut and washer \\
   1 \texttimes & Tactile button \\
   9 \texttimes & Red LED \\
@@ -94,49 +94,63 @@ Start by unpacking all baggies into a bowl so you don't lose any components.
   1 \texttimes & M2 standoff \\
 \end{tabular}
 
-\begin{figure}[p]
+\section{Power and I2C}
+
+Start by soldering the power and I2C connectors.
+
+\begin{enumerate}
+  \item Take the male 2\texttimes5 connector and put the side with shorter legs
+    through the footprint marked as ``Power''. Make sure to put it on the
+    correct side of the PCB.
+  \item Solder a single pin in and check that the connector is upright. If it
+    is not, heat up the pin and align the connector by pushing it against the
+    board.
+  \item Solder all the pins in.
+\end{enumerate}
+
+Repeat the process for the male 1\texttimes3 connector, placed in the ``I2C''
+footprint.
+
+\section{Daisy Patch Submodule}
+
+The Daisy Patch Submodule is connected to the main PCB through a set of
+connectors.
+
+\begin{enumerate}
+  \item Mount the four female 2\texttimes5 connectors on the pins of the Daisy
+    Patch Submodule. See figure \ref{daisy}. This makes it easier to
+    align all the connectors properly.
+  \item Plug the connectors of the submodule into the black PCB through
+    footprints marked as ``SM''. Make sure to put them on the correct side
+    of the PCB, where all four connectors are marked.
+  \item Solder all the pins in.
+  \item Once done, carefully detach Daisy Patch Submodule to prevent it
+    from getting damaged while progressing with the build. It may be a
+    little difficult. Pull each connector by a millimeter at a time.
+    The result is illustrated in figure \ref{connectors}.
+\end{enumerate}
+
+\begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{p01.jpg}
   \caption{All the components laid out}
 \end{figure}
 
-% TODO: Stopped here
-
-\section{Daisy Patch Submodule}
-
-The Daisy Patch Submodule is connected to the main PCB through a set of connectors.
-
-\begin{enumerate}
-  \item Mount the four female 2\texttimes5 connectors on the pins of the Daisy Patch Submodule. See figure \ref{daisy}. This will make it easier to align all the connectors properly.
-  \item Plug the connectors of the submodule into the black PCB through footprints marked as ``SM''. Make sure to put them on the correct side of the PCB, where all four connectors are marked.
-  \item Solder all the pins in.
-  \item Once done, carefully detach Daisy Patch Submodule to prevent it from getting damaged while progressing with the build. It may be a little difficult. Pull each connector by a millimeter at a time.
-\end{enumerate}
-
-\begin{figure}[p]
+\begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{p02.jpg}
   \caption{Connectors mounted on the submodule}
   \label{daisy}
 \end{figure}
 
-\clearpage
-
-\section{Power}
-
-The next step is to solder on the power connector.
-
-\begin{enumerate}
-  \item Take the male 2\texttimes5 connector and put the side with shorter legs through the footprint marked as ``Power''. Make sure to put it on the correct side of the PCB.
-  \item Solder all the pins in. The result is illustrated in figure \ref{connectors}.
-\end{enumerate}
-
-\begin{figure}[p]
+\begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{p03.jpg}
   \caption{The power and submodule connectors}
   \label{connectors}
 \end{figure}
+
+\clearpage
 
 \section{Front panel}
 
@@ -148,6 +162,7 @@ Now when all the internal parts are soldered, the next step would be to assemble
   \item Put all jack sockets into the PCB.
   \item Put LEDs in place. The cathode (shorter leg) goes through the hole closer to the edge.
   \item Now when all parts are in, carefully put the front panel on them. Be patient aligning all parts so they fit through holes. The button may be a little problematic. If you see it not getting through, use tweezers to align its bottom part. Don't worry about the LEDs for now.
+  \item Double-check that WOW/FLUT, TONE, and all the PAN pots have a center detent (snap in the middle)
   \item Put washers on the pots and jacks. See figure \ref{washers}. Pot washers fit tightly into the panel, don't be afraid to push them in.
   \item Tighten all the potentiometers and jack sockets in place with their nuts. Take care not to scratch the panel. Plastic tools are prefered, and steel drivers should also serve well. If you only have pliers, put them in a thick plastic bag. Protect the panel!
   \item Solder in all the potentiometers and jacks. Only solder the three smaller terminals of each potentiometer.
@@ -178,7 +193,7 @@ Now when all the internal parts are soldered, the next step would be to assemble
   \label{masking}
 \end{figure}
 
-\clearpage
+% \clearpage
 
 \section{Knobs}
 
