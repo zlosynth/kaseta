@@ -154,77 +154,126 @@ connectors.
 
 \section{Front panel}
 
-Now when all the internal parts are soldered, the next step would be to assemble parts sitting in the front panel.
+Now when all the internal parts are soldered, the next step would be to assemble
+parts sitting in the front panel.
 
 \begin{enumerate}
-  \item Snap in the button. Take care not to bend its leg. Don't push the button all the way to the PCB. See figure \ref{front components}.
-  \item Place all potentiometers in the PCB, do not solder them yet. The big legs on the sides are used to snap the pot in.
+  \item Put the hex standoff on top of the hole labeled ``Standoff'' and secure
+    it there with the phillips screw.
+  \item Snap in the button. Take care not to bend its leg. Don't push it all the
+    way to the PCB. See figure \ref{front components}.
+  \item Place the 5 green D-shaped potentiometers in ``Green pot''
+    footprints, do not solder them yet. The big legs on the sides are used to
+    snap the pot in. Use the appropriate pot for the bottom-most place
+    marked as ``Green pot w/ center detent''.
+  \item Similarly, place the 14 blue trimmer potentiometers in the ``Blue pot''
+    footprints, some of which are marked for center detent.
+  \item Place sliding potentiometers in their marked places. Do not put their
+    caps on yet.
   \item Put all jack sockets into the PCB.
-  \item Put LEDs in place. The cathode (shorter leg) goes through the hole closer to the edge.
-  \item Now when all parts are in, carefully put the front panel on them. Be patient aligning all parts so they fit through holes. The button may be a little problematic. If you see it not getting through, use tweezers to align its bottom part. Don't worry about the LEDs for now.
-  \item Double-check that WOW/FLUT, TONE, and all the PAN pots have a center detent (snap in the middle)
-  \item Put washers on the pots and jacks. See figure \ref{washers}. Pot washers fit tightly into the panel, don't be afraid to push them in.
-  \item Tighten all the potentiometers and jack sockets in place with their nuts. Take care not to scratch the panel. Plastic tools are prefered, and steel drivers should also serve well. If you only have pliers, put them in a thick plastic bag. Protect the panel!
-  \item Solder in all the potentiometers and jacks. Only solder the three smaller terminals of each potentiometer.
-  \item Use a masking tape on the portion of the panel with holes for LEDs, see figure \ref{masking}. Push the LEDs against the tape, even with the panel surface.
-  \item Solder the LEDs. Then snap their legs off.
-  \item Use tweezers to align the button. About 2 mm of the button should be sticking out of the panel. Test that the button can be easily clicked and returns to its resting position.
-  \item Once the button is in a satisfying position, solder one of its legs, double-check it can be clicked and that it returns, and solder the remaining legs.
+  \item Put LEDs in place. Pay attention to the markings on the PCB explaining
+    their correct orientation.
+  \item Now when all parts are in, carefully put the front panel on them.
+    Be patient aligning all parts so they fit through holes. The button may be a
+    little problematic. If you see it not getting through, use tweezers to align
+    its bottom part. Don't worry about the LEDs for now.
+  \item Put washers on the pots and jacks. See figure \ref{washers}. Pot washers
+    fit tightly into the panel, don't be afraid to push them in if needed.
+  \item Secure the front side of the standoff with the flat-head screw.
+    Tighten the WOW/FLUT potentiometer with a nut.
+  \item Go over all the trimmer pots and check that they turn smoothly. If they
+    don't, the may not be aligned with the panel correctly. There are two
+    options to fix this. If many of them are stiff, loosen the standoff screw
+    and WOW/FLUT nut, and try to shift the front panel into a better position.
+    If the issue is limited to fewer trimmer potentiometers, try using tweezers
+    to bend legs of given pot to align it straight against the panel.
+  \item Double-check that WOW/FLUT, TONE, and all the PAN pots have a center
+    detent (they snap in the middle).
+  \item Finally tighten all the potentiometers and jack sockets in place with
+    their nuts. Use care not to scratch the panel. Plastic tools are prefered,
+    and steel drivers should also serve well. If you only have pliers, put them
+    in a thick plastic bag. Protect the panel!
 \end{enumerate}
 
-\begin{figure}[p]
+\begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{p04.jpg}
   \caption{Side view with the front components in}
   \label{front components}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{p05.jpg}
   \caption{Pots and jacks with their washers on}
   \label{washers}
 \end{figure}
 
-\begin{figure}[p]
+\begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{p06.jpg}
   \caption{Taped LED holes}
   \label{masking}
 \end{figure}
 
-% \clearpage
+\clearpage
 
-\section{Knobs}
-
-You can now put knobs on the potentiometers.
+Once all the components are placed correctly, with potentiometers moving freely
+and the button returning after being pressed, move on to soldering.
 
 \begin{enumerate}
-  \item The silver part of the big knob is protected with a sticky foil. Peel it off.
-  \item Put the big knob on the topmost potentiometer. Use a small flat screwdriver to tighten the screw of the pot. The screw should be pressing against the flat part of the shaft. Keep some distance between the knob and the panel.
-  \item Put smaller black knobs on the remaining pots. Align them with the D-shaped shaft and press them in. You may need to pull them a little bit if you see they are scratching the nut.
+  \item Solder in all the potentiometers and jacks. Only solder the three
+    smaller terminals of each potentiometer.
+  \item For each sliding potentiometer, move its shaft to the center, press on
+    it so it sits flat on the PCB and solder one of the smaller terminals. Try
+    moving the shaft from one end to another making sure that it is aligned with
+    the hole. If it is not, heat up the terminal and try aligning the
+    potentiometer.
+  \item Once the sliding potentiometers is in a satisifying position, solder the
+    other two of its smaller terminals.
+  \item Use a masking tape on the portion of the panel with holes for LEDs, see
+    figure \ref{masking}. Push the LEDs against the tape, even with the panel
+    surface.
+  \item Solder the LEDs. Then snap their legs off and remove the tape.
+  \item Use tweezers to align the button. About 2 mm of it should be
+    sticking out of the panel. Test that it can be easily clicked and
+    returns to its resting position. If it does not, try to angle its body.
+  \item Once the button is in a satisfying position, solder one of its legs,
+    double-check it can be clicked and that it returns, and solder the remaining
+    legs.
 \end{enumerate}
 
-\begin{figure}[p]
-  \centering
-  \includegraphics[width=\linewidth]{p07.jpg}
-  \caption{Side view of the assembled module}
-\end{figure}
+\section{Knobs and caps}
+
+You can now put knobs and caps on the potentiometers.
+
+\begin{enumerate}
+  \item Put black knobs on the five pots on the left. Align them with the
+    D-shaped shaft and press them in. You may need to pull them a little bit if
+    you see they are scratching the nut.
+  \item Mount the black caps onto the shafts of slider potentiometers.
+\end{enumerate}
 
 \section{Final assembly}
 
 Connect the Daisy Patch Submodule to the main black PCB to complete the build.
-
-\begin{figure}[p]
-  \centering
-  \includegraphics[width=\linewidth]{p08.jpg}
-  \caption{Front view of the assembled module}
-\end{figure}
 
 \section{Congratulations}
 
 The module is now complete. Have fun!
 
 You can find the user manual on \url{https://zlosynth.com/kaseta-user-manual.pdf}.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{p07.jpg}
+  \caption{Side view of the assembled module}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=\linewidth]{p08.jpg}
+  \caption{Front view of the assembled module}
+\end{figure}
 
 \end{document}
