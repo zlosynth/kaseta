@@ -34,11 +34,11 @@ kaseta-dsp = { path = "../dsp", features = ["defmt"] }
 kaseta-control = { path = "../control", features = ["defmt"] }
 sirena = { git = "https://github.com/zlosynth/sirena", rev = "0ba4c32" }
 heapless = "0.7"
-cortex-m = "0.7"
+cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
 cortex-m-rtic = "1"
 systick-monotonic = "1"
 defmt = "0.3"
-defmt-rtt = "0.3"
+defmt-rtt = "0.4"
 panic-probe = { version = "0.3", features = ["print-defmt"] }
 stm32h7xx-hal = { version = "0.12", features = [
   "stm32h750v",

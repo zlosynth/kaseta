@@ -12,11 +12,11 @@ publish = false
 harness = false
 
 [dependencies]
-cortex-m = "0.7.3"
-cortex-m-rt = "0.7.0"
-defmt = "0.3.0"
-defmt-rtt = "0.3.0"
-panic-probe = { version = "0.3.0", features = ["print-defmt"] }
+cortex-m = { version = "0.7", features = ["critical-section-single-core"] }
+cortex-m-rt = "0.7"
+defmt = "0.3"
+defmt-rtt = "0.4"
+panic-probe = { version = "0.3", features = ["print-defmt"] }
 daisy = { version = "0.7", features = ["seed"] }
 sirena = { git = "https://github.com/zlosynth/sirena", rev = "0ba4c32" }
 kaseta-dsp = { path = "../dsp" }
