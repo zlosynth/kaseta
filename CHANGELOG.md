@@ -9,6 +9,7 @@ backwards compatibility.
 * Remove DIP switch from the PCB and firmware.
 * Document all the functionality in a user manual.
 * Add a build manual.
+* Play an animation during the boot.
 
 ## 0.7.0
 

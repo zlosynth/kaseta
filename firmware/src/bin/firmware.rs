@@ -15,7 +15,7 @@ mod app {
     use sirena::memory_manager::MemoryManager;
     use systick_monotonic::Systick;
 
-    use kaseta_control::{InputSnapshot, Save, Store};
+    use kaseta_control::{DesiredOutput, InputSnapshot, Save, Store};
     use kaseta_dsp::processor::{
         Attributes as ProcessorAttributes, Processor, Reaction as ProcessorReaction,
     };
@@ -84,7 +84,7 @@ mod app {
         let randomizer = system.randomizer;
         let mut inputs = system.inputs;
         let flash = system.flash;
-        let outputs = system.outputs;
+        let mut outputs = system.outputs;
 
         let processor = initialize_dsp_processor(sdram);
         let mut storage = Storage::new(flash);
@@ -92,8 +92,8 @@ mod app {
 
         defmt::info!("Initialization was completed, starting tasks");
 
-        // Avoid clicks on boot.
-        cortex_m::asm::delay(480_000_000);
+        // Buy some time to avoid clicks on boot.
+        boot_animation(&mut outputs);
 
         audio.spawn();
         blink::spawn(true, BLINKS).unwrap();
@@ -120,6 +120,32 @@ mod app {
             },
             init::Monotonics(mono),
         )
+    }
+
+    fn boot_animation(outputs: &mut Outputs) {
+        const MS: u32 = 480_000_000 / 1000;
+        const STEP: u32 = 130 * MS;
+
+        let mut set_leds = |leds| {
+            outputs.set(&DesiredOutput {
+                display: leds,
+                impulse_led: true,
+                impulse_trigger: false,
+            });
+        };
+
+        for x in [
+            [true, false, false, false, false, false, false, true],
+            [false, true, false, false, false, false, true, false],
+            [false, false, true, false, false, true, false, false],
+            [false, false, false, true, true, false, false, false],
+            [false, false, true, false, false, true, false, false],
+            [false, true, false, false, false, false, true, false],
+            [true, false, false, false, false, false, false, true],
+        ] {
+            set_leds(x);
+            cortex_m::asm::delay(STEP);
+        }
     }
 
     #[task(
