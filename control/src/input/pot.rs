@@ -31,6 +31,10 @@ impl Pot {
         let diff = (self.last_value_above_noise - value).abs();
         if diff > 0.002 {
             self.last_value_above_noise = value;
+        } else if value < 0.0001 {
+            self.last_value_above_noise = 0.0;
+        } else if value > 0.9999 {
+            self.last_value_above_noise = 1.0;
         }
     }
 
@@ -67,5 +71,36 @@ mod tests {
         }
 
         panic!("Control have not reached the target {}", value);
+    }
+
+    #[test]
+    fn when_pot_moves_near_zero_it_snaps_to_it_despite_not_traveling_enough_distance() {
+        let mut pot = Pot::default();
+
+        for _ in 0..32 {
+            pot.update(0.004);
+        }
+        for _ in 0..32 {
+            pot.update(0.008);
+        }
+        for _ in 0..32 {
+            pot.update(0.0);
+        }
+
+        assert_relative_eq!(pot.last_value_above_noise, 0.0);
+    }
+
+    #[test]
+    fn when_pot_moves_near_full_it_snaps_to_it_despite_not_traveling_enough_distance() {
+        let mut pot = Pot::default();
+
+        for _ in 0..32 {
+            pot.update(0.999);
+        }
+        for _ in 0..32 {
+            pot.update(1.0);
+        }
+
+        assert_relative_eq!(pot.last_value_above_noise, 1.0);
     }
 }

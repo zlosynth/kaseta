@@ -131,7 +131,9 @@ impl Pots {
 fn transpose_adc(sample: u32, slope: u32) -> f32 {
     let float = (slope as f32 - sample as f32) / slope as f32;
     // NOTE: Pots are connected to -5 to +5 V ADC while they span only
-    // from 0 to +5 V
+    // from 0 to +5 V.
     let half_range = float * 2.0 - 1.0;
-    half_range.clamp(0.0, 1.0)
+    // NOTE: The pot never reaches all the way up to max voltage.
+    let scaled_up = half_range * (1.0 / 0.988);
+    scaled_up.clamp(0.0, 1.0)
 }

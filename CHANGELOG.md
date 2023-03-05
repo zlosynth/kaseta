@@ -11,6 +11,7 @@ backwards compatibility.
 * Add a build manual.
 * Play an animation during the boot.
 * Enlarge snap-in holes for trim pots.
+* Improve position and speed potentiometers accuracy.
 
 ## 0.7.0
 

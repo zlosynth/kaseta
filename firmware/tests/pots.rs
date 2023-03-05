@@ -23,7 +23,7 @@ mod tests {
                 defmt::info!("Turn {} all the way up, then click the button", $name);
                 sample_until_button_is_clicked(inputs);
                 cortex_m::asm::delay(480_000_000 / 2); // Protection against accidental double-clicks
-                defmt::assert!($pot > 0.98, "Assert failed, actual value: {:?}", $pot);
+                defmt::assert!($pot > 0.9999, "Assert failed, actual value: {:?}", $pot);
                 defmt::info!("OK");
             };
         }
@@ -31,15 +31,18 @@ mod tests {
         defmt::info!("Turn all pots to their minimum value, then click the button");
         sample_until_button_is_clicked(inputs);
         defmt::assert!(
-            inputs.pots.pre_amp < 0.02
-                && inputs.pots.drive < 0.02
-                && inputs.pots.bias < 0.02
-                && inputs.pots.dry_wet < 0.02
-                && inputs.pots.wow_flut < 0.02
-                && inputs.pots.speed < 0.02
-                && inputs.pots.tone < 0.02
+            inputs.pots.pre_amp < 0.0001
+                && inputs.pots.drive < 0.0001
+                && inputs.pots.bias < 0.0001
+                && inputs.pots.dry_wet < 0.0001
+                && inputs.pots.wow_flut < 0.0001
+                && inputs.pots.speed < 0.0001
+                && inputs.pots.tone < 0.0001
                 && inputs.pots.head.iter().all(|h| {
-                    h.position < 0.02 && h.volume < 0.02 && h.feedback < 0.02 && h.pan < 0.02
+                    h.position < 0.0001
+                        && h.volume < 0.0001
+                        && h.feedback < 0.0001
+                        && h.pan < 0.0001
                 })
         );
         defmt::info!("OK");
