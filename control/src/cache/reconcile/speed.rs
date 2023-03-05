@@ -65,17 +65,18 @@ impl Store {
                         .map(|x| x / 5.0),
                 );
 
-                self.show_length_on_display(sum);
-
-                const MIN: f32 = 0.01;
-                const MIDDLE: f32 = 10.0;
-                const MAX: f32 = 5.0 * 60.0;
-                if sum < 0.5 {
-                    let phase = sum * 2.0;
-                    MIDDLE + (1.0 - phase) * (MAX - MIDDLE)
+                if sum < 0.25 {
+                    self.show_length_on_display(0.0);
+                    5.0 * 60.0
+                } else if sum < 0.5 {
+                    self.show_length_on_display(0.25);
+                    60.0
                 } else {
-                    let phase = (sum - 0.5) * 2.0;
-                    MIN + (1.0 - phase) * (MIDDLE - MIN)
+                    const MIN: f32 = 0.01;
+                    const MAX: f32 = 10.0;
+                    let phase = 1.0 - (sum - 0.5) * 2.0;
+                    self.show_length_on_display(sum);
+                    MIN + phase * (MAX - MIN)
                 }
             };
         }
