@@ -10,6 +10,7 @@ backwards compatibility.
 * Document all the functionality in a user manual.
 * Add a build manual.
 * Play an animation during the boot.
+* Enlarge snap-in holes for trim pots.
 
 ## 0.7.0
 
