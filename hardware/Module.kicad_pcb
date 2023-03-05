@@ -4078,7 +4078,7 @@
   (gr_text "Blue\npot" (at 75.84 37.5) (layer "B.SilkS") (tstamp 4b30fec7-766c-493e-bcf6-aeb860cc2596)
     (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
   )
-  (gr_text "Switch" (at 52.9 108.72) (layer "B.SilkS") (tstamp 541949df-8dd2-4c10-9113-e604fb953a8c)
+  (gr_text "Button" (at 52.9 108.72) (layer "B.SilkS") (tstamp 541949df-8dd2-4c10-9113-e604fb953a8c)
     (effects (font (size 1 1) (thickness 0.15)) (justify mirror))
   )
   (gr_text "Jack" (at 63.55 122.56) (layer "B.SilkS") (tstamp 5763478f-b342-4305-88c9-ecbf0d984d57)
