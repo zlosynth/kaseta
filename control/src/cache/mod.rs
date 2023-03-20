@@ -62,12 +62,27 @@ pub type ClockDetectors = [ClockDetector; 4];
 pub struct Options {
     pub quantize_8: bool,
     pub quantize_6: bool,
-    pub short_delay_range: bool,
+    pub delay_range: DelayRange,
     pub rewind: bool,
     pub enable_oscillator: bool,
     pub random_impulse: bool,
     pub filter_feedback: bool,
     pub unlimited: bool,
+}
+
+/// Range of the delay time.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum DelayRange {
+    Long,
+    Short,
+    Audio,
+}
+
+impl Default for DelayRange {
+    fn default() -> Self {
+        Self::Long
+    }
 }
 
 /// Storing tempo if it was tapped in using the button.

@@ -12,6 +12,7 @@ backwards compatibility.
 * Play an animation during the boot.
 * Enlarge snap-in holes for trim pots.
 * Improve position and speed potentiometers accuracy.
+* Add a third speed range for 10 ms to 5 seconds.
 
 ## 0.7.0
 

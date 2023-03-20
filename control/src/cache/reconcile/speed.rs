@@ -1,33 +1,32 @@
 use crate::cache::display::{AltAttributeScreen, AttributeScreen, SpeedRange};
 use crate::cache::mapping::AttributeIdentifier;
+use crate::cache::DelayRange;
 use crate::log;
 use crate::Store;
 
 impl Store {
     pub fn reconcile_speed(&mut self, needs_save: &mut bool) {
-        let original_short_delay_range = self.cache.options.short_delay_range;
+        let original_delay_range = self.cache.options.delay_range;
 
         if self.input.button.pressed && self.input.speed.activation_movement() {
-            self.cache.options.short_delay_range = self.input.speed.value() > 0.8;
-            if self.cache.options.short_delay_range {
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::SpeedRange(SpeedRange::Short));
+            let value = self.input.speed.value();
+            let (option, display) = if value < 0.5 {
+                (DelayRange::Long, SpeedRange::Long)
+            } else if value < 0.8 {
+                (DelayRange::Short, SpeedRange::Short)
             } else {
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::SpeedRange(SpeedRange::Long));
-            }
+                (DelayRange::Audio, SpeedRange::Audio)
+            };
+            self.cache.options.delay_range = option;
+            self.cache
+                .display
+                .set_alt_menu(AltAttributeScreen::SpeedRange(display));
         }
 
-        let short_delay_range = self.cache.options.short_delay_range;
-        if short_delay_range != original_short_delay_range {
+        let delay_range = self.cache.options.delay_range;
+        if delay_range != original_delay_range {
             *needs_save |= true;
-            if short_delay_range {
-                log::info!("Setting delay range=short");
-            } else {
-                log::info!("Setting delay range=long");
-            }
+            log::info!("Setting delay range={}", delay_range);
         }
 
         let control_index = self.control_index_for_attribute(AttributeIdentifier::Speed);
@@ -45,40 +44,54 @@ impl Store {
         } else if let Some(tapped_tempo) = self.cache.tapped_tempo {
             self.cache.attributes.speed = tapped_tempo;
         } else {
-            self.cache.attributes.speed = if self.cache.options.short_delay_range {
-                let sum = super::sum(
-                    self.input.speed.last_value_above_noise,
-                    self.control_value_for_attribute(AttributeIdentifier::Speed)
-                        .map(|x| x / 5.0),
-                );
-
-                self.show_length_on_display(sum);
-
-                let voct = sum * 7.0;
-                let a = 13.73;
-                let frequency = a * libm::powf(2.0, voct);
-                1.0 / frequency
-            } else {
-                let sum = super::sum(
-                    self.input.speed.last_value_above_noise,
-                    self.control_value_for_attribute(AttributeIdentifier::Speed)
-                        .map(|x| x / 5.0),
-                );
-
-                if sum < 0.25 {
-                    self.show_length_on_display(0.0);
-                    5.0 * 60.0
-                } else if sum < 0.5 {
-                    self.show_length_on_display(0.25);
-                    60.0
-                } else {
-                    const MIN: f32 = 0.01;
-                    const MAX: f32 = 10.0;
-                    let phase = 1.0 - (sum - 0.5) * 2.0;
-                    self.show_length_on_display(sum);
-                    MIN + phase * (MAX - MIN)
-                }
+            let (speed, display) = match self.cache.options.delay_range {
+                DelayRange::Long => self.speed_for_long_range(),
+                DelayRange::Short => self.speed_for_short_range(),
+                DelayRange::Audio => self.speed_for_audio_range(),
             };
+            self.show_length_on_display(display);
+            self.cache.attributes.speed = speed;
+        }
+    }
+
+    fn speed_for_audio_range(&mut self) -> (f32, f32) {
+        let sum = super::sum(
+            self.input.speed.last_value_above_noise,
+            self.control_value_for_attribute(AttributeIdentifier::Speed)
+                .map(|x| x / 5.0),
+        );
+        let voct = sum * 7.0;
+        let a = 13.73;
+        let frequency = a * libm::powf(2.0, voct);
+        (1.0 / frequency, sum)
+    }
+
+    fn speed_for_short_range(&mut self) -> (f32, f32) {
+        let sum = super::sum(
+            self.input.speed.last_value_above_noise,
+            self.control_value_for_attribute(AttributeIdentifier::Speed)
+                .map(|x| x / 5.0),
+        );
+        let speed = super::calculate_from_sum(sum, (0.01, 5.0), None);
+        (speed, sum)
+    }
+
+    fn speed_for_long_range(&mut self) -> (f32, f32) {
+        let sum = super::sum(
+            self.input.speed.last_value_above_noise,
+            self.control_value_for_attribute(AttributeIdentifier::Speed)
+                .map(|x| x / 5.0),
+        );
+        if sum < 0.5 {
+            const MIN: f32 = 10.0;
+            const MAX: f32 = 5.0 * 60.0;
+            let phase = sum * 2.0;
+            (MIN + phase * (MAX - MIN), sum)
+        } else {
+            const MIN: f32 = 0.01;
+            const MAX: f32 = 10.0;
+            let phase = 1.0 - (sum - 0.5) * 2.0;
+            (MIN + phase * (MAX - MIN), sum)
         }
     }
 
