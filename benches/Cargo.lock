@@ -235,7 +235,7 @@ dependencies = [
 
 [[package]]
 name = "kaseta-benches"
-version = "0.7.0"
+version = "1.0.0"
 dependencies = [
  "cortex-m",
  "cortex-m-rt",
@@ -250,7 +250,7 @@ dependencies = [
 
 [[package]]
 name = "kaseta-control"
-version = "0.7.0"
+version = "1.0.0"
 dependencies = [
  "crc",
  "heapless",
@@ -261,7 +261,7 @@ dependencies = [
 
 [[package]]
 name = "kaseta-dsp"
-version = "0.7.0"
+version = "1.0.0"
 dependencies = [
  "libm",
  "micromath 2.0.0",

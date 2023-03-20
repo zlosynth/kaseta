@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+## 1.0.0
+
 * Remove DIP switch from the PCB and firmware.
 * Document all the functionality in a user manual.
 * Add a build manual.
