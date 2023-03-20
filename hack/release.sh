@@ -17,9 +17,9 @@ makers
 rm -rf release
 mkdir release
 
-pushd eurorack && cargo objcopy --release -- -O binary ../release/kaseta-firmware-${version}.bin && popd
+pushd firmware && cargo objcopy --release -- -O binary ../release/kaseta-firmware-${version}.bin && popd
 
-make manual
+makers manual
 cp manual/user/manual.pdf release/kaseta-user-manual.pdf
 cp manual/build/manual.pdf release/kaseta-build-manual.pdf
 
