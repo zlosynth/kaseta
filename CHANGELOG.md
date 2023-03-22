@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* Clearly mark the power connector on the PCB.
+
 ## 1.0.0
 
 * Remove DIP switch from the PCB and firmware.

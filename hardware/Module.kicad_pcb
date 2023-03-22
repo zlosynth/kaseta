@@ -1071,7 +1071,7 @@
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp 873f0d8e-8399-4dff-afb9-60b8443b7e74)
     )
-    (fp_text value "Power" (at 4.935 6.295) (layer "F.Fab")
+    (fp_text value "Power" (at 4.935 6.295) (layer "F.SilkS")
       (effects (font (size 1 1) (thickness 0.15)))
       (tstamp be055fd9-f731-42f0-af53-57637b465c13)
     )
