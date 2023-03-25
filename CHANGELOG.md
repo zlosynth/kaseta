@@ -7,6 +7,7 @@ backwards compatibility.
 ## Unreleased
 
 * Clearly mark the power connector on the PCB.
+* Simplify instructions in the build manual.
 
 ## 1.0.0
 

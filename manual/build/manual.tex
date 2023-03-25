@@ -9,7 +9,10 @@
 \usepackage{fancyhdr} % headers and footers
 \usepackage{titling} % picture in the title
 \usepackage{hyperref} % clickable links
+\usepackage{footnote} % footnotes in tables
+\makesavenoteenv{tabular} % footnotes in tables
 \usepackage[left=2cm,right=2cm,top=3cm,bottom=3cm]{geometry} % wider and taller page
+\renewcommand*{\thefootnote}{\fnsymbol{footnote}} % use an asterisk for footnotes
 
 \pagenumbering{gobble} % hide page numbers
 \setlength{\columnsep}{1cm} % space between columns
@@ -21,7 +24,6 @@
    /Title  (Kaseta - Build Manual)
 }
 
-% TODO: Bring this back. It is commented out to fix syntax highlighting
 % \pretitle{%
 %   \begin{center}
 %   \Huge
@@ -51,7 +53,7 @@ device (SMD) parts already pre-soldered. The through-hole components are left to
 be assembled by you.
 
 Pay attention to the orientation and position of all the parts. Desoldering them
-would be difficult and may break the module. Also, be careful not to touch the
+would be difficult and may break the module. Also, use care not to touch the
 pre-soldered SMD parts with the soldering iron. Read through the whole manual
 first. Make sure you understand all the steps before you start soldering.
 
@@ -62,7 +64,7 @@ first. Make sure you understand all the steps before you start soldering.
 \begin{itemize}
   \item Soldering iron
   \item Masking tape
-  \item Flat head screwdriver
+  \item Slotted head screwdriver
   \item Phillips head screwdriver
   \item Side-cutters
 \end{itemize}
@@ -77,20 +79,22 @@ Start by unpacking all baggies into a bowl so you don't lose any components.
   1 \texttimes & Front panel \\
   1 \texttimes & PCB (the black board) \\
   1 \texttimes & Daisy Patch Submodule (the yellow board) \\
-  4 \texttimes & Green D-shaped pot without detent \\
-  1 \texttimes & Green D-shaped pot with center detent \\
+  5 \texttimes & Blue trim potentiometer with center detent%
+\footnote{Potentiometers with a center detent snap when they are turned through their center position} \\
+  9 \texttimes & Blue trim potentiometer without a detent \\
+  1 \texttimes & Green D-shaped potentiometer with center detent \\
+  4 \texttimes & Green D-shaped potentiometer without a detent \\
   5 \texttimes & M7 nut and washer \\
   5 \texttimes & Knob \\
   4 \texttimes & Slider potentiometer and cap \\
-  9 \texttimes & Blue trim pot without detent \\
-  5 \texttimes & Blue trim pot with center detent \\
-  8 \texttimes & 3.5mm jack socket, M6 nut and washer \\
+  8 \texttimes & 3.5mm jack socket \\
+  8 \texttimes & M6 nut and washer \\
   1 \texttimes & Tactile button \\
   9 \texttimes & Red LED \\
   1 \texttimes & Male connector 2\texttimes5 \\
   4 \texttimes & Female connector 2\texttimes5 \\
-  1 \texttimes & M2 flat screw \\
-  1 \texttimes & M2 phillips screw \\
+  1 \texttimes & M2 slotted screw \\
+  1 \texttimes & M2 Phillips screw \\
   1 \texttimes & M2 standoff \\
 \end{tabular}
 
@@ -100,8 +104,8 @@ Start by soldering the power and I2C connectors.
 
 \begin{enumerate}
   \item Take the male 2\texttimes5 connector and put the side with shorter legs
-    through the footprint marked as ``Power''. Make sure to put it on the
-    correct side of the PCB.
+    through the footprint marked with a white stripe and a label ``RED~-12V''.
+    Make sure to put it on the correct side of the PCB.
   \item Solder a single pin in and check that the connector is upright. If it
     is not, heat up the pin and align the connector by pushing it against the
     board.
@@ -118,16 +122,15 @@ connectors.
 
 \begin{enumerate}
   \item Mount the four female 2\texttimes5 connectors on the pins of the Daisy
-    Patch Submodule. See figure \ref{daisy}. This makes it easier to
-    align all the connectors properly.
-  \item Plug the connectors of the submodule into the black PCB through
+    Patch Submodule. See Figure \ref{daisy}.
+  \item Plug the mounted connectors into the black PCB through
     footprints marked as ``SM''. Make sure to put them on the correct side
     of the PCB, where all four connectors are marked.
   \item Solder all the pins in.
   \item Once done, carefully detach Daisy Patch Submodule to prevent it
     from getting damaged while progressing with the build. It may be a
     little difficult. Pull each connector by a millimeter at a time.
-    The result is illustrated in figure \ref{connectors}.
+    The result is illustrated in Figure \ref{connectors}.
 \end{enumerate}
 
 \begin{figure}[h]
@@ -150,22 +153,20 @@ connectors.
   \label{connectors}
 \end{figure}
 
-\clearpage
-
 \section{Front panel}
 
-Now when all the internal parts are soldered, the next step would be to assemble
+Now when all the internal parts are soldered, the next step is to assemble
 parts sitting in the front panel.
 
 \begin{enumerate}
   \item Put the hex standoff on top of the hole labeled ``Standoff'' and secure
-    it there with the phillips screw.
+    it there with the Phillips screw.
   \item Snap in the button. Take care not to bend its leg. Don't push it all the
-    way to the PCB. See figure \ref{front components}.
+    way to the PCB. See Figure \ref{front components}.
   \item Place the 5 green D-shaped potentiometers in ``Green pot''
     footprints, do not solder them yet. The big legs on the sides are used to
-    snap the pot in. Use the appropriate pot for the bottom-most place
-    marked as ``Green pot w/ center detent''.
+    snap the pot in. Use the appropriate potentiometer for the bottom-most
+    place marked as ``Green pot w/ center detent''.
   \item Similarly, place the 14 blue trimmer potentiometers in the ``Blue pot''
     footprints, some of which are marked for center detent.
   \item Place sliding potentiometers in their marked places. Do not put their
@@ -174,25 +175,20 @@ parts sitting in the front panel.
   \item Put LEDs in place. Pay attention to the markings on the PCB explaining
     their correct orientation.
   \item Now when all parts are in, carefully put the front panel on them.
-    Be patient aligning all parts so they fit through holes. The button may be a
-    little problematic. If you see it not getting through, use tweezers to align
-    its bottom part. Don't worry about the LEDs for now.
-  \item Put washers on the pots and jacks. See figure \ref{washers}. Pot washers
+    This is probably the most difficult part of this build. Be patient aligning
+    all parts so they fit through holes. If you see that some are not getting
+    through, use tweezers to align them. Leave the LEDs freely hanging in their
+    holes for now.
+  \item Put washers on the pots and jacks. See Figure \ref{washers}. Pot washers
     fit tightly into the panel, don't be afraid to push them in if needed.
-  \item Secure the front side of the standoff with the flat-head screw.
-    Tighten the WOW/FLUT potentiometer with a nut.
-  \item Go over all the trimmer pots and check that they turn smoothly. If they
-    don't, the may not be aligned with the panel correctly. There are two
-    options to fix this. If many of them are stiff, loosen the standoff screw
-    and WOW/FLUT nut, and try to shift the front panel into a better position.
-    If the issue is limited to fewer trimmer potentiometers, try using tweezers
-    to bend legs of given pot to align it straight against the panel.
-  \item Double-check that WOW/FLUT, TONE, and all the PAN pots have a center
-    detent (they snap in the middle).
-  \item Finally tighten all the potentiometers and jack sockets in place with
-    their nuts. Use care not to scratch the panel. Plastic tools are prefered,
+  \item Secure the front side of the standoff with the slotted screw. Tighten
+    all the potentiometers and jack sockets in place with their nuts.
+    Use care not to scratch the panel. Plastic tools are prefered,
     and steel drivers should also serve well. If you only have pliers, put them
     in a thick plastic bag. Protect the panel!
+  \item Go over all the trimmer pots and check that they turn smoothly.
+    Double-check that WOW/FLUT, TONE, and all four PAN potentiometers have a
+    center detent.
 \end{enumerate}
 
 \begin{figure}[h]
@@ -218,22 +214,19 @@ parts sitting in the front panel.
 
 \clearpage
 
-Once all the components are placed correctly, with potentiometers moving freely
-and the button returning after being pressed, move on to soldering.
+Once all the components are placed correctly, move on to soldering.
 
 \begin{enumerate}
-  \item Solder in all the potentiometers and jacks. Only solder the three
+  \item Solder in all the rotary potentiometers and jacks. Only solder the three
     smaller terminals of each potentiometer.
-  \item For each sliding potentiometer, move its shaft to the center, press on
-    it so it sits flat on the PCB and solder one of the smaller terminals. Try
-    moving the shaft from one end to another making sure that it is aligned with
-    the hole. If it is not, heat up the terminal and try aligning the
-    potentiometer.
-  \item Once the sliding potentiometers is in a satisifying position, solder the
-    other two of its smaller terminals.
+  \item For each sliding potentiometer, start by soldering one of its smaller
+    terminals. After that, slide its shaft to the side of the just-soldered
+    terminal. Then heat up the terminal while pressing on the shaft to make it
+    sit flat on the PCB. Repeat the process on the other end of the
+    potentiometer. Finally, solder the third small terminal.
   \item Use a masking tape on the portion of the panel with holes for LEDs, see
-    figure \ref{masking}. Push the LEDs against the tape, even with the panel
-    surface.
+    Figure \ref{masking}. Push the LEDs against the tape, so they are even with
+    the panel surface.
   \item Solder the LEDs. Then snap their legs off and remove the tape.
   \item Use tweezers to align the button. About 2 mm of it should be
     sticking out of the panel. Test that it can be easily clicked and

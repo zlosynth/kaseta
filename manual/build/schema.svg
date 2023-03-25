@@ -75,9 +75,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.75950629"
-     inkscape:cx="454.90077"
-     inkscape:cy="204.07994"
+     inkscape:zoom="6.8984383"
+     inkscape:cx="380.44843"
+     inkscape:cy="418.35556"
      inkscape:document-units="mm"
      inkscape:current-layer="layer7"
      inkscape:document-rotation="0"
@@ -6056,30 +6056,6 @@
     <path
        d="m -21.689276,238.81982 0.04762,0.0952 v 0.19048 l -0.04762,0.0952 -0.04762,0.0476 -0.09524,0.0476 h -0.28571 l -0.09524,-0.0476 -0.04762,-0.0476 -0.04762,-0.0952 v -0.19048 l 0.04762,-0.0952"
        id="path40073"
-       style="fill:#000000;fill-opacity:0;stroke:#000000;stroke-width:0.15;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1" />
-    <path
-       d="m -22.308326,237.67697 0.66667,-0.2381 -0.66667,-0.23809"
-       id="path40075"
-       style="fill:#000000;fill-opacity:0;stroke:#000000;stroke-width:0.15;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1" />
-    <path
-       d="m -22.641656,236.62935 v -0.0952 l 0.04762,-0.0952 0.04762,-0.0476 0.09524,-0.0476 0.19047,-0.0476 h 0.2381 l 0.19047,0.0476 0.09524,0.0476 0.04762,0.0476 0.04762,0.0952 v 0.0952 l -0.04762,0.0952 -0.04762,0.0476 -0.09524,0.0476 -0.19047,0.0476 h -0.2381 l -0.19047,-0.0476 -0.09524,-0.0476 -0.04762,-0.0476 -0.04762,-0.0952"
-       id="path40077"
-       style="fill:#000000;fill-opacity:0;stroke:#000000;stroke-width:0.15;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1" />
-    <path
-       d="m -21.736896,235.86744 0.04762,-0.0476 0.04762,0.0476 -0.04762,0.0476 -0.04762,-0.0476 h 0.09524"
-       id="path40079"
-       style="fill:#000000;fill-opacity:0;stroke:#000000;stroke-width:0.15;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1" />
-    <path
-       d="m -22.641656,235.48649 v -0.66666 l 1,0.42858"
-       id="path40081"
-       style="fill:#000000;fill-opacity:0;stroke:#000000;stroke-width:0.15;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1" />
-    <path
-       d="m -21.736896,234.43888 0.04762,-0.0476 0.04762,0.0476 -0.04762,0.0476 -0.04762,-0.0476 h 0.09524"
-       id="path40083"
-       style="fill:#000000;fill-opacity:0;stroke:#000000;stroke-width:0.15;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1" />
-    <path
-       d="m -22.641656,233.77222 v -0.0952 l 0.04762,-0.0952 0.04762,-0.0476 0.09524,-0.0476 0.19047,-0.0476 h 0.2381 l 0.19047,0.0476 0.09524,0.0476 0.04762,0.0476 0.04762,0.0952 v 0.0952 l -0.04762,0.0952 -0.04762,0.0476 -0.09524,0.0476 -0.19047,0.0476 h -0.2381 l -0.19047,-0.0476 -0.09524,-0.0476 -0.04762,-0.0476 -0.04762,-0.0952"
-       id="path40085"
        style="fill:#000000;fill-opacity:0;stroke:#000000;stroke-width:0.15;stroke-linecap:round;stroke-linejoin:round;stroke-opacity:1" />
     <g
        aria-label="SM"
