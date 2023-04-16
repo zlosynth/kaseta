@@ -7,12 +7,13 @@ Saturating tape delay and feedback sculptor module for Eurorack.
 </p>
 
 * Delay with 4 reading heads
+* Up to 5 minutes of audio recording
 * Tape saturation simulation
 * Wow and flutter effects
-* Stereo output
-* Up to five minutes of recording
-* Internal oscillator
+* Tone control
+* Voltage-controlled oscillator
 * Trigger sequencer
+* Stereo output
 * LEDs visualizing dialed parameters
 * Based around Electro-Smith's [Daisy Patch SM](https://www.electro-smith.com/daisy/patch-sm) platform
 * Programmed in Rust
