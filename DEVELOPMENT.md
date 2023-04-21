@@ -141,7 +141,7 @@ install needed pre-requisites. On Fedora it can be done by running the
 following:
 
 ```sh
-sudo dnf install inkscape texlive-latex texlive-ec texlive-microtype texlive-pagecolor texlive-parskip texlive-titling
+sudo dnf install inkscape texlive-latex texlive-ec texlive-microtype texlive-pagecolor texlive-parskip texlive-titling texlive-hardwrap texlive-mdwtools
 ```
 
 To build the manual:
