@@ -32,7 +32,7 @@ impl Default for Queue {
 impl Queue {
     pub fn push(&mut self, action: ControlAction) {
         // NOTE: The capacity is set to accomodate for all possible actions.
-        let _ = self.queue.push(action);
+        let _: Result<_, _> = self.queue.push(action);
     }
 
     pub fn pop(&mut self) -> Option<ControlAction> {

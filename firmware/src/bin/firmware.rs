@@ -1,5 +1,6 @@
 #![no_main]
 #![no_std]
+#![allow(clippy::no_mangle_with_rust_abi)] // rtic::app fails this.
 
 use kaseta_firmware as _; // Global logger and panicking behavior.
 

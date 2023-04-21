@@ -183,7 +183,7 @@ impl Store {
             if !cv.is_plugged {
                 // NOTE: This is safe since the number of controls is equal to the
                 // size of the Vec.
-                let _ = disconnected.push(i);
+                let _: Result<_, _> = disconnected.push(i);
             }
         }
         disconnected
@@ -196,11 +196,11 @@ impl Store {
             if cv.was_plugged {
                 // NOTE: This is safe since the number of controls is equal to the
                 // size of the Vec.
-                let _ = plugged.push(i);
+                let _: Result<_, _> = plugged.push(i);
             }
             if cv.was_unplugged {
                 // NOTE: Ditto.
-                let _ = unplugged.push(i);
+                let _: Result<_, _> = unplugged.push(i);
             }
         }
         (plugged, unplugged)
