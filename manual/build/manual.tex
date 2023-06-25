@@ -92,9 +92,8 @@ Start by unpacking all baggies into a bowl so you don't lose any components.
   9 \texttimes & Red LED \\
   1 \texttimes & Male connector 2\texttimes5 \\
   4 \texttimes & Female connector 2\texttimes5 \\
-  1 \texttimes & M2 slotted screw \\
-  1 \texttimes & M2 Phillips screw \\
-  1 \texttimes & M2 standoff \\
+  1 \texttimes & Male connector 1\texttimes3 \\
+  1 \texttimes & M2 slotted screw, M2 Phillips screw, standoff \\
 \end{tabular}
 
 * Potentiometers with a center detent snap when they are turned through their
@@ -107,7 +106,7 @@ Start by soldering the power and I2C connectors.
 \begin{enumerate}
   \item Take the male 2\texttimes5 connector and put the side with shorter legs
     through the footprint marked with a white stripe and a label ``RED~-12V''.
-    Make sure to put it on the correct side of the PCB.
+    Make sure to put it on the marked side of the PCB.
   \item Solder a single pin in and check that the connector is upright. If it
     is not, heat up the pin and align the connector by pushing it against the
     board.
@@ -151,7 +150,7 @@ connectors.
 \begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{p03.jpg}
-  \caption{The power and submodule connectors}
+  \caption{The power, I2C and submodule connectors}
   \label{connectors}
 \end{figure}
 
@@ -163,8 +162,7 @@ parts sitting in the front panel.
 \begin{enumerate}
   \item Put the hex standoff on top of the hole labeled ``Standoff'' and secure
     it there with the Phillips screw.
-  \item Snap in the button. Take care not to bend its leg. Don't push it all the
-    way to the PCB. See Figure \ref{front components}.
+  \item Snap in the button.
   \item Place the 5 green D-shaped potentiometers in ``Green pot''
     footprints, do not solder them yet. The big legs on the sides are used to
     snap the pot in. Use the appropriate potentiometer for the bottom-most
@@ -181,10 +179,9 @@ parts sitting in the front panel.
     all parts so they fit through holes. If you see that some are not getting
     through, use tweezers to align them. Leave the LEDs freely hanging in their
     holes for now.
-  \item Put washers on the pots and jacks. See Figure \ref{washers}. Pot washers
-    fit tightly into the panel, don't be afraid to push them in if needed.
+  \item Put washers on the pots and jacks.
   \item Secure the front side of the standoff with the slotted screw. Tighten
-    all the potentiometers and jack sockets in place with their nuts.
+    all the potentiometers and 3.5mm jack sockets in place with their nuts.
     Use care not to scratch the panel. Plastic tools are prefered,
     and steel drivers should also serve well. If you only have pliers, put them
     in a thick plastic bag. Protect the panel!
@@ -196,20 +193,13 @@ parts sitting in the front panel.
 \begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{p04.jpg}
-  \caption{Side view with the front components in}
-  \label{front components}
+  \caption{Backside before soldering}
+  \label{Before soldering}
 \end{figure}
 
 \begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{p05.jpg}
-  \caption{Pots and jacks with their washers on}
-  \label{washers}
-\end{figure}
-
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=\linewidth]{p06.jpg}
   \caption{Taped LED holes}
   \label{masking}
 \end{figure}
@@ -259,15 +249,17 @@ The module is now complete. Have fun!
 
 You can find the user manual on \url{https://zlosynth.com/kaseta-user-manual.pdf}.
 
+\vspace{2cm}
+
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\linewidth]{p07.jpg}
-  \caption{Side view of the assembled module}
+  \includegraphics[width=\linewidth]{p06.jpg}
+  \caption{\centering Top, left, bottom and right side view of the assembled module}
 \end{figure}
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\linewidth]{p08.jpg}
+  \includegraphics[width=\linewidth]{p07.jpg}
   \caption{Front view of the assembled module}
 \end{figure}
 
