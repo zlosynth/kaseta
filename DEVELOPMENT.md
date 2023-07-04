@@ -73,11 +73,14 @@ DEFMT_LOG=info makers flash
 Unlike ST-Link, DFU flashing does not require any external probe. Just connect
 the module to your computer via a USB cable.
 
-First, install [dfu-util](http://dfu-util.sourceforge.net/). On Fedora, this can
-be done by calling:
+First, install [dfu-util](http://dfu-util.sourceforge.net/) and
+[cargo-binutils](https://github.com/rust-embedded/cargo-binutils).
+On Fedora, this can be done by calling:
 
 ```sh
 sudo dnf install dfu-util
+cargo install cargo-binutils
+rustup component add llvm-tools-preview
 ```
 
 Click the RESET button while holding the BOOT button of the Daisy Patch SM to
