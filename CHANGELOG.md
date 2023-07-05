@@ -10,6 +10,7 @@ backwards compatibility.
 * Simplify instructions in the build manual.
 * Change the maximum value of medium speed to 8 seconds.
 * Fix slow speed scaling direction.
+* Support clock inputs that rest in negative voltage.
 
 ## 1.0.0
 

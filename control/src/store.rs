@@ -424,7 +424,7 @@ impl Store {
         }
 
         for (i, control) in self.input.control.iter().enumerate() {
-            if !control.is_plugged || control.value_raw() < 0.45 {
+            if !control.is_plugged {
                 self.cache.clock_detectors[i].reset();
             }
 
@@ -1711,28 +1711,6 @@ mod tests {
         clock_trigger(&mut store, 1, input, 2000);
         clock_trigger(&mut store, 1, input, 999);
         clock_trigger(&mut store, 1, input, 2000);
-        clock_trigger(&mut store, 1, input, 1);
-
-        assert!(store.cache.clock_detectors[1].detected_tempo().is_none());
-    }
-
-    #[test]
-    fn when_signal_goes_below_zero_it_is_not_recognized_as_clock() {
-        let mut store = Store::new();
-        let mut input = InputSnapshot::default();
-
-        clock_trigger(&mut store, 1, input, 2000);
-        clock_trigger(&mut store, 1, input, 2000);
-
-        input.control[1] = Some(1.0);
-        store.apply_input_snapshot(input);
-        store.tick();
-        input.control[1] = Some(0.1);
-        store.apply_input_snapshot(input);
-        for _ in 0..1999 {
-            store.tick();
-        }
-
         clock_trigger(&mut store, 1, input, 1);
 
         assert!(store.cache.clock_detectors[1].detected_tempo().is_none());
