@@ -43,7 +43,7 @@ flashing. Start by installing its dependencies. For Fedora, it can be done by
 running the following:
 
 ```sh
-sudo dnf install -y libusbx-devel libftdi-devel libudev-devel
+sudo dnf install libusbx-devel libftdi-devel libudev-devel
 ```
 
 You may then install needed udev rules. See the [probe-rs getting
