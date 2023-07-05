@@ -85,7 +85,7 @@ impl Store {
         if sum < 0.5 {
             const MIN: f32 = 10.0;
             const MAX: f32 = 5.0 * 60.0;
-            let phase = sum * 2.0;
+            let phase = 1.0 - sum * 2.0;
             (MIN + phase * (MAX - MIN), sum)
         } else {
             const MIN: f32 = 0.01;
