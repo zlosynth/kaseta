@@ -89,7 +89,7 @@ impl Store {
             (MIN + phase * (MAX - MIN), sum)
         } else {
             const MIN: f32 = 0.01;
-            const MAX: f32 = 10.0;
+            const MAX: f32 = 8.0;
             let phase = 1.0 - (sum - 0.5) * 2.0;
             (MIN + phase * (MAX - MIN), sum)
         }
