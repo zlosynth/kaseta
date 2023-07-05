@@ -121,10 +121,6 @@ impl Store {
         if dsp_reaction.hysteresis_clipping {
             self.cache.display.set_clipping();
         }
-
-        if dsp_reaction.output_clipping {
-            log::warn!("The output has clipped");
-        }
     }
 
     pub fn tick(&mut self) -> DesiredOutput {

@@ -9,12 +9,4 @@ macro_rules! log_info {
     );
 }
 
-macro_rules! log_warning {
-    ( $($arg:tt)+ ) => (
-        #[cfg(feature = "defmt")]
-        defmt::warn!($($arg)+);
-    );
-}
-
 pub(crate) use log_info as info;
-pub(crate) use log_warning as warn;
