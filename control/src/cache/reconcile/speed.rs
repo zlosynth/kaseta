@@ -72,7 +72,7 @@ impl Store {
             self.control_value_for_attribute(AttributeIdentifier::Speed)
                 .map(|x| x / 5.0),
         );
-        let speed = super::calculate_from_sum(sum, (0.01, 5.0), None);
+        let speed = super::calculate_from_sum(sum, (8.0, 0.01), None);
         (speed, sum)
     }
 

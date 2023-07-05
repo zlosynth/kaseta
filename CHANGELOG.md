@@ -8,6 +8,7 @@ backwards compatibility.
 
 * Clearly mark the power connector on the PCB.
 * Simplify instructions in the build manual.
+* Change the maximum value of medium speed to 8 seconds.
 
 ## 1.0.0
 
