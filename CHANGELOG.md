@@ -6,7 +6,7 @@ backwards compatibility.
 
 ## Unreleased
 
-* Improve English in the manuals.
+* Improve English and clarity in the manuals.
 * Fix documentation of octave scaling.
 * Document real current consumption.
 
