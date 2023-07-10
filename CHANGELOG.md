@@ -6,6 +6,10 @@ backwards compatibility.
 
 ## Unreleased
 
+* Improve English in the manuals.
+* Fix documentation of octave scaling.
+* Document real current consumption.
+
 ## 1.1.0
 
 * Clearly mark the power connector on the PCB.
