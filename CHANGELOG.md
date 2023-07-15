@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* Fix reset, so it persists the default configuration.
+
 ## 1.1.1
 
 * Improve English and clarity in the manuals.

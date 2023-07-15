@@ -89,7 +89,7 @@ mod app {
 
         let processor = initialize_dsp_processor(sdram);
         let mut storage = Storage::new(flash);
-        let control = initialize_control_store(&mut inputs, &mut storage, system.frequency);
+        let (control, save) = initialize_control_store(&mut inputs, &mut storage, system.frequency);
 
         defmt::info!("Initialization was completed, starting tasks");
 
@@ -100,6 +100,8 @@ mod app {
         blink::spawn(true, BLINKS).unwrap();
         control::spawn().unwrap();
         input::spawn().unwrap();
+        // Force-save initial configuration. This is required in case reset was initiated.
+        store::spawn(save).ok().unwrap();
 
         (
             Shared {},
@@ -301,11 +303,11 @@ mod app {
         inputs: &mut Inputs,
         storage: &mut Storage,
         frequency: Hertz,
-    ) -> Store {
+    ) -> (Store, Save) {
         let save = retrieve_save(inputs, storage);
         let mut control = Store::from(save);
         warm_up_control(&mut control, inputs, frequency);
-        control
+        (control, save)
     }
 
     fn retrieve_save(inputs: &mut Inputs, storage: &mut Storage) -> Save {
