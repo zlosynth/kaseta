@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+## 1.1.2
+
 * Fix reset, so it persists the default configuration.
 
 ## 1.1.1
