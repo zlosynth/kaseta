@@ -59,13 +59,19 @@ impl WowFlutter {
         RingBuffer::from(slice)
     }
 
-    pub fn process(&mut self, buffer: &mut [f32], random: &mut impl Random) {
+    pub fn roll_dice(&mut self, random: &mut impl Random) {
         self.flutter.roll_dice(random);
+    }
 
+    pub fn pop_delay(&mut self, random: &mut impl Random) -> f32 {
+        let wow_delay = self.wow.pop(random) * self.sample_rate as f32;
+        let flutter_delay = self.flutter.pop() * self.sample_rate as f32;
+        wow_delay + flutter_delay
+    }
+
+    pub fn process(&mut self, buffer: &mut [f32], random: &mut impl Random) {
         for x in buffer.iter_mut() {
-            let wow_delay = self.wow.pop(random) * self.sample_rate as f32;
-            let flutter_delay = self.flutter.pop() * self.sample_rate as f32;
-            let delay = wow_delay + flutter_delay;
+            let delay = self.pop_delay(random);
 
             let a = self.buffer.peek(delay as usize);
             let b = self.buffer.peek(delay as usize + 1);

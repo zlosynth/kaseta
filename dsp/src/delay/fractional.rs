@@ -61,18 +61,19 @@ pub struct FractionalDelayAttributes {
 // NOTE: Rewind is moving to the target in a steady pace. Fading is going there
 // instantly, fading between the current and the destination.
 impl FractionalDelay {
-    pub fn read(&mut self, buffer: &RingBuffer, offset: usize) -> f32 {
+    pub fn read(&mut self, buffer: &RingBuffer, offset: f32) -> f32 {
+        let x = {
+            let a = buffer.peek((self.pointer + offset) as usize);
+            let b = buffer.peek((self.pointer + offset) as usize + 1);
+            a + (b - a) * (self.pointer + offset).fract()
+        };
         match &mut self.state {
-            State::Stable => buffer.peek(self.pointer as usize + offset),
+            State::Stable => x,
             State::Rewinding(StateRewinding {
                 ref mut relative_speed,
                 target_position,
                 rewind_speed,
             }) => {
-                let a = buffer.peek(self.pointer as usize + offset);
-                let b = buffer.peek(self.pointer as usize + 1 + offset);
-                let x = a + (b - a) * self.pointer.fract();
-
                 self.pointer += *relative_speed;
 
                 if has_crossed_target(self.pointer, *target_position, *rewind_speed) {
@@ -95,8 +96,7 @@ impl FractionalDelay {
                 step,
                 done,
             }) => {
-                let x = buffer.peek(self.pointer as usize + offset);
-                let y = buffer.peek(*target as usize + offset);
+                let y = buffer.peek((*target + offset) as usize);
                 let out = x * *current_volume + y * *target_volume;
 
                 if target_volume.relative_eq(1.0, 0.0001) {

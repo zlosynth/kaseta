@@ -31,6 +31,7 @@ pub struct Delay {
     impulse_cursor: f32,
     random_impulse: bool,
     filter_placement: FilterPlacement,
+    wow_flutter_placement: WowFlutterPlacement,
     compressor: [Compressor; 4],
     dc_blocker: [DCBlocker; 4],
 }
@@ -72,6 +73,13 @@ pub enum FilterPlacement {
     Feedback,
 }
 
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum WowFlutterPlacement {
+    Input,
+    Read,
+}
+
 #[derive(Default, Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Reaction {
@@ -103,6 +111,7 @@ impl Delay {
             impulse_cursor: 0.0,
             random_impulse: false,
             filter_placement: FilterPlacement::default(),
+            wow_flutter_placement: WowFlutterPlacement::Read,
             compressor: [
                 Compressor::new(sample_rate),
                 Compressor::new(sample_rate),
@@ -140,7 +149,10 @@ impl Delay {
             tone.process(input_buffer);
         }
 
-        wow_flutter.process(input_buffer, random);
+        wow_flutter.roll_dice(random);
+        if self.wow_flutter_placement.is_input() {
+            wow_flutter.process(input_buffer, random);
+        }
 
         for x in input_buffer.iter() {
             self.buffer.write(*x);
@@ -155,10 +167,15 @@ impl Delay {
             // NOTE: Must read from back, so heads can move from old to new.
             let age = buffer_len - i;
 
+            let mut offset = age as f32;
+            if self.wow_flutter_placement.is_read() {
+                offset += wow_flutter.pop_delay(random);
+            }
+
             let mut feedback: f32 = self
                 .heads
                 .iter_mut()
-                .map(|head| head.reader.read(&self.buffer, age) * head.feedback)
+                .map(|head| head.reader.read(&self.buffer, offset) * head.feedback)
                 .enumerate()
                 .map(|(i, x)| self.compressor[i].process(self.dc_blocker[i].tick(x)))
                 .sum();
@@ -171,7 +188,7 @@ impl Delay {
             let mut left = 0.0;
             let mut right = 0.0;
             for head in &mut self.heads {
-                let value = head.reader.read(&self.buffer, age);
+                let value = head.reader.read(&self.buffer, offset);
                 let amplified = value * head.volume;
                 left += amplified * (1.0 - head.pan);
                 right += amplified * head.pan;
@@ -259,5 +276,15 @@ impl FilterPlacement {
 
     fn is_feedback(self) -> bool {
         matches!(self, Self::Feedback)
+    }
+}
+
+impl WowFlutterPlacement {
+    fn is_input(self) -> bool {
+        matches!(self, Self::Input)
+    }
+
+    fn is_read(self) -> bool {
+        matches!(self, Self::Read)
     }
 }
