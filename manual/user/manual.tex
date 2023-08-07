@@ -227,8 +227,8 @@ the module.
             &
             \node[dspnodeopen,dsp/label=above] (drive-bias-control)  {Drive+Bias};  &
             \node[dspnodeopen,dsp/label=above] (dry-wet-control)     {Dry/Wet};     &
-            \node[dspnodeopen,dsp/label=above] (wow-flutter-control) {Wow/Flutter}; &
             \node[dspnodeopen,dsp/label=above] (tone-control)        {Tone};        &
+            \node[dspnodeopen,dsp/label=above] (wow-flutter-control) {Wow/Flutter}; &
             \\
             %-------------------------------------------------------------------
             \node[dspnodeopen,dsp/label=left] (input)             {Input};       &
@@ -236,9 +236,9 @@ the module.
             \node[dspnodefull]                (dry-wet-split)     {};            &
             \node[dspsquare]                  (saturation)        {Saturation};  &
             \node[dspmixer]                   (dry-wet-mix)       {};            &
-            \node[dspsquare]                  (time-effect)       {Time effect}; &
             \node[dspsquare]                  (filter)            {Filter};      &
-            \node[coordinate]                 (filter-to-write-a) {};            \\
+            \node[dspsquare]                  (time-effect)       {Time effect}; &
+            \node[coordinate]                 (time-effect-to-write-a) {};            \\
             %-------------------------------------------------------------------
             &
             &
@@ -317,8 +317,8 @@ the module.
         \draw[dspflow]       (pre-amp) -- (dry-wet-split);
         \draw[dspflow] (dry-wet-split) -- (saturation);
         \draw[dspflow]    (saturation) -- (dry-wet-mix);
-        \draw[dspflow]   (dry-wet-mix) -- (time-effect);
-        \draw[dspflow]   (time-effect) -- (filter);
+        \draw[dspflow]   (dry-wet-mix) -- (filter);
+        \draw[dspflow]        (filter) -- (time-effect);
 
         % Controls
         \draw[dspconn]        (pre-amp-control) -- (pre-amp);
@@ -336,9 +336,9 @@ the module.
         \draw[dspline] (dry-wet-bypass-b) -- (dry-wet-mix);
 
         % Route to the write head
-        \draw[dspline]            (filter) -- (filter-to-write-a);
-        \draw[dspline] (filter-to-write-a) -- (route-to-write-b);
-        \draw[dspflow]  (route-to-write-b) -- (write);
+        \draw[dspline]            (time-effect) -- (time-effect-to-write-a);
+        \draw[dspline] (time-effect-to-write-a) -- (route-to-write-b);
+        \draw[dspflow]       (route-to-write-b) -- (write);
 
         % Delay block
         \draw[line width=0.7mm] (delay-nw) -- (delay-sw) -- (delay-se) -- (delay-ne) -- cycle;

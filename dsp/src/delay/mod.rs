@@ -11,6 +11,7 @@ use crate::math;
 use crate::random::Random;
 use crate::ring_buffer::RingBuffer;
 use crate::tone::Tone;
+use crate::wow_flutter::WowFlutter;
 
 use self::compressor::Compressor;
 use self::fractional::{FractionalDelay, FractionalDelayAttributes};
@@ -132,11 +133,14 @@ impl Delay {
         output_buffer_left: &mut [f32],
         output_buffer_right: &mut [f32],
         tone: &mut Tone,
+        wow_flutter: &mut WowFlutter,
         random: &mut impl Random,
     ) -> Reaction {
         if self.filter_placement.is_volume() {
             tone.process(input_buffer);
         }
+
+        wow_flutter.process(input_buffer, random);
 
         for x in input_buffer.iter() {
             self.buffer.write(*x);

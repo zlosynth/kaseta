@@ -131,8 +131,6 @@ impl Processor {
             }
         }
 
-        self.wow_flutter.process(&mut buffer, random);
-
         let mut oversampled_block = [0.0; 32 * 4];
         self.upsampler.process(&buffer, &mut oversampled_block);
         self.hysteresis
@@ -150,6 +148,7 @@ impl Processor {
                 &mut buffer_left,
                 &mut buffer_right,
                 &mut self.tone,
+                &mut self.wow_flutter,
                 random,
             )
             .notify(&mut reaction);

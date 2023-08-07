@@ -25,6 +25,7 @@ use sirena::memory_manager::MemoryManager;
 use kaseta_dsp::delay::{Attributes, Delay, FilterPlacement, HeadAttributes};
 use kaseta_dsp::random::Random;
 use kaseta_dsp::tone::Tone;
+use kaseta_dsp::wow_flutter::WowFlutter;
 
 struct RandomStub;
 
@@ -69,6 +70,7 @@ fn main() -> ! {
     let mut randomizer = dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks);
     let mut delay = Delay::new(SAMPLE_RATE, &mut memory_manager);
     let mut tone = Tone::new(SAMPLE_RATE as u32);
+    let mut wow_flutter = WowFlutter::new(48_000, &mut memory_manager);
 
     let cycles = op_cyccnt_diff!(cp, {
         for _ in 0..BUFFERS {
@@ -120,6 +122,7 @@ fn main() -> ! {
                 &mut output_left,
                 &mut output_right,
                 &mut tone,
+                &mut wow_flutter,
                 &mut RandomStub,
             );
         }
