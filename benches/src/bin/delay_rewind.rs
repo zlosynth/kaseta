@@ -8,7 +8,7 @@
 //! * Calling `set_attribute` on every buffer: 25967
 //! * Rewinding on all heads: 36082
 //! * With introduced impulses (and probably something else too): 33008
-//! * After introducing feedback compression: 64275
+//! * After applying wow and flutter on both input and on read: 74741
 
 #![no_main]
 #![no_std]
@@ -27,6 +27,10 @@ use kaseta_dsp::delay::{Attributes, Delay, FilterPlacement, HeadAttributes, WowF
 use kaseta_dsp::random::Random;
 use kaseta_dsp::tone::Tone;
 use kaseta_dsp::wow_flutter::WowFlutter;
+
+// Slice for shorter buffers that will be stored in the main memory.
+#[link_section = ".sram"]
+static mut MEMORY: [MaybeUninit<u32>; 96 * 1024] = unsafe { MaybeUninit::uninit().assume_init() };
 
 struct RandomStub;
 
@@ -56,7 +60,7 @@ fn main() -> ! {
     let pins = daisy::board_split_gpios!(board, ccdr, dp);
     let sdram = daisy::board_split_sdram!(cp, dp, ccdr, pins);
 
-    let mut memory_manager = {
+    let mut sdram_manager = {
         let ram_slice = unsafe {
             let ram_items = sdram.size() / core::mem::size_of::<MaybeUninit<u32>>();
             let ram_ptr = sdram.base_address.cast();
@@ -64,14 +68,15 @@ fn main() -> ! {
         };
         MemoryManager::from(ram_slice)
     };
+    let mut stack_manager = { MemoryManager::from(unsafe { &mut MEMORY[..] }) };
 
     cp.SCB.enable_icache();
     cp.SCB.enable_dcache(&mut cp.CPUID);
 
     let mut randomizer = dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks);
-    let mut delay = Delay::new(SAMPLE_RATE, &mut memory_manager);
+    let mut delay = Delay::new(SAMPLE_RATE, &mut sdram_manager);
     let mut tone = Tone::new(SAMPLE_RATE as u32);
-    let mut wow_flutter = WowFlutter::new(48_000, &mut memory_manager);
+    let mut wow_flutter = WowFlutter::new(48_000, &mut stack_manager);
 
     let cycles = op_cyccnt_diff!(cp, {
         for _ in 0..BUFFERS {
@@ -114,7 +119,7 @@ fn main() -> ! {
                 reset_impulse: false,
                 random_impulse: false,
                 filter_placement: FilterPlacement::Volume,
-                wow_flutter_placement: WowFlutterPlacement::Read,
+                wow_flutter_placement: WowFlutterPlacement::Both,
             });
             let mut input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
             let mut output_left: [f32; BUFFER_SIZE] = [0.0; BUFFER_SIZE];
