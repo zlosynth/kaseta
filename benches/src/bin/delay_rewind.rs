@@ -22,7 +22,7 @@ use core::mem::MaybeUninit;
 use daisy::hal::prelude::_stm32h7xx_hal_rng_RngExt;
 use sirena::memory_manager::MemoryManager;
 
-use kaseta_dsp::delay::{Attributes, Delay, FilterPlacement, HeadAttributes};
+use kaseta_dsp::delay::{Attributes, Delay, FilterPlacement, HeadAttributes, WowFlutterPlacement};
 use kaseta_dsp::random::Random;
 use kaseta_dsp::tone::Tone;
 use kaseta_dsp::wow_flutter::WowFlutter;
@@ -113,6 +113,7 @@ fn main() -> ! {
                 reset_impulse: false,
                 random_impulse: false,
                 filter_placement: FilterPlacement::Volume,
+                wow_flutter_placement: WowFlutterPlacement::Read,
             });
             let mut input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
             let mut output_left: [f32; BUFFER_SIZE] = [0.0; BUFFER_SIZE];

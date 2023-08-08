@@ -65,8 +65,10 @@ fn main() -> ! {
     let mut buffer: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
 
     let cycles = op_cyccnt_diff!(cp, {
+        let mut wow_flutter_delays = [0.0; 32];
+        wow_flutter.populate_delays(&mut wow_flutter_delays[..], &mut RandomStub);
         for _ in 0..300 {
-            wow_flutter.process(&mut buffer, &mut RandomStub);
+            wow_flutter.process(&mut buffer, &wow_flutter_delays);
         }
     });
 

@@ -7,7 +7,7 @@ use crate::compressor::Compressor;
 use crate::dc_blocker::DCBlocker;
 use crate::delay::{
     Attributes as DelayAttributes, Delay, FilterPlacement, HeadAttributes as DelayHeadAttributes,
-    Reaction as DelayReaction,
+    Reaction as DelayReaction, WowFlutterPlacement,
 };
 use crate::hysteresis::{
     Attributes as HysteresisAttributes, Hysteresis, Reaction as HysteresisReaction,
@@ -63,6 +63,7 @@ pub struct Attributes {
     pub reset_impulse: bool,
     pub random_impulse: bool,
     pub filter_feedback: bool,
+    pub wow_flutter_placement: u8,
     pub rewind_speed: [(f32, f32); 4],
 }
 
@@ -270,6 +271,12 @@ impl From<Attributes> for DelayAttributes {
                 FilterPlacement::Feedback
             } else {
                 FilterPlacement::Volume
+            },
+            wow_flutter_placement: match other.wow_flutter_placement {
+                0 => WowFlutterPlacement::Input,
+                1 => WowFlutterPlacement::Read,
+                2 => WowFlutterPlacement::Both,
+                _ => unreachable!(),
             },
         }
     }

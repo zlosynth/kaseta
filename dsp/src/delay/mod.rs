@@ -53,6 +53,7 @@ pub struct Attributes {
     pub reset_impulse: bool,
     pub random_impulse: bool,
     pub filter_placement: FilterPlacement,
+    pub wow_flutter_placement: WowFlutterPlacement,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -78,6 +79,7 @@ pub enum FilterPlacement {
 pub enum WowFlutterPlacement {
     Input,
     Read,
+    Both,
 }
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -111,7 +113,7 @@ impl Delay {
             impulse_cursor: 0.0,
             random_impulse: false,
             filter_placement: FilterPlacement::default(),
-            wow_flutter_placement: WowFlutterPlacement::Read,
+            wow_flutter_placement: WowFlutterPlacement::default(),
             compressor: [
                 Compressor::new(sample_rate),
                 Compressor::new(sample_rate),
@@ -149,9 +151,18 @@ impl Delay {
             tone.process(input_buffer);
         }
 
-        wow_flutter.roll_dice(random);
+        let mut wow_flutter_delays = [0.0; 32];
+        wow_flutter.populate_delays(&mut wow_flutter_delays[..], random);
+        if self.wow_flutter_placement.is_both() {
+            for x in &mut wow_flutter_delays {
+                *x /= 2.0;
+            }
+        }
+
         if self.wow_flutter_placement.is_input() {
-            wow_flutter.process(input_buffer, random);
+            wow_flutter.process(input_buffer, &wow_flutter_delays);
+        } else {
+            wow_flutter.dry_process(input_buffer);
         }
 
         for x in input_buffer.iter() {
@@ -169,7 +180,7 @@ impl Delay {
 
             let mut offset = age as f32;
             if self.wow_flutter_placement.is_read() {
-                offset += wow_flutter.pop_delay(random);
+                offset += wow_flutter_delays[i];
             }
 
             let mut feedback: f32 = self
@@ -243,6 +254,7 @@ impl Delay {
         }
         self.random_impulse = attributes.random_impulse;
         self.filter_placement = attributes.filter_placement;
+        self.wow_flutter_placement = attributes.wow_flutter_placement;
 
         self.length = attributes.length;
         for (i, head) in self.heads.iter_mut().enumerate() {
@@ -279,12 +291,22 @@ impl FilterPlacement {
     }
 }
 
+impl Default for WowFlutterPlacement {
+    fn default() -> Self {
+        Self::Both
+    }
+}
+
 impl WowFlutterPlacement {
     fn is_input(self) -> bool {
-        matches!(self, Self::Input)
+        matches!(self, Self::Input) || matches!(self, Self::Both)
     }
 
     fn is_read(self) -> bool {
-        matches!(self, Self::Read)
+        matches!(self, Self::Read) || matches!(self, Self::Both)
+    }
+
+    fn is_both(self) -> bool {
+        matches!(self, Self::Both)
     }
 }

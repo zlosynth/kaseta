@@ -59,23 +59,39 @@ impl WowFlutter {
         RingBuffer::from(slice)
     }
 
-    pub fn roll_dice(&mut self, random: &mut impl Random) {
+    pub fn populate_delays(&mut self, buffer: &mut [f32], random: &mut impl Random) {
+        self.roll_dice(random);
+        for x in buffer.iter_mut() {
+            *x = self.pop_delay(random);
+        }
+    }
+
+    fn roll_dice(&mut self, random: &mut impl Random) {
         self.flutter.roll_dice(random);
     }
 
-    pub fn pop_delay(&mut self, random: &mut impl Random) -> f32 {
+    fn pop_delay(&mut self, random: &mut impl Random) -> f32 {
         let wow_delay = self.wow.pop(random) * self.sample_rate as f32;
         let flutter_delay = self.flutter.pop() * self.sample_rate as f32;
         wow_delay + flutter_delay
     }
 
-    pub fn process(&mut self, buffer: &mut [f32], random: &mut impl Random) {
+    /// Feed the buffer with incoming signal.
+    ///
+    /// This should be called when process is not. For instance if `pop_delay`
+    /// is called directly. Feeding the buffer will prevent pops after the
+    /// signal path is rerouted directly to process again.
+    pub fn dry_process(&mut self, buffer: &mut [f32]) {
         for x in buffer.iter_mut() {
-            let delay = self.pop_delay(random);
+            self.buffer.write(*x);
+        }
+    }
 
-            let a = self.buffer.peek(delay as usize);
-            let b = self.buffer.peek(delay as usize + 1);
-            let delayed = a + (b - a) * delay.fract();
+    pub fn process(&mut self, buffer: &mut [f32], delays: &[f32]) {
+        for (d, x) in delays.iter().zip(buffer.iter_mut()) {
+            let a = self.buffer.peek(*d as usize);
+            let b = self.buffer.peek(*d as usize + 1);
+            let delayed = a + (b - a) * d.fract();
 
             self.buffer.write(*x);
 

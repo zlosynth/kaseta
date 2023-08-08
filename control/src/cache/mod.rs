@@ -67,6 +67,7 @@ pub struct Options {
     pub enable_oscillator: bool,
     pub random_impulse: bool,
     pub filter_feedback: bool,
+    pub wow_flutter_placement: WowFlutterPlacement,
     pub unlimited: bool,
 }
 
@@ -82,6 +83,31 @@ pub enum DelayRange {
 impl Default for DelayRange {
     fn default() -> Self {
         Self::Long
+    }
+}
+
+/// Placement of the time effects of wow and flutter.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum WowFlutterPlacement {
+    Input,
+    Read,
+    Both,
+}
+
+impl Default for WowFlutterPlacement {
+    fn default() -> Self {
+        Self::Both
+    }
+}
+
+impl WowFlutterPlacement {
+    pub fn is_input(self) -> bool {
+        matches!(self, Self::Input)
+    }
+
+    pub fn is_read(self) -> bool {
+        matches!(self, Self::Read)
     }
 }
 
@@ -165,6 +191,13 @@ impl Cache {
             reset_impulse: self.attributes.reset_impulse,
             random_impulse: self.options.random_impulse,
             filter_feedback: self.options.filter_feedback,
+            wow_flutter_placement: if self.options.wow_flutter_placement.is_input() {
+                0
+            } else if self.options.wow_flutter_placement.is_read() {
+                1
+            } else {
+                2
+            },
         }
     }
 

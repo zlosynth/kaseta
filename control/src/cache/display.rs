@@ -49,6 +49,7 @@ pub enum AltAttributeScreen {
     SpeedRange(SpeedRange),
     TonePosition(TonePosition),
     HysteresisRange(HysteresisRange),
+    WowFlutterPlacement(WowFlutterPlacement),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -78,6 +79,14 @@ pub enum TonePosition {
 pub enum HysteresisRange {
     Unlimited,
     Limited,
+}
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum WowFlutterPlacement {
+    Input,
+    Read,
+    Both,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -390,6 +399,11 @@ fn leds_for_alt_attribute(alt_attribute: AltAttributeScreen) -> [bool; 8] {
         AltAttributeScreen::HysteresisRange(range) => match range {
             HysteresisRange::Unlimited => [false, true, false, true, true, false, true, false],
             HysteresisRange::Limited => [false, false, false, false, true, true, true, true],
+        },
+        AltAttributeScreen::WowFlutterPlacement(placement) => match placement {
+            WowFlutterPlacement::Input => [true, false, false, false, true, false, false, false],
+            WowFlutterPlacement::Read => [false, true, true, true, false, true, true, true],
+            WowFlutterPlacement::Both => [true, true, true, true, true, true, true, true],
         },
     }
 }

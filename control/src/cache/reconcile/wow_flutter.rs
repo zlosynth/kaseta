@@ -1,7 +1,11 @@
 use super::calculate;
 use super::taper;
+use crate::cache::display::AltAttributeScreen;
 use crate::cache::display::AttributeScreen;
+use crate::cache::display::WowFlutterPlacement as WowFlutterPlacementScreen;
 use crate::cache::mapping::AttributeIdentifier;
+use crate::cache::WowFlutterPlacement;
+use crate::log;
 use crate::Store;
 
 const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 0.2);
@@ -10,7 +14,34 @@ const FLUTTER_DEPTH_RANGE: (f32, f32) = (0.0, 0.006);
 const FLUTTER_CHANCE_RANGE: (f32, f32) = (0.0001, 0.0008);
 
 impl Store {
-    pub fn reconcile_wow_flutter(&mut self) {
+    pub fn reconcile_wow_flutter(&mut self, needs_save: &mut bool) {
+        let original_placement = self.cache.options.wow_flutter_placement;
+
+        if self.input.button.pressed && self.input.wow_flut.activation_movement() {
+            let value = self.input.wow_flut.value();
+            let (placement, screen) = if value < 0.3 {
+                (WowFlutterPlacement::Input, WowFlutterPlacementScreen::Input)
+            } else if value < 0.6 {
+                (WowFlutterPlacement::Read, WowFlutterPlacementScreen::Read)
+            } else {
+                (WowFlutterPlacement::Both, WowFlutterPlacementScreen::Both)
+            };
+            self.cache.options.wow_flutter_placement = placement;
+            self.cache
+                .display
+                .set_alt_menu(AltAttributeScreen::WowFlutterPlacement(screen));
+        }
+
+        let placement = self.cache.options.wow_flutter_placement;
+        if placement != original_placement {
+            *needs_save |= true;
+            if placement.is_input() {
+                log::info!("Setting wow/flutter placement=input");
+            } else {
+                log::info!("Setting wow/flutter placement=read");
+            }
+        }
+
         let depth = calculate(
             self.input.wow_flut.value(),
             self.control_value_for_attribute(AttributeIdentifier::WowFlut)
