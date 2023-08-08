@@ -4,7 +4,7 @@
 //! to be processed by wow and flutter.
 //!
 //! * Original implementation: 162429
-//! * Using cosinus lookup table: 15743
+//! * Using cosinus lookup table: 10752
 
 #![no_main]
 #![no_std]

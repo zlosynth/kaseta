@@ -7,6 +7,7 @@
 //! * After removing interpolation: 44285
 //! * Without amplitude clamping: 26030
 //! * With introduced impulses: 26141
+//! * After introducing feedback compression: 51396
 
 #![no_main]
 #![no_std]
