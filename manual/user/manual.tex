@@ -216,7 +216,7 @@ the module.
 
 \section{Signal flow}
 
-\vspace{2.5cm}
+\vspace{2cm}
 \begin{figure*}[ht]
     \center
     \begin{tikzpicture}
@@ -276,6 +276,14 @@ the module.
             \node[coordinate] (delay-se)   {}; &
             \\
             %-------------------------------------------------------------------
+            &
+            &
+            &
+            &
+            &
+            \node[dspsquare]                   (time-effect-read)         {Time effect}; &
+            \node[dspnodeopen,dsp/label=right] (wow-flutter-read-control) {Wow/Flutter}; \\
+            %-------------------------------------------------------------------
             \node[dspmixer]                    (feedback-mixer)         {};                   &
             &
             &
@@ -321,14 +329,15 @@ the module.
         \draw[dspflow]        (filter) -- (time-effect);
 
         % Controls
-        \draw[dspconn]        (pre-amp-control) -- (pre-amp);
-        \draw[dspconn]     (drive-bias-control) -- (saturation);
-        \draw[dspconn]        (dry-wet-control) -- (dry-wet-mix);
-        \draw[dspconn]    (wow-flutter-control) -- (time-effect);
-        \draw[dspconn]           (tone-control) -- (filter);
-        \draw[dspconn]     (volume-pan-control) -- (volume-pan);
-        \draw[dspconn]       (feedback-control) -- (feedback);
-        \draw[dspconn] (position-speed-control) -- (read);
+        \draw[dspconn]         (pre-amp-control) -- (pre-amp);
+        \draw[dspconn]      (drive-bias-control) -- (saturation);
+        \draw[dspconn]         (dry-wet-control) -- (dry-wet-mix);
+        \draw[dspconn]     (wow-flutter-control) -- (time-effect);
+        \draw[dspconn](wow-flutter-read-control) -- (time-effect-read);
+        \draw[dspconn]            (tone-control) -- (filter);
+        \draw[dspconn]      (volume-pan-control) -- (volume-pan);
+        \draw[dspconn]        (feedback-control) -- (feedback);
+        \draw[dspconn]  (position-speed-control) -- (read);
 
         % Dry/wet bypass
         \draw[dspline]    (dry-wet-split) -- (dry-wet-bypass-a);
@@ -344,8 +353,9 @@ the module.
         \draw[line width=0.7mm] (delay-nw) -- (delay-sw) -- (delay-se) -- (delay-ne) -- cycle;
 
         % Writing and reading heads
-        \draw[dspflow] (write) -- (delay-nw);
-        \draw[dspflow] (read-point) -- (read);
+        \draw[dspflow]            (write) -- (delay-nw);
+        \draw[dspflow]       (read-point) -- (time-effect-read);
+        \draw[dspflow] (time-effect-read) -- (read);
 
         % Feedback flow
         \draw[dspflow]                    (read) -- (feedback);
@@ -361,7 +371,7 @@ the module.
         \draw[dspflows] (playback-mixer) -- (outputs);
     \end{tikzpicture}
     \caption{\label{fig:flowchart}{\it
-      Signal flow within the module. Only a single reading head is shown for clarity.}}
+      The default signal flow within the module. Only a single reading head is shown for clarity.}}
 \end{figure*}
 
 % Start of features deep dive page
