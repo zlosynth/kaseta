@@ -126,7 +126,7 @@ Kaseta is 20 HP wide. It is powered by a +12V/{\textminus}12V 2\texttimes5
 connector. The red stripe (\textminus12V) has to be connected on the side of the
 board marked with the white line. The module must be mounted in a eurorack case.
 
-\vspace{1cm}
+\vspace{0.5cm}
 
 \section{Controls, inputs and outputs}
 
@@ -139,6 +139,7 @@ independent delay reading heads.
 The button (B) serves for tempo tap-in and access to secondary attributes of
 some knobs:
 Position of a filter set through TONE,
+placement of wow and flutter effects set through WOW/FLUT,
 unlimited hysteresis enabled through DRIVE,
 and internal oscillator enabled through PRE-AMP.
 
@@ -385,6 +386,8 @@ The PRE-AMP attribute attenuates or amplifies the signal received via INPUT
 between silence and +28 dB. If the input signal is boosted too hard and starts
 clipping, the display will start blinking.
 
+\vspace{1.5cm}
+
 \section{Internal oscillator}
 
 The INPUT signal can be replaced with an internal oscillator. This oscillator
@@ -393,6 +396,8 @@ consists of two sine waves, one of which is a slightly detuned sub-octave.
 To enable this feature, turn the PRE-AMP knob to the max while holding the
 button. The PRE-AMP knob controls the pitch. If a control input is mapped to the
 pitch, it will follow the 1V/oct standard.
+
+\vspace{1.5cm}
 
 \section{Hysteresis}
 
@@ -407,16 +412,7 @@ The range of drive and bias is limitted to keep the simulation stable. This
 limitation can be disabled to reach far harsher distortions, clicks and pops.
 Disable it by turning the DRIVE knob to the max while holding the button.
 
-\section{Tone}
-
-TONE applies a filter on the saturated signal. When the pot is at its 12 hours,
-the filter is disabled. Turning it to the left or right enables a low-pass or
-high-pass filter, respectively.
-
-Turning this knob to the max while holding the button makes it so the filter
-gets applied on the feedback of each of the delay heads.
-
-\vspace{5mm}
+\vspace{1cm}
 
 \end{minipage}%
 \begin{minipage}{0.05\textwidth}
@@ -425,6 +421,15 @@ gets applied on the feedback of each of the delay heads.
 % Right column
 \begin{minipage}[t]{0.45\textwidth}
 \setlength{\parskip}{6pt}
+
+\section{Tone}
+
+TONE applies a filter on the saturated signal. When the pot is at its 12 hours,
+the filter is disabled. Turning it to the left or right enables a low-pass or
+high-pass filter, respectively.
+
+Turning this knob to the max while holding the button makes it so the filter
+gets applied on the feedback of each of the delay heads.
 
 \section{Wow and flutter}
 
@@ -437,6 +442,32 @@ increases of pitch.
 WOW/FLUT is controlling these time effects. When the pot is at its 12 hours, the
 effect is disabled. Turning it to the left or right enables wow or flutter,
 respectively.
+
+\subsection{Placement}
+
+There are three placement options for this effect, each with its distinct
+behavior.
+
+\textbf{On the input} -- the effect will be applied to the signal before it
+  enters the delay. This is useful when using multiple heads placed in different
+  positions since the modulation at the time of their reading will vary.
+
+\textbf{On reading from tape} -- the effect will be applied when reading the
+  signal back from the tape. This is useful when using feedback, since each time
+  the signal passes through the tape it will get further modulated.
+
+\textbf{Both simultaneously} -- both of the placements are active. Default.
+
+Hold the button while turning the WOW/FLUT knob to switch between the input,
+read, and both placements.
+
+\end{minipage}
+
+% Continuation of features deep dive page
+\newpage
+
+\begin{minipage}[t]{0.45\textwidth}
+\setlength{\parskip}{6pt}
 
 \section{Delay}
 
@@ -468,6 +499,20 @@ to fit in. To allow stronger feedback, reduce the pre-amp or drive.
 
 When the combined strength of all feedback gets too strong, the module may enter
 into a feedback loop. To get out of this loop, reduce the feedback.
+
+\vspace{5mm}
+
+\end{minipage}%
+\begin{minipage}{0.05\textwidth}
+\phantom{ }
+\end{minipage}%
+% Right column
+\begin{minipage}[t]{0.45\textwidth}
+\setlength{\parskip}{6pt}
+
+% To be populated
+
+\newpage
 
 \end{minipage}
 
