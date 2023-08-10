@@ -6,6 +6,9 @@ backwards compatibility.
 
 ## Unreleased
 
+* Apply wow and flutter to both the input and reading heads.
+* Allow configuration of wow and flutter placement.
+
 ## 1.1.2
 
 * Fix reset, so it persists the default configuration.
