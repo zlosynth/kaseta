@@ -18,8 +18,8 @@ use self::fractional::{FractionalDelay, FractionalDelayAttributes};
 
 // Assuming sample rate of 48 kHz, 64 MB memory and f32 samples of 4 bytes,
 // the module should hold up to 349 seconds of audio. Rounding down to whole
-// minutes.
-const MAX_LENGTH: f32 = 5.0 * 60.0;
+// minutes and adding some overhead for wow and flutter.
+const MAX_LENGTH: f32 = 5.0 * 60.0 + 5.0;
 
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
