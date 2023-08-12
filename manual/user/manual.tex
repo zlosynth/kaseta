@@ -277,8 +277,8 @@ the module.
             \node[coordinate] (delay-se)   {}; &
             \\
             %-------------------------------------------------------------------
-            &
-            &
+            \node[dspsquare]                   (filter-feedback)          {Filter};      &
+            \node[dspnodeopen,dsp/label=right] (tone-feedback-control)    {Tone};        &
             &
             &
             &
@@ -336,6 +336,7 @@ the module.
         \draw[dspconn]     (wow-flutter-control) -- (time-effect);
         \draw[dspconn](wow-flutter-read-control) -- (time-effect-read);
         \draw[dspconn]            (tone-control) -- (filter);
+        \draw[dspconn]   (tone-feedback-control) -- (filter-feedback);
         \draw[dspconn]      (volume-pan-control) -- (volume-pan);
         \draw[dspconn]        (feedback-control) -- (feedback);
         \draw[dspconn]  (position-speed-control) -- (read);
@@ -361,7 +362,8 @@ the module.
         % Feedback flow
         \draw[dspflow]                    (read) -- (feedback);
         \draw[dspflow]                (feedback) -- (feedback-mixer);
-        \draw[dspflow]          (feedback-mixer) -- (feedback-mixer-to-write);
+        \draw[dspflow]          (feedback-mixer) -- (filter-feedback);
+        \draw[dspflow]         (filter-feedback) -- (feedback-mixer-to-write);
         \draw[dspflow]          (other-feedback) -- (feedback-mixer);
         \draw[dspflow] (feedback-mixer-to-write) -- (write);
 
@@ -386,7 +388,7 @@ The PRE-AMP attribute attenuates or amplifies the signal received via INPUT
 between silence and +28 dB. If the input signal is boosted too hard and starts
 clipping, the display will start blinking.
 
-\vspace{1.5cm}
+\vspace{1cm}
 
 \section{Internal oscillator}
 
@@ -397,7 +399,7 @@ To enable this feature, turn the PRE-AMP knob to the max while holding the
 button. The PRE-AMP knob controls the pitch. If a control input is mapped to the
 pitch, it will follow the 1V/oct standard.
 
-\vspace{1.5cm}
+\vspace{1cm}
 
 \section{Hysteresis}
 
@@ -407,6 +409,8 @@ magnetization model\footnote{
   \url{https://ccrma.stanford.edu/~jatin/420/tape/TapeModel_DAFx.pdf}
 }. DRIVE and BIAS are affecting the character of the saturation. DRY/WET blends
 between clear and saturated signals.
+
+\subsection{Limitting}
 
 The range of drive and bias is limitted to keep the simulation stable. This
 limitation can be disabled to reach far harsher distortions, clicks and pops.
@@ -428,8 +432,30 @@ TONE applies a filter on the saturated signal. When the pot is at its 12 hours,
 the filter is disabled. Turning it to the left or right enables a low-pass or
 high-pass filter, respectively.
 
-Turning this knob to the max while holding the button makes it so the filter
-gets applied on the feedback of each of the delay heads.
+\subsection{Placement}
+
+There are three placement options for the filter.
+
+\textbf{On the input} -- the filter gets applied on the signal after it leaves
+  the saturation stage. This is useful to shave off some unwanted frequencies
+  and can act as a VCF when mapped to a CV input.
+
+\textbf{On feedback} -- the filter gets applied on the signal every time it
+  passes through the feedback. This is useful to keep the loop from getting out
+  of hand and also to introduce dampening.
+
+\textbf{Both simultaneously} -- both of the placements are active. Default.
+
+Hold the button while turning the TONE knob to switch between the input,
+feedback, and both placements.
+
+\end{minipage}
+
+% Continuation of features deep dive page
+\newpage
+
+\begin{minipage}[t]{0.45\textwidth}
+\setlength{\parskip}{6pt}
 
 \section{Wow and flutter}
 
@@ -461,11 +487,11 @@ behavior.
 Hold the button while turning the WOW/FLUT knob to switch between the input,
 read, and both placements.
 
-\end{minipage}
-
-% Continuation of features deep dive page
-\newpage
-
+\end{minipage}%
+\begin{minipage}{0.05\textwidth}
+\phantom{ }
+\end{minipage}%
+% Right column
 \begin{minipage}[t]{0.45\textwidth}
 \setlength{\parskip}{6pt}
 
@@ -501,16 +527,6 @@ When the combined strength of all feedback gets too strong, the module may enter
 into a feedback loop. To get out of this loop, reduce the feedback.
 
 \vspace{5mm}
-
-\end{minipage}%
-\begin{minipage}{0.05\textwidth}
-\phantom{ }
-\end{minipage}%
-% Right column
-\begin{minipage}[t]{0.45\textwidth}
-\setlength{\parskip}{6pt}
-
-% To be populated
 
 \newpage
 
