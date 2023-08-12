@@ -501,11 +501,22 @@ The input signal gets recorded on an imaginary tape by a writing head, to be
 then, after a set interval, played back by a reading head. See the figure 
 \ref{fig:flowchart}.
 
+\subsection{Heads}
+
 There are four such reading heads, each controlled by four knobs (H). POSITION
 sets the relative position in the delay. VOL controls how much of the signal
 will be sent into the output, with PAN controlling the balance between LEFT and
 RIGHT. FEEDBACK controls how much of the signal is fed back to the beginning of
 the delay.
+
+When the combined strength of all feedback gets too strong, the module may enter
+into a feedback loop. To get out of this loop, reduce the feedback, or use the
+tone filter.
+
+When the signal written to the tape is too loud, it will not allow any feedback
+to fit in. To allow stronger feedback, reduce the pre-amp or drive.
+
+\subsection{Speed}
 
 SPEED controls the velocity in which the imaginary tape loops around, or in
 other words, the length of the delay. By default, this length is between
@@ -517,14 +528,10 @@ Alternatively, tap the button four times to set the desired tempo.
 Similarly, if a clock signal is detected in control input mapped to SPEED, it
 would set the tempo, with the SPEED knob acting as a multiplier.
 
+\subsection{Impulse}
+
 The IMPULSE trigger output will fire in the pattern set through head positions.
 It is synchronized with the tap-in or clock-in.
-
-When the signal written to the tape is too loud, it will not allow any feedback
-to fit in. To allow stronger feedback, reduce the pre-amp or drive.
-
-When the combined strength of all feedback gets too strong, the module may enter
-into a feedback loop. To get out of this loop, reduce the feedback.
 
 \vspace{5mm}
 
