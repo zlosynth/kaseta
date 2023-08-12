@@ -37,8 +37,10 @@ impl Store {
             *needs_save |= true;
             if placement.is_input() {
                 log::info!("Setting wow/flutter placement=input");
-            } else {
+            } else if placement.is_read() {
                 log::info!("Setting wow/flutter placement=read");
+            } else {
+                log::info!("Setting wow/flutter placement=both");
             }
         }
 

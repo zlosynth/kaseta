@@ -10,7 +10,7 @@ use crate::dc_blocker::DCBlocker;
 use crate::math;
 use crate::random::Random;
 use crate::ring_buffer::RingBuffer;
-use crate::tone::Tone;
+use crate::tone::Tone2;
 use crate::wow_flutter::WowFlutter;
 
 use self::compressor::Compressor;
@@ -70,8 +70,9 @@ pub struct HeadAttributes {
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum FilterPlacement {
-    Volume,
+    Input,
     Feedback,
+    Both,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -143,12 +144,12 @@ impl Delay {
         input_buffer: &mut [f32],
         output_buffer_left: &mut [f32],
         output_buffer_right: &mut [f32],
-        tone: &mut Tone,
+        tone: &mut Tone2,
         wow_flutter: &mut WowFlutter,
         random: &mut impl Random,
     ) -> Reaction {
-        if self.filter_placement.is_volume() {
-            tone.process(input_buffer);
+        if self.filter_placement.is_input() {
+            tone.tone_1.process(input_buffer);
         }
 
         let mut wow_flutter_delays = [0.0; 32];
@@ -191,7 +192,7 @@ impl Delay {
                 .map(|(i, x)| self.compressor[i].process(self.dc_blocker[i].tick(x)))
                 .sum();
             if self.filter_placement.is_feedback() {
-                feedback = tone.tick(feedback);
+                feedback = tone.tone_2.tick(feedback);
             }
             *self.buffer.peek_mut(age) += feedback;
 
@@ -277,17 +278,17 @@ fn dice_to_bool(random: f32, chance: f32) -> bool {
 
 impl Default for FilterPlacement {
     fn default() -> Self {
-        Self::Volume
+        Self::Both
     }
 }
 
 impl FilterPlacement {
-    fn is_volume(self) -> bool {
-        matches!(self, Self::Volume)
+    fn is_input(self) -> bool {
+        matches!(self, Self::Input) || matches!(self, Self::Both)
     }
 
     fn is_feedback(self) -> bool {
-        matches!(self, Self::Feedback)
+        matches!(self, Self::Feedback) || matches!(self, Self::Both)
     }
 }
 

@@ -66,7 +66,7 @@ pub struct Options {
     pub rewind: bool,
     pub enable_oscillator: bool,
     pub random_impulse: bool,
-    pub filter_feedback: bool,
+    pub filter_placement: FilterPlacement,
     pub wow_flutter_placement: WowFlutterPlacement,
     pub unlimited: bool,
 }
@@ -83,6 +83,31 @@ pub enum DelayRange {
 impl Default for DelayRange {
     fn default() -> Self {
         Self::Long
+    }
+}
+
+/// Placement of the low/high pass filter.
+#[derive(Clone, Copy, Debug, PartialEq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum FilterPlacement {
+    Input,
+    Feedback,
+    Both,
+}
+
+impl Default for FilterPlacement {
+    fn default() -> Self {
+        Self::Both
+    }
+}
+
+impl FilterPlacement {
+    pub fn is_input(self) -> bool {
+        matches!(self, Self::Input)
+    }
+
+    pub fn is_feedback(self) -> bool {
+        matches!(self, Self::Feedback)
     }
 }
 
@@ -190,7 +215,13 @@ impl Cache {
             rewind_speed: self.configuration.rewind_speed(),
             reset_impulse: self.attributes.reset_impulse,
             random_impulse: self.options.random_impulse,
-            filter_feedback: self.options.filter_feedback,
+            filter_placement: if self.options.filter_placement.is_input() {
+                0
+            } else if self.options.filter_placement.is_feedback() {
+                1
+            } else {
+                2
+            },
             wow_flutter_placement: if self.options.wow_flutter_placement.is_input() {
                 0
             } else if self.options.wow_flutter_placement.is_read() {

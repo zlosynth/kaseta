@@ -8,6 +8,7 @@
 //! * Without amplitude clamping: 26030
 //! * With introduced impulses: 26141
 //! * After applying wow and flutter on both input and on read: 68248
+//! * After applying filter on both the input and feedback: 71310
 
 #![no_main]
 #![no_std]
@@ -25,7 +26,7 @@ use sirena::memory_manager::MemoryManager;
 
 use kaseta_dsp::delay::{Attributes, Delay, FilterPlacement, HeadAttributes, WowFlutterPlacement};
 use kaseta_dsp::random::Random;
-use kaseta_dsp::tone::Tone;
+use kaseta_dsp::tone::Tone2;
 use kaseta_dsp::wow_flutter::WowFlutter;
 
 // Slice for shorter buffers that will be stored in the main memory.
@@ -70,7 +71,7 @@ fn main() -> ! {
 
     let mut randomizer = dp.RNG.constrain(ccdr.peripheral.RNG, &ccdr.clocks);
     let mut delay = Delay::new(SAMPLE_RATE, &mut sdram_manager);
-    let mut tone = Tone::new(SAMPLE_RATE as u32);
+    let mut tone = Tone2::new(SAMPLE_RATE);
     let mut wow_flutter = WowFlutter::new(48_000, &mut stack_manager);
 
     let cycles = op_cyccnt_diff!(cp, {
@@ -113,7 +114,7 @@ fn main() -> ! {
                 ],
                 reset_impulse: false,
                 random_impulse: false,
-                filter_placement: FilterPlacement::Volume,
+                filter_placement: FilterPlacement::Both,
                 wow_flutter_placement: WowFlutterPlacement::Both,
             });
             let mut input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);

@@ -6,8 +6,10 @@ backwards compatibility.
 
 ## Unreleased
 
-* Apply wow and flutter to both the input and reading heads.
 * Allow configuration of wow and flutter placement.
+* Apply wow and flutter to both the input and reading heads by default.
+* Add an option to place filter on both the input and feedback.
+* Place the filter on input and feedback by default.
 
 ## 1.1.2
 

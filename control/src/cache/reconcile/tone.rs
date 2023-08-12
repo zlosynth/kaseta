@@ -1,33 +1,40 @@
 use super::calculate;
-use crate::cache::display::{AltAttributeScreen, AttributeScreen, TonePosition};
+use crate::cache::display::{
+    AltAttributeScreen, AttributeScreen, FilterPlacement as FilterPlacementScreen,
+};
 use crate::cache::mapping::AttributeIdentifier;
+use crate::cache::FilterPlacement;
 use crate::log;
 use crate::Store;
 
 impl Store {
     pub fn reconcile_tone(&mut self, needs_save: &mut bool) {
-        let original_filter_feedback = self.cache.options.filter_feedback;
+        let original_placement = self.cache.options.filter_placement;
 
         if self.input.button.pressed && self.input.tone.activation_movement() {
-            self.cache.options.filter_feedback = self.input.tone.value() < 0.5;
-            if self.cache.options.filter_feedback {
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::TonePosition(TonePosition::Feedback));
+            let value = self.input.tone.value();
+            let (placement, screen) = if value < 0.3 {
+                (FilterPlacement::Input, FilterPlacementScreen::Input)
+            } else if value < 0.6 {
+                (FilterPlacement::Feedback, FilterPlacementScreen::Feedback)
             } else {
-                self.cache
-                    .display
-                    .set_alt_menu(AltAttributeScreen::TonePosition(TonePosition::Volume));
-            }
+                (FilterPlacement::Both, FilterPlacementScreen::Both)
+            };
+            self.cache.options.filter_placement = placement;
+            self.cache
+                .display
+                .set_alt_menu(AltAttributeScreen::FilterPlacement(screen));
         }
 
-        let filter_feedback = self.cache.options.filter_feedback;
-        if filter_feedback != original_filter_feedback {
+        let placement = self.cache.options.filter_placement;
+        if placement != original_placement {
             *needs_save |= true;
-            if filter_feedback {
-                log::info!("Positioning tone filter=feedback");
+            if placement.is_input() {
+                log::info!("Setting filter placement=input");
+            } else if placement.is_feedback() {
+                log::info!("Setting filter placement=feedback");
             } else {
-                log::info!("Positioning tone filter=volume");
+                log::info!("Setting filter placement=both");
             }
         }
 

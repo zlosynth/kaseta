@@ -16,7 +16,7 @@ use crate::oscillator::{Attributes as OscillatorAttributes, Oscillator};
 use crate::oversampling::{Downsampler4, Upsampler4};
 use crate::pre_amp::{Attributes as PreAmpAttributes, PreAmp};
 use crate::random::Random;
-use crate::tone::{Attributes as ToneAttributes, Tone};
+use crate::tone::{Attributes as ToneAttributes, Tone2};
 use crate::wow_flutter::{Attributes as WowFlutterAttributes, WowFlutter};
 
 #[derive(Debug)]
@@ -29,7 +29,7 @@ pub struct Processor {
     hysteresis: Hysteresis,
     wow_flutter: WowFlutter,
     delay: Delay,
-    tone: Tone,
+    tone: Tone2,
     compressor: Compressor,
     dc_blocker: [DCBlocker; 3],
     first_stage: FirstStage,
@@ -62,7 +62,7 @@ pub struct Attributes {
     pub rewind: bool,
     pub reset_impulse: bool,
     pub random_impulse: bool,
-    pub filter_feedback: bool,
+    pub filter_placement: u8,
     pub wow_flutter_placement: u8,
     pub rewind_speed: [(f32, f32); 4],
 }
@@ -100,7 +100,7 @@ impl Processor {
             hysteresis: Hysteresis::new(fs),
             wow_flutter: WowFlutter::new(fs as u32, stack_manager),
             delay: Delay::new(fs, sdram_manager),
-            tone: Tone::new(fs as u32),
+            tone: Tone2::new(fs),
             compressor: Compressor::new(fs),
             dc_blocker: [
                 DCBlocker::default(),
@@ -267,10 +267,11 @@ impl From<Attributes> for DelayAttributes {
             ],
             reset_impulse: other.reset_impulse,
             random_impulse: other.random_impulse,
-            filter_placement: if other.filter_feedback {
-                FilterPlacement::Feedback
-            } else {
-                FilterPlacement::Volume
+            filter_placement: match other.filter_placement {
+                0 => FilterPlacement::Input,
+                1 => FilterPlacement::Feedback,
+                2 => FilterPlacement::Both,
+                _ => unreachable!(),
             },
             wow_flutter_placement: match other.wow_flutter_placement {
                 0 => WowFlutterPlacement::Input,

@@ -47,7 +47,7 @@ pub enum ConfigurationScreen {
 pub enum AltAttributeScreen {
     PreAmpMode(PreAmpMode),
     SpeedRange(SpeedRange),
-    TonePosition(TonePosition),
+    FilterPlacement(FilterPlacement),
     HysteresisRange(HysteresisRange),
     WowFlutterPlacement(WowFlutterPlacement),
 }
@@ -69,9 +69,10 @@ pub enum SpeedRange {
 
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub enum TonePosition {
-    Volume,
+pub enum FilterPlacement {
+    Input,
     Feedback,
+    Both,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -392,9 +393,10 @@ fn leds_for_alt_attribute(alt_attribute: AltAttributeScreen) -> [bool; 8] {
             SpeedRange::Short => [false, false, true, true, false, false, true, true],
             SpeedRange::Audio => [false, false, false, true, false, false, false, true],
         },
-        AltAttributeScreen::TonePosition(position) => match position {
-            TonePosition::Volume => [true, true, true, true, false, false, false, false],
-            TonePosition::Feedback => [false, false, false, false, true, true, true, true],
+        AltAttributeScreen::FilterPlacement(position) => match position {
+            FilterPlacement::Input => [true, false, false, false, true, false, false, false],
+            FilterPlacement::Feedback => [false, true, true, true, false, true, true, true],
+            FilterPlacement::Both => [true, true, true, true, true, true, true, true],
         },
         AltAttributeScreen::HysteresisRange(range) => match range {
             HysteresisRange::Unlimited => [false, true, false, true, true, false, true, false],
