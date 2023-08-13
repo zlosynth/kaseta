@@ -264,6 +264,7 @@ impl Store {
         }
     }
 
+    #[allow(clippy::needless_bool_assign)]
     fn detect_reset_buffer_request(&mut self) {
         let held_for_more_than_5_seconds = self.input.button.held == 5_000
             && self.input.latest_pot_activity() > self.input.button.held;
