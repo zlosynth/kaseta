@@ -29,7 +29,7 @@ impl Save {
 }
 
 // This constant is used to invalidate data when needed
-const TOKEN: u16 = 2;
+const TOKEN: u16 = 3;
 const CRC: Crc<u16> = Crc::<u16>::new(&CRC_16_USB);
 pub struct InvalidData;
 
