@@ -103,6 +103,15 @@ impl WowFlutter {
         self.wow.set_attributes(&attributes.into());
         self.flutter.set_attributes(&attributes.into());
     }
+
+    pub fn buffer_reset(&mut self, start: usize, size: usize) {
+        self.buffer.reset(start, size);
+    }
+
+    #[must_use]
+    pub fn buffer_len(&self) -> usize {
+        self.buffer.len()
+    }
 }
 
 impl From<Attributes> for WowAttributes {

@@ -64,6 +64,7 @@ pub struct Attributes {
     pub random_impulse: bool,
     pub filter_placement: u8,
     pub wow_flutter_placement: u8,
+    pub reset_buffer: bool,
     pub rewind_speed: [(f32, f32); 4],
 }
 
@@ -279,6 +280,7 @@ impl From<Attributes> for DelayAttributes {
                 2 => WowFlutterPlacement::Both,
                 _ => unreachable!(),
             },
+            reset_buffer: other.reset_buffer,
         }
     }
 }

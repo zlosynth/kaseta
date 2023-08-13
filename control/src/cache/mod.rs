@@ -39,6 +39,7 @@ pub struct Cache {
     pub clock_detectors: ClockDetectors,
     pub tap_detector: TapDetector,
     pub tapped_tempo: TappedTempo,
+    pub reset_buffer: bool,
     pub attributes: Attributes,
     pub impulse_trigger: Trigger,
     pub impulse_led: Led,
@@ -229,6 +230,7 @@ impl Cache {
             } else {
                 2
             },
+            reset_buffer: self.reset_buffer,
         }
     }
 

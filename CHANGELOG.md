@@ -6,6 +6,7 @@ backwards compatibility.
 
 ## Unreleased
 
+* Clear the entire tape by holding the button for 3 seconds.
 * Allow configuration of wow and flutter placement.
 * Apply wow and flutter to both the input and reading heads by default.
 * Add an option to place filter on both the input and feedback.

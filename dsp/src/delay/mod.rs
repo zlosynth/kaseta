@@ -32,6 +32,7 @@ pub struct Delay {
     random_impulse: bool,
     filter_placement: FilterPlacement,
     wow_flutter_placement: WowFlutterPlacement,
+    buffer_reset: BufferReset,
     compressor: [Compressor; 4],
     dc_blocker: [DCBlocker; 4],
 }
@@ -54,6 +55,7 @@ pub struct Attributes {
     pub random_impulse: bool,
     pub filter_placement: FilterPlacement,
     pub wow_flutter_placement: WowFlutterPlacement,
+    pub reset_buffer: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -81,6 +83,23 @@ pub enum WowFlutterPlacement {
     Input,
     Read,
     Both,
+}
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum BufferReset {
+    Armed,
+    FadingOut(usize, usize),
+    Resetting(usize, usize),
+    FadingIn(usize, usize),
+    Disarmed,
+}
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+struct ResetSelector {
+    pub index: usize,
+    pub block_size: usize,
 }
 
 #[derive(Default, Clone, Copy, Debug)]
@@ -115,6 +134,7 @@ impl Delay {
             random_impulse: false,
             filter_placement: FilterPlacement::default(),
             wow_flutter_placement: WowFlutterPlacement::default(),
+            buffer_reset: BufferReset::Disarmed,
             compressor: [
                 Compressor::new(sample_rate),
                 Compressor::new(sample_rate),
@@ -148,6 +168,12 @@ impl Delay {
         wow_flutter: &mut WowFlutter,
         random: &mut impl Random,
     ) -> Reaction {
+        let buffer_len = input_buffer.len();
+        for (i, x) in input_buffer.iter_mut().enumerate() {
+            let amp = self.buffer_reset.calculate_input_amplitude(i, buffer_len);
+            *x *= amp;
+        }
+
         if self.filter_placement.is_input() {
             tone.tone_1.process(input_buffer);
         }
@@ -170,7 +196,6 @@ impl Delay {
             self.buffer.write(*x);
         }
 
-        let buffer_len = output_buffer_left.len();
         for (i, (l, r)) in output_buffer_left
             .iter_mut()
             .zip(output_buffer_right)
@@ -206,8 +231,17 @@ impl Delay {
                 right += amplified * head.pan;
             }
 
-            *l = left;
-            *r = right;
+            let amp = self.buffer_reset.calculate_output_amplitude(i, buffer_len);
+
+            *l = left * amp;
+            *r = right * amp;
+        }
+
+        if let Some(ResetSelector { index, block_size }) = self.buffer_reset.tick() {
+            let delay_chunk = self.buffer.len() / block_size;
+            self.buffer.reset(index * delay_chunk, delay_chunk);
+            let wow_flutter_chunk = wow_flutter.buffer_len() / block_size;
+            wow_flutter.buffer_reset(index * wow_flutter_chunk, wow_flutter_chunk);
         }
 
         let impulse = self.consider_impulse(input_buffer.len(), random);
@@ -269,6 +303,10 @@ impl Delay {
                 blend_steps: 3200, // XXX: It must be also dividable by buffer size
             });
         }
+
+        if attributes.reset_buffer {
+            self.buffer_reset = BufferReset::Armed;
+        }
     }
 }
 
@@ -309,5 +347,74 @@ impl WowFlutterPlacement {
 
     fn is_both(self) -> bool {
         matches!(self, Self::Both)
+    }
+}
+
+impl BufferReset {
+    fn calculate_input_amplitude(&mut self, i: usize, buffer_len: usize) -> f32 {
+        match self {
+            BufferReset::FadingOut(j, n) => {
+                let part = 1.0 / *n as f32;
+                let start = *j as f32 / *n as f32;
+                let phase_in_buffer = i as f32 / buffer_len as f32;
+                1.0 - (start + phase_in_buffer * part)
+            }
+            BufferReset::FadingIn(j, n) => {
+                let part = 1.0 / *n as f32;
+                let start = *j as f32 / *n as f32;
+                let phase_in_buffer = i as f32 / buffer_len as f32;
+                start + phase_in_buffer * part
+            }
+            BufferReset::Resetting(_, _) => 0.0,
+            _ => 1.0,
+        }
+    }
+
+    fn calculate_output_amplitude(&mut self, i: usize, buffer_len: usize) -> f32 {
+        match self {
+            BufferReset::FadingOut(j, n) => {
+                let part = 1.0 / *n as f32;
+                let start = *j as f32 / *n as f32;
+                let phase_in_buffer = i as f32 / buffer_len as f32;
+                1.0 - (start + phase_in_buffer * part)
+            }
+            BufferReset::Resetting(_, _) => 0.0,
+            _ => 1.0,
+        }
+    }
+
+    fn tick(&mut self) -> Option<ResetSelector> {
+        let mut reset_request = None;
+        *self = match self {
+            BufferReset::Armed => BufferReset::FadingOut(0, 50),
+            BufferReset::FadingOut(j, n) => {
+                if j == n {
+                    let chunks = 2 << 11;
+                    BufferReset::Resetting(0, chunks)
+                } else {
+                    BufferReset::FadingOut(*j + 1, *n)
+                }
+            }
+            BufferReset::Resetting(j, n) => {
+                if j == n {
+                    BufferReset::FadingIn(0, 2000)
+                } else {
+                    reset_request = Some(ResetSelector {
+                        index: *j,
+                        block_size: *n,
+                    });
+                    BufferReset::Resetting(*j + 1, *n)
+                }
+            }
+            BufferReset::FadingIn(j, n) => {
+                if j == n {
+                    BufferReset::Disarmed
+                } else {
+                    BufferReset::FadingIn(*j + 1, *n)
+                }
+            }
+            BufferReset::Disarmed => BufferReset::Disarmed,
+        };
+        reset_request
     }
 }

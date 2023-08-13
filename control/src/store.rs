@@ -150,7 +150,9 @@ impl Store {
 
         match self.state {
             State::Normal => {
-                self.converge_from_normal_state(&mut needs_save);
+                self.detect_tapped_tempo(&mut needs_save);
+                self.detect_reset_buffer_request();
+                self.converge_from_normal_state();
             }
             State::Configuring(configuring) => {
                 self.converge_from_configuring_state(configuring, &mut needs_save);
@@ -220,8 +222,7 @@ impl Store {
         }
     }
 
-    fn converge_from_normal_state(&mut self, needs_save: &mut bool) {
-        self.detect_tapped_tempo(needs_save);
+    fn converge_from_normal_state(&mut self) {
         if self.button_is_held_for_very_long_without_pot_activity() {
             log::info!("Entering configuration menu");
             self.state = State::configuring_from_draft(self.cache.configuration);
@@ -260,6 +261,17 @@ impl Store {
             *needs_save = true;
             self.cache.tap_detector.reset();
             self.cache.tapped_tempo = None;
+        }
+    }
+
+    fn detect_reset_buffer_request(&mut self) {
+        let held_for_more_than_5_seconds = self.input.button.held == 5_000
+            && self.input.latest_pot_activity() > self.input.button.held;
+        if held_for_more_than_5_seconds {
+            log::info!("Resetting the buffer");
+            self.cache.reset_buffer = true;
+        } else {
+            self.cache.reset_buffer = false;
         }
     }
 
