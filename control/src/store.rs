@@ -222,7 +222,7 @@ impl Store {
 
     fn converge_from_normal_state(&mut self, needs_save: &mut bool) {
         self.detect_tapped_tempo(needs_save);
-        if self.button_is_long_held_without_pot_activity() {
+        if self.button_is_held_for_very_long_without_pot_activity() {
             log::info!("Entering configuration menu");
             self.state = State::configuring_from_draft(self.cache.configuration);
             self.cache.display.set_dialog(DialogScreen::configuration());
@@ -263,8 +263,8 @@ impl Store {
         }
     }
 
-    fn button_is_long_held_without_pot_activity(&mut self) -> bool {
-        self.input.button.held > 5_000 && self.input.latest_pot_activity() > self.input.button.held
+    fn button_is_held_for_very_long_without_pot_activity(&mut self) -> bool {
+        self.input.button.held > 60_000 && self.input.latest_pot_activity() > self.input.button.held
     }
 
     fn converge_from_mapping_state(
