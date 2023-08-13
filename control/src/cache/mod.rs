@@ -1,5 +1,4 @@
 pub mod calibration;
-mod clock_detector;
 pub mod configuration;
 pub mod display;
 mod interval_detector;
@@ -7,19 +6,20 @@ mod led;
 pub mod mapping;
 mod quantization;
 mod reconcile;
-mod tap_detector;
+mod tap_clock_detector;
 mod trigger;
 
 use heapless::Vec;
 use kaseta_dsp::processor::{Attributes as DSPAttributes, AttributesHead as DSPAttributesHead};
 
 use self::calibration::Calibration;
-use self::clock_detector::ClockDetector;
 pub use self::configuration::Configuration;
 use self::display::Display;
 use self::led::Led;
 use self::mapping::{AttributeIdentifier, Mapping};
-use self::tap_detector::TapDetector;
+use self::tap_clock_detector::{
+    TapClockDetector as TapDetector, TapClockDetector as ClockDetector,
+};
 use self::trigger::Trigger;
 use crate::log;
 use crate::output::DesiredOutput;

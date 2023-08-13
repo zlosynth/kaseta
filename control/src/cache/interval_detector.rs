@@ -52,15 +52,6 @@ impl IntervalDetector {
         }
         self.just_detected = false;
     }
-
-    pub fn reset_if_inactive(&mut self) {
-        if let Some(tempo) = self.tempo {
-            let max = tempo + tempo / 10;
-            if self.trigger_age[2] > max {
-                self.reset();
-            }
-        }
-    }
 }
 
 fn toleration(distance: u32) -> Range<u32> {

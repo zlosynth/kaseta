@@ -1882,7 +1882,7 @@ mod tests {
     }
 
     #[test]
-    fn when_clock_signal_stops_speed_gets_set_from_its_analog_signal_and_pot() {
+    fn when_clock_signal_stops_speed_is_retained_until_cv_is_unplugged() {
         let mut store = Store::new();
         let mut input = InputSnapshot::default();
 
@@ -1918,6 +1918,12 @@ mod tests {
         clock_trigger(&mut store, 1, input, 20000);
 
         let attributes = store.apply_input_snapshot(input).dsp_attributes;
-        assert_relative_eq!(attributes.speed, original_speed);
+        assert_relative_eq!(attributes.speed, 2.0);
+
+        // Unplug
+        input.control[1] = None;
+        let attributes = store.apply_input_snapshot(input).dsp_attributes;
+
+        assert_relative_ne!(attributes.speed, 2.0);
     }
 }

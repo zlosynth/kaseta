@@ -4,13 +4,16 @@ use super::interval_detector::IntervalDetector;
 ///
 /// This is only a momentary detector. To persist once detected
 /// tempo, the result needs to be snapshotted and stored elsewhere.
+///
+/// This has been created as a merge of the original `TapDetector`
+/// and `ClockDetector` after any difference between them was removed.
 #[derive(Debug, Default)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-pub struct ClockDetector {
+pub struct TapClockDetector {
     detector: IntervalDetector,
 }
 
-impl ClockDetector {
+impl TapClockDetector {
     pub fn trigger(&mut self) {
         self.detector.trigger();
     }
@@ -21,7 +24,6 @@ impl ClockDetector {
 
     pub fn tick(&mut self) {
         self.detector.tick();
-        self.detector.reset_if_inactive();
     }
 
     pub fn reset(&mut self) {

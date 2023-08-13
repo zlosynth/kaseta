@@ -11,6 +11,7 @@ backwards compatibility.
 * Apply wow and flutter to both the input and reading heads by default.
 * Add an option to place filter on both the input and feedback.
 * Place the filter on input and feedback by default.
+* Retain clocked tempo until CV input gets unplugged.
 
 ## 1.1.2
 
