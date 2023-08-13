@@ -550,7 +550,7 @@ mod tests {
         store.apply_input_snapshot(input);
         store.tick();
         input.button = true;
-        for _ in 0..6 * 1000 {
+        for _ in 0..61 * 1000 {
             store.apply_input_snapshot(input);
             store.tick();
         }
@@ -1136,7 +1136,7 @@ mod tests {
         }
 
         #[test]
-        fn when_button_is_held_for_5_seconds_it_enters_configuration_mode() {
+        fn when_button_is_held_for_60_seconds_it_enters_configuration_mode() {
             let mut store = init_store();
             let input = InputSnapshot::default();
 
