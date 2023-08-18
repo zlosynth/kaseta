@@ -61,3 +61,7 @@ harness = false
 [[bin]]
 name = "buffer"
 harness = false
+
+[[bin]]
+name = "compressor"
+harness = false

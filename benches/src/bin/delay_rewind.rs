@@ -10,6 +10,7 @@
 //! * With introduced impulses (and probably something else too): 33008
 //! * After applying wow and flutter on both input and on read: 74741
 //! * After applying filter on both the input and feedback: 77349
+//! * After replacing max in the compressor with if: 76177
 
 #![no_main]
 #![no_std]

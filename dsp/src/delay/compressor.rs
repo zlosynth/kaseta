@@ -27,7 +27,7 @@ impl Compressor {
 
     pub fn process(&mut self, x: f32) -> f32 {
         let abs = fabsf(x);
-        let level = f32::max(abs, 1.0e-6);
+        let level = if abs > 1.0e-6 { abs } else { 1.0e-6 };
         let level_in_decibels = 20.0 * log10f(level);
 
         let overshoot = level_in_decibels - TRESHOLD;

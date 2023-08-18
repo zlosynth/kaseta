@@ -8,7 +8,8 @@
 //! * Without amplitude clamping: 26030
 //! * With introduced impulses: 26141
 //! * After applying wow and flutter on both input and on read: 68248
-//! * After applying filter on both the input and feedback: 71310
+//! * After applying filter on both the input and feedback: 74367
+//! * After replacing max in the compressor with if: 70177
 
 #![no_main]
 #![no_std]

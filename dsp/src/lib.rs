@@ -18,6 +18,7 @@ pub mod processor;
 pub mod random;
 
 // Public for the sake of benchmarks
+pub mod compressor;
 pub mod delay;
 pub mod hysteresis;
 pub mod oscillator;
@@ -26,7 +27,6 @@ pub mod tone;
 pub mod wow_flutter;
 
 mod clipper;
-mod compressor;
 mod dc_blocker;
 mod linkwitz_riley_filter;
 mod math;

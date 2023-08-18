@@ -21,6 +21,7 @@ pub struct Compressor {
 }
 
 impl Compressor {
+    #[must_use]
     pub fn new(sample_rate: f32) -> Self {
         Self {
             n1: 0.0,
@@ -31,8 +32,10 @@ impl Compressor {
 
     pub fn process(&mut self, buffer_left: &mut [f32], buffer_right: &mut [f32]) {
         for (l, r) in buffer_left.iter_mut().zip(buffer_right) {
-            let max = f32::max(fabsf(*l), fabsf(*r));
-            let level = f32::max(max, 1.0e-6);
+            let l_abs = fabsf(*l);
+            let r_abs = fabsf(*r);
+            let max = if l_abs > r_abs { l_abs } else { r_abs };
+            let level = if max > 1.0e-6 { max } else { 1.0e-6 };
             let level_in_decibels = 20.0 * log10f(level);
 
             let overshoot = level_in_decibels - TRESHOLD;
