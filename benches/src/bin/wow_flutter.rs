@@ -5,6 +5,7 @@
 //!
 //! * Original implementation: 162429
 //! * Using cosinus lookup table: 10752
+//! * Updated results: 1545
 
 #![no_main]
 #![no_std]
