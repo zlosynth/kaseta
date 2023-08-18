@@ -28,6 +28,7 @@ pub mod wow_flutter;
 
 mod clipper;
 mod dc_blocker;
+mod decibels;
 mod linkwitz_riley_filter;
 mod math;
 mod one_pole_filter;

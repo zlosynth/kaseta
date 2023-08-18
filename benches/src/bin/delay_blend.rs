@@ -10,6 +10,7 @@
 //! * After applying wow and flutter on both input and on read: 68248
 //! * After applying filter on both the input and feedback: 74367
 //! * After replacing max in the compressor with if: 70177
+//! * After using a lookup table for dB to linear: 76214
 
 #![no_main]
 #![no_std]

@@ -1,4 +1,6 @@
-use libm::{expf, fabsf, log10f, powf};
+use libm::{expf, fabsf, log10f};
+
+use crate::decibels;
 
 const ATTACK_IN_SECONDS: f32 = 0.01;
 const RELEASE_IN_SECONDS: f32 = 0.14;
@@ -45,7 +47,7 @@ impl Compressor {
             self.alpha_release * self.n1 + (1.0 - self.alpha_release) * compression
         };
         self.n1 = filtered_compression;
-        let filtered_compression_linear = powf(10.0, filtered_compression / 20.0);
+        let filtered_compression_linear = decibels::db_to_linear(filtered_compression);
 
         x * filtered_compression_linear
     }
