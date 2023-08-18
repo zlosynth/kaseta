@@ -48,7 +48,7 @@ script = "make -C manual/user && make -C manual/build"
 workspace = false
 script = '''
 cd firmware
-cargo run --release --bin firmware
+cargo run --release --bin firmware --features idle-measuring
 '''
 
 [tasks.flash-dfu]

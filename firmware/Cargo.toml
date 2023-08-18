@@ -6,6 +6,9 @@ authors = ["Petr Horáček <hrck@protonmail.com>"]
 license = "GPL-3.0-or-later"
 publish = false
 
+[features]
+idle-measuring = []
+
 [lib]
 harness = false
 
