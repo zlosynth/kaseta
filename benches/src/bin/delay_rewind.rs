@@ -12,6 +12,7 @@
 //! * After applying filter on both the input and feedback: 77349
 //! * After replacing max in the compressor with if: 76177
 //! * After using a lookup table for dB to linear: 83393
+//! * After using a lookup table for linear to dB: 69309
 
 #![no_main]
 #![no_std]

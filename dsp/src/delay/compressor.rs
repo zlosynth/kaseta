@@ -1,4 +1,4 @@
-use libm::{expf, fabsf, log10f};
+use libm::{expf, fabsf};
 
 use crate::decibels;
 
@@ -30,7 +30,8 @@ impl Compressor {
     pub fn process(&mut self, x: f32) -> f32 {
         let abs = fabsf(x);
         let level = if abs > 1.0e-6 { abs } else { 1.0e-6 };
-        let level_in_decibels = 20.0 * log10f(level);
+        // let level_in_decibels = 20.0 * log10f(level);
+        let level_in_decibels = decibels::linear_to_db(level);
 
         let overshoot = level_in_decibels - TRESHOLD;
         let compression = if overshoot < -KNEE_HALF {
