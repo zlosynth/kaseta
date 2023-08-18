@@ -13,6 +13,7 @@
 //! * Further tweaking of the buffer: 70714
 //! * Downsampling the whole buffer at once: 41241
 //! * Using SDRAM instead of stack: 44708
+//! * Update after a long time: 29692
 
 #![no_main]
 #![no_std]
