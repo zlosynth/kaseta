@@ -17,6 +17,11 @@ approx = "0.4"
 heapless = "0.7"
 rand = "0.8"
 proptest = "1.0"
+criterion = { version = "0.4", features = ["html_reports"] }
 
 [features]
 defmt = ["dep:defmt", "sirena/defmt"]
+
+[[bench]]
+name = "bench"
+harness = false

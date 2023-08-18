@@ -31,6 +31,32 @@ Run formatting, linter and unit tests:
 makers
 ```
 
+## DSP benchmark
+
+Run the benchmark:
+
+``` sh
+cd dsp
+cargo bench --bench bench
+```
+
+Use a profiler to analyze the results:
+
+``` sh
+cd dsp
+rm -f target/release/deps/bench-*
+rm -f callgrind.out.*
+RUSTFLAGS="-g" cargo bench --bench bench --no-run
+BENCH=$(find target/release/deps -type f -executable -name 'bench-*')
+valgrind \
+    --tool=callgrind \
+    --dump-instr=yes \
+    --collect-jumps=yes \
+    --simulate-cache=yes \
+    ${BENCH} --bench --profile-time 10
+kcachegrind callgrind.out.*
+```
+
 ## Flash via ST-Link
 
 This requires external probe, such as the ST LINK-V3 MINI. The benefit of this
@@ -103,7 +129,7 @@ To run one of the integration tests kept under `firmware/tests`:
 makers test-embedded inputs
 ```
 
-## Benchmark
+## Embedded benchmark
 
 For the most accurate results, benchmarks of control and dsp modules are executed
 directly against the hardware.

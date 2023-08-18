@@ -319,7 +319,7 @@ mod tests {
 
     #[test]
     fn db_to_linear_lookup_above_top_limit() {
-        assert_relative_eq!(db_to_linear(0.999999), 1.0, epsilon = 0.0001);
+        assert_relative_eq!(db_to_linear(0.99999), 1.0, epsilon = 0.0001);
     }
 
     #[test]
