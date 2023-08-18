@@ -212,9 +212,10 @@ mod app {
     fn log_idle_time(idling_relative: f32) {
         const IDLE_LIMIT: f32 = 0.1;
         let idling_percent = idling_relative * 100.0;
-        defmt::debug!("Idle time={}%", idling_percent);
         if idling_relative < IDLE_LIMIT {
             defmt::warn!("Idle time={}% is below the limit", idling_percent);
+        } else {
+            defmt::debug!("Idle time={}%", idling_percent);
         }
     }
 
