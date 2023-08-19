@@ -96,7 +96,11 @@ impl FractionalDelay {
                 step,
                 done,
             }) => {
-                let y = buffer.peek((*target + offset) as usize);
+                let y = {
+                    let a = buffer.peek((*target + offset) as usize);
+                    let b = buffer.peek((*target + offset) as usize + 1);
+                    a + (b - a) * (self.pointer + offset).fract()
+                };
                 let out = x * *current_volume + y * *target_volume;
 
                 if target_volume.relative_eq(1.0, 0.0001) {
