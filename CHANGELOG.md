@@ -12,7 +12,7 @@ backwards compatibility.
 * Add an option to place filter on both the input and feedback.
 * Place the filter on input and feedback by default.
 * Retain clocked tempo until CV input gets unplugged.
-* Optimize DSP to prevent crashes under lot of load.
+* Optimize to prevent crashes under lot of load.
 * Widen the zone of the WOW/FLUT knob where the effect is disabled.
 
 ## 1.1.2

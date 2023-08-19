@@ -40,7 +40,9 @@ mod app {
     type Mono = Systick<1000>;
 
     #[shared]
-    struct Shared {}
+    struct Shared {
+        save_cache: Option<Save>,
+    }
 
     #[local]
     struct Local {
@@ -58,6 +60,8 @@ mod app {
         processor_attributes_consumer: Consumer<'static, ProcessorAttributes, 8>,
         processor_reaction_producer: Producer<'static, ProcessorReaction, 8>,
         processor_reaction_consumer: Consumer<'static, ProcessorReaction, 8>,
+        save_producer: Producer<'static, Save, 8>,
+        save_consumer: Consumer<'static, Save, 8>,
     }
 
     #[init(
@@ -65,6 +69,7 @@ mod app {
             input_snapshot_queue: Queue<InputSnapshot, 8> = Queue::new(),
             processor_attributes_queue: Queue<ProcessorAttributes, 8> = Queue::new(),
             processor_reaction_queue: Queue<ProcessorReaction, 8> = Queue::new(),
+            save_queue: Queue<Save, 8> = Queue::new(),
         ]
     )]
     fn init(mut cx: init::Context) -> (Shared, Local, init::Monotonics) {
@@ -76,6 +81,7 @@ mod app {
             cx.local.processor_attributes_queue.split();
         let (processor_reaction_producer, processor_reaction_consumer) =
             cx.local.processor_reaction_queue.split();
+        let (save_producer, save_consumer) = cx.local.save_queue.split();
 
         if cfg!(feature = "idle-measuring") {
             cx.core.DCB.enable_trace();
@@ -105,11 +111,13 @@ mod app {
         blink::spawn(true, BLINKS).unwrap();
         control::spawn().unwrap();
         input::spawn().unwrap();
+        store_cacher::spawn().unwrap();
+        store_issuer::spawn().unwrap();
         // Force-save initial configuration. This is required in case reset was initiated.
         store::spawn(save).ok().unwrap();
 
         (
-            Shared {},
+            Shared { save_cache: None },
             Local {
                 status_led,
                 processor,
@@ -125,6 +133,8 @@ mod app {
                 processor_attributes_consumer,
                 processor_reaction_producer,
                 processor_reaction_consumer,
+                save_producer,
+                save_consumer,
             },
             init::Monotonics(mono),
         )
@@ -282,6 +292,7 @@ mod app {
             input_snapshot_consumer,
             processor_attributes_producer,
             processor_reaction_consumer,
+            save_producer,
         ],
         priority = 3,
     )]
@@ -293,6 +304,7 @@ mod app {
         let input_snapshot_consumer = cx.local.input_snapshot_consumer;
         let processor_attributes_producer = cx.local.processor_attributes_producer;
         let processor_reaction_consumer = cx.local.processor_reaction_consumer;
+        let save_producer = cx.local.save_producer;
 
         warn_about_queue_capacity("input_snapshot", input_snapshot_consumer);
         warn_about_queue_capacity("processor_reaction", processor_reaction_consumer);
@@ -304,7 +316,7 @@ mod app {
         if let Some(snapshot) = dequeue_last(input_snapshot_consumer) {
             let result = control.apply_input_snapshot(snapshot);
             if let Some(save) = result.save {
-                store::spawn(save).ok().unwrap();
+                save_producer.enqueue(save).ok().unwrap();
             }
             processor_attributes_producer
                 .enqueue(result.dsp_attributes)
@@ -314,6 +326,45 @@ mod app {
 
         let desired_output = control.tick();
         outputs.set(&desired_output);
+    }
+
+    #[task(
+        local = [
+            save_consumer,
+        ],
+        shared = [
+            save_cache,
+        ],
+        priority = 3,
+    )]
+    fn store_cacher(cx: store_cacher::Context) {
+        store_cacher::spawn_after(1.millis()).ok().unwrap();
+
+        let save_consumer = cx.local.save_consumer;
+        let mut save_cache = cx.shared.save_cache;
+
+        warn_about_queue_capacity("save_consumer", save_consumer);
+        if let Some(save) = dequeue_last(save_consumer) {
+            save_cache.lock(|save_cache| {
+                *save_cache = Some(save);
+            });
+        }
+    }
+
+    #[task(
+        shared = [
+            save_cache,
+        ],
+        priority = 3,
+    )]
+    fn store_issuer(mut cx: store_issuer::Context) {
+        store_issuer::spawn_after(1.secs()).ok().unwrap();
+
+        cx.shared.save_cache.lock(|save_cache| {
+            if let Some(save) = save_cache.take() {
+                store::spawn(save).ok().unwrap();
+            }
+        });
     }
 
     #[task(local = [storage])]
