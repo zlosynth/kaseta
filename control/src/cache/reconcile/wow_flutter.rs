@@ -9,7 +9,7 @@ use crate::log;
 use crate::Store;
 
 const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 0.2);
-const FLUTTER_DEPTH_RANGE: (f32, f32) = (0.0, 0.006);
+const FLUTTER_DEPTH_RANGE: (f32, f32) = (0.002, 0.006);
 // Once in 6 seconds to once a second.
 const FLUTTER_CHANCE_RANGE: (f32, f32) = (0.0001, 0.0008);
 
@@ -53,35 +53,35 @@ impl Store {
         );
 
         if depth.is_sign_negative() {
-            self.enable_wow(depth);
+            self.enable_wow(-depth);
         } else {
             self.enable_flutter(depth);
         };
     }
 
     fn enable_wow(&mut self, depth: f32) {
-        self.cache.attributes.wow = calculate(-depth, None, WOW_DEPTH_RANGE, None);
+        self.cache.attributes.wow = calculate_wow(depth);
         self.cache.attributes.flutter_depth = 0.0;
         self.cache.attributes.flutter_chance = 0.0;
+
         if self.input.wow_flut.activation_movement() {
             self.cache
                 .display
-                .force_attribute(AttributeScreen::Wow(-depth));
+                .force_attribute(AttributeScreen::Wow(depth));
         } else {
             self.cache
                 .display
-                .update_attribute(AttributeScreen::Wow(-depth));
+                .update_attribute(AttributeScreen::Wow(depth));
         }
     }
 
     fn enable_flutter(&mut self, depth: f32) {
+        let (flutter_depth, flutter_chance) = calculate_flutter(depth);
+
         self.cache.attributes.wow = 0.0;
-        self.cache.attributes.flutter_depth = calculate(depth, None, FLUTTER_DEPTH_RANGE, None);
-        self.cache.attributes.flutter_chance = if depth > 0.95 {
-            1.0
-        } else {
-            calculate(depth, None, FLUTTER_CHANCE_RANGE, Some(taper::log))
-        };
+        self.cache.attributes.flutter_depth = flutter_depth;
+        self.cache.attributes.flutter_chance = flutter_chance;
+
         if self.input.wow_flut.activation_movement() {
             self.cache
                 .display
@@ -92,4 +92,33 @@ impl Store {
                 .update_attribute(AttributeScreen::Flutter(depth));
         }
     }
+}
+
+fn calculate_wow(depth: f32) -> f32 {
+    const DEAD_ZONE: f32 = 0.1;
+
+    if depth < DEAD_ZONE {
+        return 0.0;
+    }
+
+    let scaled_depth = (depth - DEAD_ZONE) / (1.0 - DEAD_ZONE);
+    calculate(scaled_depth, None, WOW_DEPTH_RANGE, None)
+}
+
+fn calculate_flutter(depth: f32) -> (f32, f32) {
+    const DEAD_ZONE: f32 = 0.1;
+
+    if depth < DEAD_ZONE {
+        return (0.0, 0.0);
+    }
+
+    let scaled_depth = (depth - DEAD_ZONE) / (1.0 - DEAD_ZONE);
+    let flutter_depth = calculate(scaled_depth, None, FLUTTER_DEPTH_RANGE, None);
+    let flutter_chance = if scaled_depth > 0.95 {
+        1.0
+    } else {
+        calculate(depth, None, FLUTTER_CHANCE_RANGE, Some(taper::log))
+    };
+
+    (flutter_depth, flutter_chance)
 }
