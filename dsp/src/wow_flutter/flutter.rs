@@ -1,10 +1,16 @@
 #[allow(unused_imports)]
 use micromath::F32Ext as _;
 
+use crate::one_pole_filter::OnePoleFilter;
 use crate::random::Random;
 use crate::trigonometry;
 
 const BASE_FREQUENCY: f32 = 6.0;
+
+// Smoothening of the depth attribute to make sure that wow does not
+// scroll to the present too abruptly, causing pops when hitting 0.
+const DEPTH_CUTOFF: f32 = 0.5;
+const CONTROL_SAMPLE_RATE: f32 = 1000.0;
 
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Attributes {
@@ -25,6 +31,7 @@ pub struct Flutter {
     depth: f32,
     chance: f32,
     pops: Option<Pops>,
+    depth_filter: OnePoleFilter,
 }
 
 #[derive(Debug)]
@@ -49,6 +56,7 @@ impl Flutter {
             depth: 0.0,
             chance: 0.0,
             pops: None,
+            depth_filter: OnePoleFilter::new(CONTROL_SAMPLE_RATE, DEPTH_CUTOFF),
         }
     }
 
@@ -98,7 +106,7 @@ impl Flutter {
     }
 
     pub fn set_attributes(&mut self, attributes: &Attributes) {
-        self.depth = attributes.depth;
+        self.depth = self.depth_filter.tick(attributes.depth);
         self.chance = attributes.chance;
     }
 }
