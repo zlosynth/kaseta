@@ -9,7 +9,7 @@ use crate::log;
 use crate::Store;
 
 const WOW_DEPTH_RANGE: (f32, f32) = (0.0, 0.2);
-const FLUTTER_DEPTH_RANGE: (f32, f32) = (0.002, 0.006);
+const FLUTTER_DEPTH_RANGE: (f32, f32) = (0.0, 0.006);
 // Once in 6 seconds to once a second.
 const FLUTTER_CHANCE_RANGE: (f32, f32) = (0.0001, 0.0008);
 
@@ -108,16 +108,16 @@ fn calculate_wow(depth: f32) -> f32 {
 fn calculate_flutter(depth: f32) -> (f32, f32) {
     const DEAD_ZONE: f32 = 0.1;
 
-    if depth < DEAD_ZONE {
-        return (0.0, 0.0);
-    }
-
-    let scaled_depth = (depth - DEAD_ZONE) / (1.0 - DEAD_ZONE);
-    let flutter_depth = calculate(scaled_depth, None, FLUTTER_DEPTH_RANGE, None);
-    let flutter_chance = if scaled_depth > 0.95 {
-        1.0
+    let flutter_depth = calculate(depth, None, FLUTTER_DEPTH_RANGE, None);
+    let flutter_chance = if depth < DEAD_ZONE {
+        0.0
     } else {
-        calculate(depth, None, FLUTTER_CHANCE_RANGE, Some(taper::log))
+        let scaled_depth = (depth - DEAD_ZONE) / (1.0 - DEAD_ZONE);
+        if scaled_depth > 0.95 {
+            1.0
+        } else {
+            calculate(depth, None, FLUTTER_CHANCE_RANGE, Some(taper::log))
+        }
     };
 
     (flutter_depth, flutter_chance)
