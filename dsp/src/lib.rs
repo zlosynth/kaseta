@@ -9,6 +9,7 @@
 #![allow(clippy::cast_possible_wrap)]
 #![allow(clippy::cast_precision_loss)]
 #![allow(clippy::similar_names)]
+#![allow(clippy::explicit_iter_loop)]
 
 #[cfg(test)]
 #[macro_use]

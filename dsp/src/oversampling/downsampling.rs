@@ -18,7 +18,7 @@ impl<const N: usize> fmt::Debug for Downsampler<N> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Downsampler")
             .field("factor", &self.factor)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 

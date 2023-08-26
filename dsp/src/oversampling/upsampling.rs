@@ -18,7 +18,7 @@ impl<const N: usize, const M: usize> fmt::Debug for Upsampler<N, M> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("Upsampler")
             .field("factor", &self.factor)
-            .finish()
+            .finish_non_exhaustive()
     }
 }
 
