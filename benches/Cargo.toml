@@ -1,6 +1,6 @@
 [package]
 name = "kaseta-benches"
-version = "1.1.2"                                 # hack/release.sh
+version = "1.2.0"                                 # hack/release.sh
 authors = ["Petr Horáček <hrck@protonmail.com>"]
 edition = "2021"
 license = "GPL-3.0-or-later"
