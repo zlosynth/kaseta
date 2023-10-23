@@ -49,7 +49,9 @@ impl Store {
                 DelayRange::Short => self.speed_for_short_range(),
                 DelayRange::Audio => self.speed_for_audio_range(),
             };
-            self.show_length_on_display(display);
+            if !self.cache.configuration.default_display_page.is_position() {
+                self.show_length_on_display(display);
+            }
             self.cache.attributes.speed = speed;
         }
     }

@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* LED can be configured to visualize the current position within the loop.
+
 ## 1.2.0
 
 * Clear the entire tape by holding the button for 5 seconds.

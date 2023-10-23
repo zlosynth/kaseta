@@ -40,6 +40,7 @@ pub enum CalibrationScreen {
 pub enum ConfigurationScreen {
     Idle(u32),
     Rewind((usize, usize)),
+    DefaultScreen(usize),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -93,7 +94,8 @@ pub enum WowFlutterPlacement {
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum AttributeScreen {
-    Positions(Positions),
+    HeadsOverview(HeadsOverview),
+    Position(usize),
     OctaveOffset(usize),
     OscillatorTone(f32),
     PreAmp(f32),
@@ -109,7 +111,7 @@ pub enum AttributeScreen {
     Pan(usize, f32),
 }
 
-pub type Positions = ([bool; 4], [bool; 4]);
+pub type HeadsOverview = ([bool; 4], [bool; 4]);
 
 impl Default for Display {
     fn default() -> Self {
@@ -122,7 +124,7 @@ impl Default for Display {
                 None,
                 Some(Screen::Attribute(
                     0,
-                    AttributeScreen::Positions(([false; 4], [false; 4])),
+                    AttributeScreen::HeadsOverview(([false; 4], [false; 4])),
                 )),
             ],
         }
@@ -235,6 +237,9 @@ fn ticked_dialog(menu: DialogScreen) -> DialogScreen {
         DialogScreen::Configuration(configuration) => match configuration {
             ConfigurationScreen::Idle(cycles) => ticked_configuration_idle(cycles),
             ConfigurationScreen::Rewind(rewind) => ticked_configuration_rewind(rewind),
+            ConfigurationScreen::DefaultScreen(selection) => {
+                ticked_configuration_default_screen(selection)
+            }
         },
         DialogScreen::Calibration(calibration) => match calibration {
             CalibrationScreen::SelectOctave1(i, cycles) => ticked_calibration_1(i, cycles),
@@ -251,6 +256,10 @@ fn ticked_configuration_idle(mut cycles: u32) -> DialogScreen {
 
 fn ticked_configuration_rewind(rewind: (usize, usize)) -> DialogScreen {
     DialogScreen::Configuration(ConfigurationScreen::Rewind(rewind))
+}
+
+fn ticked_configuration_default_screen(selection: usize) -> DialogScreen {
+    DialogScreen::Configuration(ConfigurationScreen::DefaultScreen(selection))
 }
 
 fn ticked_calibration_1(i: usize, mut cycles: u32) -> DialogScreen {
@@ -379,6 +388,7 @@ fn leds_for_configuration(configuration: &ConfigurationScreen) -> [bool; 8] {
             }
             leds
         }
+        ConfigurationScreen::DefaultScreen(selection) => index_to_leds(*selection),
     }
 }
 
@@ -412,9 +422,10 @@ fn leds_for_alt_attribute(alt_attribute: AltAttributeScreen) -> [bool; 8] {
 
 fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
     match attribute {
-        AttributeScreen::Positions((top, bottom)) => [
+        AttributeScreen::HeadsOverview((top, bottom)) => [
             top[0], top[1], top[2], top[3], bottom[0], bottom[1], bottom[2], bottom[3],
         ],
+        AttributeScreen::Position(position) => index_to_leds(position),
         AttributeScreen::OctaveOffset(offset) => {
             let mut leds = [false; 8];
             if offset >= leds.len() {
@@ -447,6 +458,12 @@ fn phase_to_leds(phase: f32) -> [bool; 8] {
     [
         leds[1], leds[3], leds[5], leds[7], leds[0], leds[2], leds[4], leds[6],
     ]
+}
+
+fn index_to_leds(index: usize) -> [bool; 8] {
+    let mut leds = [false; 8];
+    leds[index] = true;
+    leds
 }
 
 fn dry_wet_to_leds(phase: f32) -> [bool; 8] {

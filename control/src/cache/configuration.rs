@@ -8,6 +8,14 @@
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Configuration {
     pub rewind_speed: [(usize, usize); 4],
+    pub default_display_page: DisplayPage,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub enum DisplayPage {
+    Heads,
+    Position,
 }
 
 impl Configuration {
@@ -20,7 +28,18 @@ impl Default for Configuration {
     fn default() -> Self {
         Self {
             rewind_speed: [(0, 0), (1, 1), (2, 2), (3, 3)],
+            default_display_page: DisplayPage::Heads,
         }
+    }
+}
+
+impl DisplayPage {
+    pub fn is_heads(&self) -> bool {
+        matches!(self, Self::Heads)
+    }
+
+    pub fn is_position(&self) -> bool {
+        matches!(self, Self::Position)
     }
 }
 

@@ -10,7 +10,9 @@ impl Store {
             self.reconcile_position(i);
         }
 
-        self.set_screen_for_positions();
+        if self.cache.configuration.default_display_page.is_heads() {
+            self.set_screen_for_heads_overview();
+        }
 
         for i in 0..4 {
             self.reconcile_volume(i);
@@ -82,26 +84,30 @@ impl Store {
         }
     }
 
-    fn set_screen_for_positions(&mut self) {
-        let screen_for_positions = self.screen_for_positions();
+    fn set_screen_for_heads_overview(&mut self) {
+        let screen_for_heads_overview = self.screen_for_heads_overview();
         let touched_position = self
             .input
             .head
             .iter()
             .any(|h| h.position.activation_movement());
         if touched_position {
-            self.cache.display.force_attribute(screen_for_positions);
+            self.cache
+                .display
+                .force_attribute(screen_for_heads_overview);
         } else {
-            self.cache.display.update_attribute(screen_for_positions);
+            self.cache
+                .display
+                .update_attribute(screen_for_heads_overview);
         }
         self.cache
             .display
-            .set_fallback_attribute(screen_for_positions);
+            .set_fallback_attribute(screen_for_heads_overview);
     }
 
-    fn screen_for_positions(&self) -> AttributeScreen {
+    fn screen_for_heads_overview(&self) -> AttributeScreen {
         // TODO: Handle hysteresis for position
-        AttributeScreen::Positions((
+        AttributeScreen::HeadsOverview((
             [
                 self.cache.attributes.head[0].volume > 0.00,
                 self.cache.attributes.head[1].volume > 0.00,

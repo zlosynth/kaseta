@@ -83,6 +83,7 @@ pub struct Reaction {
     pub hysteresis_clipping: bool,
     pub delay_impulse: bool,
     pub output_clipping: bool,
+    pub new_position: usize,
 }
 
 impl Processor {
@@ -294,6 +295,7 @@ impl HysteresisReaction {
 impl DelayReaction {
     fn notify(&mut self, reaction: &mut Reaction) {
         reaction.delay_impulse = self.impulse;
+        reaction.new_position = self.new_position;
     }
 }
 

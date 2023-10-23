@@ -9,9 +9,11 @@ use kaseta_dsp::processor::{Attributes as DSPAttributes, Reaction as DSPReaction
 
 use crate::action::{ControlAction, Queue};
 use crate::cache::calibration::Calibration;
-use crate::cache::display::{ConfigurationScreen, DialogScreen, Screen};
+use crate::cache::configuration::DisplayPage;
+use crate::cache::display::{AttributeScreen, ConfigurationScreen, DialogScreen, Screen};
 use crate::cache::mapping::AttributeIdentifier;
 use crate::cache::{Cache, Configuration};
+use crate::input::pot::Pot;
 use crate::input::snapshot::Snapshot as InputSnapshot;
 use crate::input::store::{Head as InputHead, Store as Input};
 use crate::log;
@@ -120,6 +122,12 @@ impl Store {
 
         if dsp_reaction.hysteresis_clipping {
             self.cache.display.set_clipping();
+        }
+
+        if self.cache.configuration.default_display_page.is_position() {
+            self.cache
+                .display
+                .set_fallback_attribute(AttributeScreen::Position(dsp_reaction.new_position));
         }
     }
 
@@ -277,7 +285,7 @@ impl Store {
     }
 
     fn button_is_held_for_very_long_without_pot_activity(&mut self) -> bool {
-        self.input.button.held > 60_000 && self.input.latest_pot_activity() > self.input.button.held
+        self.input.button.held > 30_000 && self.input.latest_pot_activity() > self.input.button.held
     }
 
     fn converge_from_mapping_state(
@@ -385,7 +393,7 @@ impl Store {
     }
 
     fn updated_configuration_draft(
-        &self,
+        &mut self,
         mut draft: Configuration,
     ) -> (Configuration, Option<ConfigurationScreen>) {
         for (i, head) in self.input.head.iter().enumerate() {
@@ -394,6 +402,13 @@ impl Store {
                 return (draft, Some(screen));
             }
         }
+
+        if let Some(screen) =
+            update_default_display_configuration(&mut draft, &mut self.input.speed)
+        {
+            return (draft, Some(screen));
+        }
+
         (draft, None)
     }
 
@@ -480,6 +495,24 @@ fn update_rewind_configuration(
     let tuple = (rewind_speed, fast_forward_speed);
     draft.rewind_speed[i] = tuple;
     Some(ConfigurationScreen::Rewind(tuple))
+}
+
+fn update_default_display_configuration(
+    draft: &mut Configuration,
+    speed: &mut Pot,
+) -> Option<ConfigurationScreen> {
+    let pre_amp_active = speed.activation_movement();
+    if !pre_amp_active {
+        return None;
+    }
+
+    if speed.value() < 0.5 {
+        draft.default_display_page = DisplayPage::Heads;
+        Some(ConfigurationScreen::DefaultScreen(0))
+    } else {
+        draft.default_display_page = DisplayPage::Position;
+        Some(ConfigurationScreen::DefaultScreen(1))
+    }
 }
 
 fn f32_to_index_of_4(x: f32) -> usize {
