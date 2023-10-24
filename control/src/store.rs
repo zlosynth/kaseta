@@ -507,10 +507,10 @@ fn update_default_display_configuration(
     }
 
     if speed.value() < 0.5 {
-        draft.default_display_page = DisplayPage::Heads;
+        draft.default_display_page = DisplayPage::Position;
         Some(ConfigurationScreen::DefaultScreen(0))
     } else {
-        draft.default_display_page = DisplayPage::Position;
+        draft.default_display_page = DisplayPage::Heads;
         Some(ConfigurationScreen::DefaultScreen(1))
     }
 }

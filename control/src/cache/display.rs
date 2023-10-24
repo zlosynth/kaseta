@@ -122,10 +122,7 @@ impl Default for Display {
                 None,
                 None,
                 None,
-                Some(Screen::Attribute(
-                    0,
-                    AttributeScreen::HeadsOverview(([false; 4], [false; 4])),
-                )),
+                Some(Screen::Attribute(0, AttributeScreen::Position(0))),
             ],
         }
     }
