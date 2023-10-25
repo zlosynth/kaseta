@@ -28,7 +28,8 @@ pub struct Delay {
     buffer: RingBuffer,
     heads: [Head; 4],
     length: f32,
-    cursor: f32,
+    impulse_cursor: f32,
+    position_cursor: f32,
     random_impulse: bool,
     filter_placement: FilterPlacement,
     wow_flutter_placement: WowFlutterPlacement,
@@ -131,7 +132,8 @@ impl Delay {
                 Head::default(),
             ],
             length: 0.0,
-            cursor: 0.0,
+            impulse_cursor: 0.0,
+            position_cursor: 0.0,
             random_impulse: false,
             filter_placement: FilterPlacement::default(),
             wow_flutter_placement: WowFlutterPlacement::default(),
@@ -246,7 +248,7 @@ impl Delay {
         }
 
         let impulse = self.consider_impulse(input_buffer.len(), random);
-        let new_position = self.calculate_position_index();
+        let new_position = self.update_position_index(input_buffer.len());
 
         Reaction {
             impulse,
@@ -260,10 +262,10 @@ impl Delay {
             return false;
         }
 
-        let initial_cursor = self.cursor;
-        self.cursor += traversed_samples as f32 / self.sample_rate;
-        while self.cursor > self.length {
-            self.cursor -= self.length;
+        let initial_cursor = self.impulse_cursor;
+        self.impulse_cursor += traversed_samples as f32 / self.sample_rate;
+        while self.impulse_cursor > self.length {
+            self.impulse_cursor -= self.length;
         }
 
         let mut impulse = false;
@@ -272,10 +274,10 @@ impl Delay {
                 continue;
             }
             let head_position = head.reader.impulse_position() / self.sample_rate;
-            let crossed_head = if initial_cursor > self.cursor {
-                head_position >= initial_cursor || head_position < self.cursor
+            let crossed_head = if initial_cursor > self.impulse_cursor {
+                head_position >= initial_cursor || head_position < self.impulse_cursor
             } else {
-                initial_cursor <= head_position && head_position < self.cursor
+                initial_cursor <= head_position && head_position < self.impulse_cursor
             };
             let chance = if self.random_impulse {
                 dice_to_bool(random.normal(), head.volume)
@@ -288,13 +290,21 @@ impl Delay {
         impulse
     }
 
-    fn calculate_position_index(&self) -> usize {
-        ((self.cursor / self.length) * 7.9999) as usize
+    fn update_position_index(&mut self, traversed_samples: usize) -> usize {
+        let traversed_in_seconds = traversed_samples as f32 / self.sample_rate;
+        let traversed_relative_to_length = traversed_in_seconds / self.length;
+        self.position_cursor += traversed_relative_to_length;
+        while self.position_cursor > 1.0 {
+            self.position_cursor -= 1.0;
+        }
+
+        (self.position_cursor * 7.9999) as usize
     }
 
     pub fn set_attributes(&mut self, attributes: Attributes) {
         if attributes.reset_impulse {
-            self.cursor = 0.0;
+            self.impulse_cursor = 0.0;
+            self.position_cursor = 0.0;
         }
         self.random_impulse = attributes.random_impulse;
         self.filter_placement = attributes.filter_placement;
