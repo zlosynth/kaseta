@@ -35,8 +35,8 @@ impl Store {
 
         let just_triggered_clock = clock_detector.map_or(false, |c| c.just_detected());
         let just_triggered_tap = self.cache.tap_detector.just_detected();
-        let just_triggered_position_reset = self.cache.reset_position;
-        self.cache.attributes.reset_impulse =
+        let just_triggered_position_reset = self.cache.requests.reset_position;
+        self.cache.requests.reset_impulse =
             just_triggered_clock || just_triggered_tap || just_triggered_position_reset;
 
         if let Some(clock_tempo) = clock_tempo {
@@ -52,7 +52,7 @@ impl Store {
                 DelayRange::Audio => self.speed_for_audio_range(),
             };
             if !self.cache.configuration.default_display_page.is_position()
-                || self.cache.paused_delay
+                || self.cache.attributes.paused_delay
             {
                 self.show_length_on_display(display);
             }

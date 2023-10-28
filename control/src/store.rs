@@ -302,9 +302,9 @@ impl Store {
             && self.input.latest_pot_activity() > self.input.button.held;
         if held_for_more_than_5_seconds {
             log::info!("Resetting the buffer");
-            self.cache.reset_buffer = true;
+            self.cache.requests.clear_buffer = true;
         } else {
-            self.cache.reset_buffer = false;
+            self.cache.requests.clear_buffer = false;
         }
     }
 
@@ -496,15 +496,15 @@ impl Store {
         if let Some(position_reset_control_index) = self.cache.configuration.position_reset_mapping
         {
             let control = &self.input.control[position_reset_control_index];
-            self.cache.reset_position = control.triggered();
+            self.cache.requests.reset_position = control.triggered();
         } else {
-            self.cache.reset_position = false;
+            self.cache.requests.reset_position = false;
         }
 
         if let Some(play_pause_control_index) = self.cache.configuration.play_pause_mapping {
             let control = &self.input.control[play_pause_control_index];
             if control.triggered() {
-                self.cache.paused_delay = !self.cache.paused_delay;
+                self.cache.attributes.paused_delay = !self.cache.attributes.paused_delay;
             }
         }
     }

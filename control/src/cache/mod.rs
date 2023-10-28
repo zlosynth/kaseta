@@ -39,9 +39,7 @@ pub struct Cache {
     pub clock_detectors: ClockDetectors,
     pub tap_detector: TapDetector,
     pub tapped_tempo: TappedTempo,
-    pub reset_buffer: bool,
-    pub reset_position: bool,
-    pub paused_delay: bool,
+    pub requests: Requests,
     pub attributes: Attributes,
     pub impulse_trigger: Trigger,
     pub impulse_led: Led,
@@ -161,7 +159,7 @@ pub struct Attributes {
     pub speed: f32,
     pub tone: f32,
     pub head: [AttributesHead; 4],
-    pub reset_impulse: bool,
+    pub paused_delay: bool,
 }
 
 #[derive(Clone, Copy, Debug, Default)]
@@ -171,6 +169,18 @@ pub struct AttributesHead {
     pub volume: f32,
     pub feedback: f32,
     pub pan: f32,
+}
+
+/// Transient requests for change of the internal state.
+///
+/// This is translated to DSP configuration request. Unlike `Attributes`,
+/// this does not describe the requested state, but a request for a change.
+#[derive(Debug, Default)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+pub struct Requests {
+    pub clear_buffer: bool,
+    pub reset_position: bool,
+    pub reset_impulse: bool,
 }
 
 impl Cache {
@@ -216,7 +226,7 @@ impl Cache {
             rewind: self.options.rewind,
             enable_oscillator: self.options.enable_oscillator,
             rewind_speed: self.configuration.rewind_speed(),
-            reset_impulse: self.attributes.reset_impulse,
+            reset_impulse: self.requests.reset_impulse,
             random_impulse: self.options.random_impulse,
             filter_placement: if self.options.filter_placement.is_input() {
                 0
@@ -232,8 +242,8 @@ impl Cache {
             } else {
                 2
             },
-            reset_buffer: self.reset_buffer,
-            paused_delay: self.paused_delay,
+            clear_buffer: self.requests.clear_buffer,
+            paused_delay: self.attributes.paused_delay,
         }
     }
 
