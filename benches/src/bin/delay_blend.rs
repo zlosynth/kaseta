@@ -120,6 +120,7 @@ fn main() -> ! {
                 filter_placement: FilterPlacement::Both,
                 wow_flutter_placement: WowFlutterPlacement::Both,
                 reset_buffer: false,
+                paused: false,
             });
             let mut input: [f32; BUFFER_SIZE] = random_buffer(&mut randomizer);
             let mut output_left: [f32; BUFFER_SIZE] = [0.0; BUFFER_SIZE];

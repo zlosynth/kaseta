@@ -41,7 +41,7 @@ pub enum ConfigurationScreen {
     Idle(u32),
     Rewind((usize, usize)),
     DefaultScreen(usize),
-    PositionResetMapping(Option<usize>),
+    ControlMapping(Option<usize>),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -238,8 +238,8 @@ fn ticked_dialog(menu: DialogScreen) -> DialogScreen {
             ConfigurationScreen::DefaultScreen(selection) => {
                 ticked_configuration_default_screen(selection)
             }
-            ConfigurationScreen::PositionResetMapping(mapping) => {
-                ticked_configuration_position_reset_mapping(mapping)
+            ConfigurationScreen::ControlMapping(mapping) => {
+                ticked_configuration_control_mapping(mapping)
             }
         },
         DialogScreen::Calibration(calibration) => match calibration {
@@ -263,8 +263,8 @@ fn ticked_configuration_default_screen(selection: usize) -> DialogScreen {
     DialogScreen::Configuration(ConfigurationScreen::DefaultScreen(selection))
 }
 
-fn ticked_configuration_position_reset_mapping(mapping: Option<usize>) -> DialogScreen {
-    DialogScreen::Configuration(ConfigurationScreen::PositionResetMapping(mapping))
+fn ticked_configuration_control_mapping(mapping: Option<usize>) -> DialogScreen {
+    DialogScreen::Configuration(ConfigurationScreen::ControlMapping(mapping))
 }
 
 fn ticked_calibration_1(i: usize, mut cycles: u32) -> DialogScreen {
@@ -394,7 +394,7 @@ fn leds_for_configuration(configuration: &ConfigurationScreen) -> [bool; 8] {
             leds
         }
         ConfigurationScreen::DefaultScreen(selection) => index_to_leds(*selection),
-        ConfigurationScreen::PositionResetMapping(mapping) => {
+        ConfigurationScreen::ControlMapping(mapping) => {
             let mut leds = [false; 8];
             if let Some(index) = mapping {
                 leds[*index] = true;

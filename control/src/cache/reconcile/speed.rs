@@ -51,7 +51,9 @@ impl Store {
                 DelayRange::Short => self.speed_for_short_range(),
                 DelayRange::Audio => self.speed_for_audio_range(),
             };
-            if !self.cache.configuration.default_display_page.is_position() {
+            if !self.cache.configuration.default_display_page.is_position()
+                || self.cache.paused_delay
+            {
                 self.show_length_on_display(display);
             }
             self.cache.attributes.speed = speed;

@@ -35,6 +35,7 @@ pub struct Delay {
     buffer_reset: BufferReset,
     compressor: [Compressor; 4],
     dc_blocker: [DCBlocker; 4],
+    playback_controls: PlayControls,
 }
 
 #[derive(Default, Debug)]
@@ -56,6 +57,7 @@ pub struct Attributes {
     pub filter_placement: FilterPlacement,
     pub wow_flutter_placement: WowFlutterPlacement,
     pub reset_buffer: bool,
+    pub paused: bool,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -109,6 +111,13 @@ pub struct Reaction {
     pub new_position: usize,
 }
 
+#[derive(Clone, Copy, Debug)]
+#[cfg_attr(feature = "defmt", derive(defmt::Format))]
+enum PlayControls {
+    Play,
+    Pause,
+}
+
 impl Delay {
     /// # Panics
     ///
@@ -148,6 +157,7 @@ impl Delay {
                 DCBlocker::default(),
                 DCBlocker::default(),
             ],
+            playback_controls: PlayControls::default(),
         }
     }
 
@@ -193,49 +203,51 @@ impl Delay {
             wow_flutter.dry_process(input_buffer);
         }
 
-        for x in input_buffer.iter() {
-            self.buffer.write(*x);
-        }
-
-        for (i, (l, r)) in output_buffer_left
-            .iter_mut()
-            .zip(output_buffer_right)
-            .enumerate()
-        {
-            // NOTE: Must read from back, so heads can move from old to new.
-            let age = buffer_len - i;
-
-            let mut offset = age as f32;
-            if self.wow_flutter_placement.is_read() {
-                offset += wow_flutter_delays[i];
+        if self.playback_controls.is_playing() {
+            for x in input_buffer.iter() {
+                self.buffer.write(*x);
             }
 
-            let mut feedback: f32 = self
-                .heads
+            for (i, (l, r)) in output_buffer_left
                 .iter_mut()
-                .map(|head| head.reader.read(&self.buffer, offset) * head.feedback)
+                .zip(output_buffer_right)
                 .enumerate()
-                .map(|(i, x)| self.compressor[i].process(self.dc_blocker[i].tick(x)))
-                .sum();
-            if self.filter_placement.is_feedback() {
-                feedback = tone.tone_2.tick(feedback);
+            {
+                // NOTE: Must read from back, so heads can move from old to new.
+                let age = buffer_len - i;
+
+                let mut offset = age as f32;
+                if self.wow_flutter_placement.is_read() {
+                    offset += wow_flutter_delays[i];
+                }
+
+                let mut feedback: f32 = self
+                    .heads
+                    .iter_mut()
+                    .map(|head| head.reader.read(&self.buffer, offset) * head.feedback)
+                    .enumerate()
+                    .map(|(i, x)| self.compressor[i].process(self.dc_blocker[i].tick(x)))
+                    .sum();
+                if self.filter_placement.is_feedback() {
+                    feedback = tone.tone_2.tick(feedback);
+                }
+                *self.buffer.peek_mut(age) += feedback;
+
+                // NOTE: Must read again now when feedback was written back.
+                let mut left = 0.0;
+                let mut right = 0.0;
+                for head in &mut self.heads {
+                    let value = head.reader.read(&self.buffer, offset);
+                    let amplified = value * head.volume;
+                    left += amplified * (1.0 - head.pan);
+                    right += amplified * head.pan;
+                }
+
+                let amp = self.buffer_reset.calculate_output_amplitude(i, buffer_len);
+
+                *l = left * amp;
+                *r = right * amp;
             }
-            *self.buffer.peek_mut(age) += feedback;
-
-            // NOTE: Must read again now when feedback was written back.
-            let mut left = 0.0;
-            let mut right = 0.0;
-            for head in &mut self.heads {
-                let value = head.reader.read(&self.buffer, offset);
-                let amplified = value * head.volume;
-                left += amplified * (1.0 - head.pan);
-                right += amplified * head.pan;
-            }
-
-            let amp = self.buffer_reset.calculate_output_amplitude(i, buffer_len);
-
-            *l = left * amp;
-            *r = right * amp;
         }
 
         if let Some(ResetSelector { index, block_size }) = self.buffer_reset.tick() {
@@ -245,7 +257,11 @@ impl Delay {
             wow_flutter.buffer_reset(index * wow_flutter_chunk, wow_flutter_chunk);
         }
 
-        let impulse = self.consider_impulse(input_buffer.len(), random);
+        let impulse = if self.playback_controls.is_playing() {
+            self.consider_impulse(input_buffer.len(), random)
+        } else {
+            false
+        };
         let new_position = self.calculate_position_index();
 
         Reaction {
@@ -316,6 +332,12 @@ impl Delay {
         if attributes.reset_buffer {
             self.buffer_reset = BufferReset::Armed;
         }
+
+        self.playback_controls = if attributes.paused {
+            PlayControls::Pause
+        } else {
+            PlayControls::Play
+        };
     }
 }
 
@@ -425,5 +447,17 @@ impl BufferReset {
             BufferReset::Disarmed => BufferReset::Disarmed,
         };
         reset_request
+    }
+}
+
+impl Default for PlayControls {
+    fn default() -> Self {
+        Self::Pause
+    }
+}
+
+impl PlayControls {
+    fn is_playing(self) -> bool {
+        matches!(self, Self::Play)
     }
 }

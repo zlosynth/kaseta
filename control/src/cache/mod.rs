@@ -41,6 +41,7 @@ pub struct Cache {
     pub tapped_tempo: TappedTempo,
     pub reset_buffer: bool,
     pub reset_position: bool,
+    pub paused_delay: bool,
     pub attributes: Attributes,
     pub impulse_trigger: Trigger,
     pub impulse_led: Led,
@@ -232,6 +233,7 @@ impl Cache {
                 2
             },
             reset_buffer: self.reset_buffer,
+            paused_delay: self.paused_delay,
         }
     }
 

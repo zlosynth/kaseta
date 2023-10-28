@@ -203,6 +203,9 @@ impl Store {
         if let Some(index) = self.cache.configuration.position_reset_mapping {
             let _: Result<_, _> = controls.insert(index);
         }
+        if let Some(index) = self.cache.configuration.play_pause_mapping {
+            let _: Result<_, _> = controls.insert(index);
+        }
     }
 
     fn plugged_and_unplugged_controls(&self) -> (Vec<usize, 4>, Vec<usize, 4>) {
@@ -231,6 +234,11 @@ impl Store {
     fn enqueue_controls(&mut self, plugged_controls: &Vec<usize, 4>) {
         for i in plugged_controls {
             if let Some(index) = self.cache.configuration.position_reset_mapping {
+                if index == *i {
+                    continue;
+                }
+            }
+            if let Some(index) = self.cache.configuration.play_pause_mapping {
                 if index == *i {
                     continue;
                 }
@@ -429,6 +437,10 @@ impl Store {
             return (draft, Some(screen));
         }
 
+        if let Some(screen) = update_play_pause_mapping(&mut draft, &mut self.input.head[0].pan) {
+            return (draft, Some(screen));
+        }
+
         (draft, None)
     }
 
@@ -488,6 +500,13 @@ impl Store {
         } else {
             self.cache.reset_position = false;
         }
+
+        if let Some(play_pause_control_index) = self.cache.configuration.play_pause_mapping {
+            let control = &self.input.control[play_pause_control_index];
+            if control.triggered() {
+                self.cache.paused_delay = !self.cache.paused_delay;
+            }
+        }
     }
 }
 
@@ -524,14 +543,14 @@ fn update_rewind_configuration(
 
 fn update_default_display_configuration(
     draft: &mut Configuration,
-    speed: &mut Pot,
+    pot: &mut Pot,
 ) -> Option<ConfigurationScreen> {
-    let pre_amp_active = speed.activation_movement();
-    if !pre_amp_active {
+    let pot_active = pot.activation_movement();
+    if !pot_active {
         return None;
     }
 
-    if speed.value() < 0.5 {
+    if pot.value() < 0.5 {
         draft.default_display_page = DisplayPage::Position;
         Some(ConfigurationScreen::DefaultScreen(0))
     } else {
@@ -542,22 +561,43 @@ fn update_default_display_configuration(
 
 fn update_position_reset_mapping(
     draft: &mut Configuration,
-    tone: &mut Pot,
+    pot: &mut Pot,
 ) -> Option<ConfigurationScreen> {
-    let tone_active = tone.activation_movement();
-    if !tone_active {
+    let pot_active = pot.activation_movement();
+    if !pot_active {
         return None;
     }
 
-    let tone_value = tone.value();
-    if tone_value < 1.0 / 5.0 {
+    let pot_value = pot.value();
+    if pot_value < 1.0 / 5.0 {
         draft.position_reset_mapping = None;
-        Some(ConfigurationScreen::PositionResetMapping(None))
+        Some(ConfigurationScreen::ControlMapping(None))
     } else {
-        let phase = (tone_value - 1.0 / 4.0) * (5.0 / 4.0);
+        let phase = (pot_value - 1.0 / 4.0) * (5.0 / 4.0);
         let index = (phase * 3.999) as usize;
         draft.position_reset_mapping = Some(index);
-        Some(ConfigurationScreen::PositionResetMapping(Some(index)))
+        Some(ConfigurationScreen::ControlMapping(Some(index)))
+    }
+}
+
+fn update_play_pause_mapping(
+    draft: &mut Configuration,
+    pot: &mut Pot,
+) -> Option<ConfigurationScreen> {
+    let pot_active = pot.activation_movement();
+    if !pot_active {
+        return None;
+    }
+
+    let pot_value = pot.value();
+    if pot_value < 1.0 / 5.0 {
+        draft.play_pause_mapping = None;
+        Some(ConfigurationScreen::ControlMapping(None))
+    } else {
+        let phase = (pot_value - 1.0 / 4.0) * (5.0 / 4.0);
+        let index = (phase * 3.999) as usize;
+        draft.play_pause_mapping = Some(index);
+        Some(ConfigurationScreen::ControlMapping(Some(index)))
     }
 }
 
