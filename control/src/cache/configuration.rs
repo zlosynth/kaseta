@@ -9,6 +9,7 @@
 pub struct Configuration {
     pub rewind_speed: [(usize, usize); 4],
     pub default_display_page: DisplayPage,
+    pub position_reset_mapping: PositionResetMapping,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -17,6 +18,8 @@ pub enum DisplayPage {
     Heads,
     Position,
 }
+
+pub type PositionResetMapping = Option<usize>;
 
 impl Configuration {
     pub(crate) fn rewind_speed(&self) -> [(f32, f32); 4] {
@@ -29,6 +32,7 @@ impl Default for Configuration {
         Self {
             rewind_speed: [(0, 0), (1, 1), (2, 2), (3, 3)],
             default_display_page: DisplayPage::Heads,
+            position_reset_mapping: None,
         }
     }
 }

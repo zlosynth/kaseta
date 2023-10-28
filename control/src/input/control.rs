@@ -37,11 +37,15 @@ impl Control {
         self.buffer.read_raw()
     }
 
-    pub fn previous_value_raw(&self) -> f32 {
+    pub fn triggered(&self) -> bool {
+        self.previous_value_raw() <= 0.9 && self.value_raw() > 0.9 && self.traveled() > 0.3
+    }
+
+    fn previous_value_raw(&self) -> f32 {
         self.buffer.read_previous_raw()
     }
 
-    pub fn traveled(&self) -> f32 {
+    fn traveled(&self) -> f32 {
         self.buffer.traveled()
     }
 }

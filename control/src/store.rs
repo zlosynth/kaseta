@@ -4,7 +4,7 @@
 //! different frequencies, passing messages from one to another. However, parts
 //! of it may be useful in software as well.
 
-use heapless::Vec;
+use heapless::{FnvIndexSet, Vec};
 use kaseta_dsp::processor::{Attributes as DSPAttributes, Reaction as DSPReaction};
 
 use crate::action::{ControlAction, Queue};
@@ -149,12 +149,7 @@ impl Store {
     fn converge_internal_state(&mut self) -> Option<Save> {
         let mut needs_save = false;
 
-        let empty_controls = self.empty_controls();
-        self.cache.unmap_controls(&empty_controls, &mut needs_save);
-
-        let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
-        self.dequeue_controls(&unplugged_controls);
-        self.enqueue_controls(&plugged_controls);
+        self.reconcile_controls(&mut needs_save);
 
         match self.state {
             State::Normal => {
@@ -183,16 +178,31 @@ impl Store {
         }
     }
 
-    fn empty_controls(&self) -> Vec<usize, 4> {
-        let mut disconnected = Vec::new();
+    fn reconcile_controls(&mut self, needs_save: &mut bool) {
+        let mut controls_to_unmap = FnvIndexSet::<_, 4>::new();
+        self.insert_non_plugged_controls(&mut controls_to_unmap);
+        self.insert_reserved_controls(&mut controls_to_unmap);
+        self.cache.unmap_controls(&controls_to_unmap, needs_save);
+
+        let (plugged_controls, unplugged_controls) = self.plugged_and_unplugged_controls();
+        self.dequeue_controls(&unplugged_controls);
+        self.enqueue_controls(&plugged_controls);
+    }
+
+    fn insert_non_plugged_controls(&self, controls: &mut FnvIndexSet<usize, 4>) {
         for (i, cv) in self.input.control.iter().enumerate() {
             if !cv.is_plugged {
                 // NOTE: This is safe since the number of controls is equal to the
-                // size of the Vec.
-                let _: Result<_, _> = disconnected.push(i);
+                // size of the Set.
+                let _: Result<_, _> = controls.insert(i);
             }
         }
-        disconnected
+    }
+
+    fn insert_reserved_controls(&self, controls: &mut FnvIndexSet<usize, 4>) {
+        if let Some(index) = self.cache.configuration.position_reset_mapping {
+            let _: Result<_, _> = controls.insert(index);
+        }
     }
 
     fn plugged_and_unplugged_controls(&self) -> (Vec<usize, 4>, Vec<usize, 4>) {
@@ -220,6 +230,12 @@ impl Store {
 
     fn enqueue_controls(&mut self, plugged_controls: &Vec<usize, 4>) {
         for i in plugged_controls {
+            if let Some(index) = self.cache.configuration.position_reset_mapping {
+                if index == *i {
+                    continue;
+                }
+            }
+
             self.queue.remove_control(*i);
             if self.input.button.pressed {
                 self.queue.push(ControlAction::Calibrate(*i));
@@ -409,6 +425,10 @@ impl Store {
             return (draft, Some(screen));
         }
 
+        if let Some(screen) = update_position_reset_mapping(&mut draft, &mut self.input.tone) {
+            return (draft, Some(screen));
+        }
+
         (draft, None)
     }
 
@@ -456,12 +476,17 @@ impl Store {
                 self.cache.clock_detectors[i].reset();
             }
 
-            let triggered = control.previous_value_raw() <= 0.9
-                && control.value_raw() > 0.9
-                && control.traveled() > 0.3;
-            if triggered {
+            if control.triggered() {
                 self.cache.clock_detectors[i].trigger();
             }
+        }
+
+        if let Some(position_reset_control_index) = self.cache.configuration.position_reset_mapping
+        {
+            let control = &self.input.control[position_reset_control_index];
+            self.cache.reset_position = control.triggered();
+        } else {
+            self.cache.reset_position = false;
         }
     }
 }
@@ -512,6 +537,27 @@ fn update_default_display_configuration(
     } else {
         draft.default_display_page = DisplayPage::Heads;
         Some(ConfigurationScreen::DefaultScreen(1))
+    }
+}
+
+fn update_position_reset_mapping(
+    draft: &mut Configuration,
+    tone: &mut Pot,
+) -> Option<ConfigurationScreen> {
+    let tone_active = tone.activation_movement();
+    if !tone_active {
+        return None;
+    }
+
+    let tone_value = tone.value();
+    if tone_value < 1.0 / 5.0 {
+        draft.position_reset_mapping = None;
+        Some(ConfigurationScreen::PositionResetMapping(None))
+    } else {
+        let phase = (tone_value - 1.0 / 4.0) * (5.0 / 4.0);
+        let index = (phase * 3.999) as usize;
+        draft.position_reset_mapping = Some(index);
+        Some(ConfigurationScreen::PositionResetMapping(Some(index)))
     }
 }
 

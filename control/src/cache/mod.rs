@@ -9,7 +9,7 @@ mod reconcile;
 mod tap_clock_detector;
 mod trigger;
 
-use heapless::Vec;
+use heapless::FnvIndexSet;
 use kaseta_dsp::processor::{Attributes as DSPAttributes, AttributesHead as DSPAttributesHead};
 
 use self::calibration::Calibration;
@@ -40,6 +40,7 @@ pub struct Cache {
     pub tap_detector: TapDetector,
     pub tapped_tempo: TappedTempo,
     pub reset_buffer: bool,
+    pub reset_position: bool,
     pub attributes: Attributes,
     pub impulse_trigger: Trigger,
     pub impulse_led: Led,
@@ -261,7 +262,11 @@ impl Cache {
         output
     }
 
-    pub fn unmap_controls(&mut self, unplugged_controls: &Vec<usize, 4>, needs_save: &mut bool) {
+    pub fn unmap_controls(
+        &mut self,
+        unplugged_controls: &FnvIndexSet<usize, 4>,
+        needs_save: &mut bool,
+    ) {
         for i in unplugged_controls {
             let attribute = self.mapping[*i];
             if !attribute.is_none() {

@@ -7,6 +7,7 @@ backwards compatibility.
 ## Unreleased
 
 * LED can be configured to visualize the current position within the loop.
+* Allow reset of the loop position through a control input.
 
 ## 1.2.0
 

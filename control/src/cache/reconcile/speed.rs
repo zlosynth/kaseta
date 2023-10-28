@@ -35,7 +35,9 @@ impl Store {
 
         let just_triggered_clock = clock_detector.map_or(false, |c| c.just_detected());
         let just_triggered_tap = self.cache.tap_detector.just_detected();
-        self.cache.attributes.reset_impulse = just_triggered_clock || just_triggered_tap;
+        let just_triggered_position_reset = self.cache.reset_position;
+        self.cache.attributes.reset_impulse =
+            just_triggered_clock || just_triggered_tap || just_triggered_position_reset;
 
         if let Some(clock_tempo) = clock_tempo {
             let c_i = f32_to_usize_5(self.input.speed.value());
