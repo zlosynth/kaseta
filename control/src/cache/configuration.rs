@@ -10,7 +10,7 @@ pub struct Configuration {
     pub rewind_speed: [(usize, usize); 4],
     pub default_display_page: DisplayPage,
     pub position_reset_mapping: PositionResetMapping,
-    pub play_pause_mapping: PlayPauseMapping,
+    pub pause_resume_mapping: PauseResumeMapping,
     pub tap_interval_denominator: usize,
 }
 
@@ -23,7 +23,7 @@ pub enum DisplayPage {
 
 pub type PositionResetMapping = Option<usize>;
 
-pub type PlayPauseMapping = Option<usize>;
+pub type PauseResumeMapping = Option<usize>;
 
 impl Configuration {
     pub(crate) fn rewind_speed(&self) -> [(f32, f32); 4] {
@@ -38,7 +38,7 @@ impl Default for Configuration {
             // TODO: Change this to position. Make sure there is fallback set from the get go
             default_display_page: DisplayPage::Heads,
             position_reset_mapping: None,
-            play_pause_mapping: None,
+            pause_resume_mapping: None,
             tap_interval_denominator: 1,
         }
     }

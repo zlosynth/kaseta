@@ -203,7 +203,7 @@ impl Store {
         if let Some(index) = self.cache.configuration.position_reset_mapping {
             let _: Result<_, _> = controls.insert(index);
         }
-        if let Some(index) = self.cache.configuration.play_pause_mapping {
+        if let Some(index) = self.cache.configuration.pause_resume_mapping {
             let _: Result<_, _> = controls.insert(index);
         }
     }
@@ -238,7 +238,7 @@ impl Store {
                     continue;
                 }
             }
-            if let Some(index) = self.cache.configuration.play_pause_mapping {
+            if let Some(index) = self.cache.configuration.pause_resume_mapping {
                 if index == *i {
                     continue;
                 }
@@ -437,7 +437,7 @@ impl Store {
             return (draft, Some(screen));
         }
 
-        if let Some(screen) = update_play_pause_mapping(&mut draft, &mut self.input.head[0].pan) {
+        if let Some(screen) = update_pause_resume_mapping(&mut draft, &mut self.input.head[0].pan) {
             return (draft, Some(screen));
         }
 
@@ -507,8 +507,8 @@ impl Store {
             self.cache.requests.reset_position = false;
         }
 
-        if let Some(play_pause_control_index) = self.cache.configuration.play_pause_mapping {
-            let control = &self.input.control[play_pause_control_index];
+        if let Some(pause_resume_control_index) = self.cache.configuration.pause_resume_mapping {
+            let control = &self.input.control[pause_resume_control_index];
             if control.triggered() {
                 self.cache.attributes.paused_delay = !self.cache.attributes.paused_delay;
             }
@@ -586,7 +586,7 @@ fn update_position_reset_mapping(
     }
 }
 
-fn update_play_pause_mapping(
+fn update_pause_resume_mapping(
     draft: &mut Configuration,
     pot: &mut Pot,
 ) -> Option<ConfigurationScreen> {
@@ -597,12 +597,12 @@ fn update_play_pause_mapping(
 
     let pot_value = pot.value();
     if pot_value < 1.0 / 5.0 {
-        draft.play_pause_mapping = None;
+        draft.pause_resume_mapping = None;
         Some(ConfigurationScreen::ControlMapping(None))
     } else {
         let phase = (pot_value - 1.0 / 4.0) * (5.0 / 4.0);
         let index = (phase * 3.999) as usize;
-        draft.play_pause_mapping = Some(index);
+        draft.pause_resume_mapping = Some(index);
         Some(ConfigurationScreen::ControlMapping(Some(index)))
     }
 }
