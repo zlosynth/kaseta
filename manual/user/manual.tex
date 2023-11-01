@@ -553,10 +553,10 @@ to exit the menu.
 
 Select what should be visualized on the display when pots are inactive.
 
-\textbf{Position within the loop} -- the LEDs blink in round-robin fashion,
-  representing the current position within the loop. This is the default.
+\textbf{1. Position within the loop} -- the LEDs blink in round-robin fashion,
+  representing the current position within the delay loop. This is the default.
 
-\textbf{Active heads} -- the top and bottom rows of LEDs represent heads with
+\textbf{2. Active heads} -- the top and bottom rows of LEDs represent heads with
   active playback and feedback respectively.
 
 While in the configuration menu, turn the SPEED knob to select the default page.
@@ -581,6 +581,37 @@ delay retains its current position, and it won't record or play back any signal.
 While in the configuration menu, turn the first PAN knob to select a dedicated
 control input for this mapping. Turning it all the way to the left will disable
 this mapping.
+
+\end{minipage}%
+\begin{minipage}{0.05\textwidth}
+\phantom{ }
+\end{minipage}%
+% Right column
+\begin{minipage}[t]{0.45\textwidth}
+\setlength{\parskip}{6pt}
+
+\subsection{Tap/clock-in interval}
+
+Configure the length of the tap/clock-in interval. Using a shorter interval
+makes dialing in longer delay lengths easier. Setting the right interval
+may also provide more intuitive control of tempo for cases where you count
+beats and bars.
+
+\textbf{1. 1/16 of the delay length} -- the delay is four times as long as the
+  the time it takes to tap-in. This is as if you counted-in 4 bars long
+  sequence.
+
+\textbf{2. 1/8 of the delay length} -- the delay is twice as long as the time
+  it takes to tap-in. This is as if you counted-in 2 bars long sequence.
+
+\textbf{3. 1/4 of the delay length} -- the length of the delay is the same as
+  the total time it takes to tap-in.
+
+\textbf{4. Full delay length} -- the length of the delay is equal to the
+  interval between each of the taps.
+
+While in the configuration menu, turn the second PAN knob to select the desired
+interval.
 
 \end{minipage}
 
@@ -701,7 +732,8 @@ ideas to create this module.
    & New filter placements \\
   v1.3 & The status LED blinks three times \\
    & Default display can be customized \\
-   & Delay position can be reset
+   & Delay position can be reset \\
+   & Configure the tap/delay length ratio
 \end{tabular}
 
 \end{minipage}

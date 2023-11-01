@@ -11,6 +11,7 @@ pub struct Configuration {
     pub default_display_page: DisplayPage,
     pub position_reset_mapping: PositionResetMapping,
     pub play_pause_mapping: PlayPauseMapping,
+    pub tap_interval_denominator: usize,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -38,6 +39,7 @@ impl Default for Configuration {
             default_display_page: DisplayPage::Heads,
             position_reset_mapping: None,
             play_pause_mapping: None,
+            tap_interval_denominator: 1,
         }
     }
 }

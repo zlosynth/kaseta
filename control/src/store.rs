@@ -441,6 +441,12 @@ impl Store {
             return (draft, Some(screen));
         }
 
+        if let Some(screen) =
+            update_tap_interval_denominator(&mut draft, &mut self.input.head[1].pan)
+        {
+            return (draft, Some(screen));
+        }
+
         (draft, None)
     }
 
@@ -599,6 +605,28 @@ fn update_play_pause_mapping(
         draft.play_pause_mapping = Some(index);
         Some(ConfigurationScreen::ControlMapping(Some(index)))
     }
+}
+
+fn update_tap_interval_denominator(
+    draft: &mut Configuration,
+    pot: &mut Pot,
+) -> Option<ConfigurationScreen> {
+    let pot_active = pot.activation_movement();
+    if !pot_active {
+        return None;
+    }
+
+    let pot_value = pot.value();
+    let index = (pot_value * 3.999) as usize;
+    let denominator = match index {
+        0 => 16,
+        1 => 8,
+        2 => 4,
+        3 => 1,
+        _ => unreachable!(),
+    };
+    draft.tap_interval_denominator = denominator;
+    Some(ConfigurationScreen::TapIntervalDenominator(denominator))
 }
 
 fn f32_to_index_of_4(x: f32) -> usize {

@@ -42,6 +42,7 @@ pub enum ConfigurationScreen {
     Rewind((usize, usize)),
     DefaultScreen(usize),
     ControlMapping(Option<usize>),
+    TapIntervalDenominator(usize),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -241,6 +242,9 @@ fn ticked_dialog(menu: DialogScreen) -> DialogScreen {
             ConfigurationScreen::ControlMapping(mapping) => {
                 ticked_configuration_control_mapping(mapping)
             }
+            ConfigurationScreen::TapIntervalDenominator(denominator) => {
+                ticked_tap_interval_denominator(denominator)
+            }
         },
         DialogScreen::Calibration(calibration) => match calibration {
             CalibrationScreen::SelectOctave1(i, cycles) => ticked_calibration_1(i, cycles),
@@ -265,6 +269,10 @@ fn ticked_configuration_default_screen(selection: usize) -> DialogScreen {
 
 fn ticked_configuration_control_mapping(mapping: Option<usize>) -> DialogScreen {
     DialogScreen::Configuration(ConfigurationScreen::ControlMapping(mapping))
+}
+
+fn ticked_tap_interval_denominator(denominator: usize) -> DialogScreen {
+    DialogScreen::Configuration(ConfigurationScreen::TapIntervalDenominator(denominator))
 }
 
 fn ticked_calibration_1(i: usize, mut cycles: u32) -> DialogScreen {
@@ -401,6 +409,16 @@ fn leds_for_configuration(configuration: &ConfigurationScreen) -> [bool; 8] {
                 leds[*index + 4] = true;
             }
             leds
+        }
+        ConfigurationScreen::TapIntervalDenominator(denominator) => {
+            let index = match *denominator {
+                16 => 0,
+                8 => 1,
+                4 => 2,
+                1 => 3,
+                _ => unreachable!(),
+            };
+            index_to_leds(index)
         }
     }
 }
