@@ -10,7 +10,9 @@ impl Store {
             self.reconcile_position(i);
         }
 
-        if self.cache.configuration.default_display_page.is_heads() {
+        let default_display_heads = self.cache.configuration.default_display_page.is_heads();
+        let in_audio_range = self.cache.options.delay_range.is_audio();
+        if default_display_heads || in_audio_range {
             self.set_screen_for_heads_overview();
         }
 

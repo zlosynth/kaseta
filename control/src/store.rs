@@ -124,7 +124,9 @@ impl Store {
             self.cache.display.set_clipping();
         }
 
-        if self.cache.configuration.default_display_page.is_position() {
+        let default_display_position = self.cache.configuration.default_display_page.is_position();
+        let in_audio_range = self.cache.options.delay_range.is_audio();
+        if default_display_position || !in_audio_range {
             self.cache
                 .display
                 .set_fallback_attribute(AttributeScreen::Position(dsp_reaction.new_position));

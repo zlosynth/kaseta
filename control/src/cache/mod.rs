@@ -87,6 +87,12 @@ impl Default for DelayRange {
     }
 }
 
+impl DelayRange {
+    pub fn is_audio(&self) -> bool {
+        matches!(self, Self::Audio)
+    }
+}
+
 /// Placement of the low/high pass filter.
 #[derive(Clone, Copy, Debug, PartialEq)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
