@@ -10,7 +10,7 @@ publish = false
 libm = "0.2"
 defmt = { version = "0.3", optional = true }
 sirena = { git = "https://github.com/zlosynth/sirena", rev = "0ba4c32" }
-micromath = "2.0"
+micromath = "2.1"
 
 [dev-dependencies]
 approx = "0.4"

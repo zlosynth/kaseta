@@ -202,20 +202,11 @@ fn reflect_inertia_on_relative_speed(
 
 trait F32Ext {
     fn pow2(self) -> Self;
-    fn signum(self) -> Self;
     fn is_zero(&self) -> bool;
     fn relative_eq(self, other: f32, epsilon: f32) -> bool;
 }
 
 impl F32Ext for f32 {
-    fn signum(self) -> f32 {
-        if self.is_sign_positive() {
-            1.0
-        } else {
-            -1.0
-        }
-    }
-
     fn pow2(self) -> f32 {
         self * self
     }
