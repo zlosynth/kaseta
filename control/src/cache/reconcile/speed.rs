@@ -53,11 +53,10 @@ impl Store {
                 DelayRange::Short => self.speed_for_short_range(),
                 DelayRange::Audio => self.speed_for_audio_range(),
             };
-            // TODO: Remove paused delay condition - instead show paused animation
             let default_display_position =
                 self.cache.configuration.default_display_page.is_position();
             let in_audio_range = self.cache.options.delay_range.is_audio();
-            if !default_display_position || in_audio_range || self.cache.attributes.paused_delay {
+            if !default_display_position || in_audio_range {
                 self.show_length_on_display(display);
             }
             self.cache.attributes.speed = speed;

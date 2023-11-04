@@ -513,6 +513,13 @@ impl Store {
             let control = &self.input.control[pause_resume_control_index];
             if control.triggered() {
                 self.cache.attributes.paused_delay = !self.cache.attributes.paused_delay;
+                if self.cache.attributes.paused_delay
+                    && self.cache.configuration.pause_resume_mapping.is_some()
+                {
+                    self.cache.display.set_paused();
+                } else {
+                    self.cache.display.reset_paused();
+                }
             }
         }
     }

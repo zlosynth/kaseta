@@ -7,7 +7,7 @@ use core::mem;
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Display {
-    pub prioritized: [Option<Screen>; 6],
+    pub prioritized: [Option<Screen>; 7],
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -18,6 +18,7 @@ pub enum Screen {
     AltAttribute(u32, AltAttributeScreen),
     Attribute(u32, AttributeScreen),
     Clipping(u32),
+    Paused(u32),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -124,6 +125,7 @@ impl Default for Display {
                 None,
                 None,
                 None,
+                None,
                 Some(Screen::Attribute(0, AttributeScreen::Position(0))),
             ],
         }
@@ -196,8 +198,19 @@ impl Display {
         }
     }
 
+    pub fn set_paused(&mut self) {
+        match self.prioritized[5] {
+            Some(Screen::Clipping(_)) => (),
+            _ => self.set_screen(5, Screen::Paused(0)),
+        }
+    }
+
+    pub fn reset_paused(&mut self) {
+        self.reset_screen(5);
+    }
+
     pub fn set_fallback_attribute(&mut self, attribute: AttributeScreen) {
-        self.set_screen(5, Screen::Attribute(0, attribute));
+        self.set_screen(6, Screen::Attribute(0, attribute));
     }
 
     fn set_screen(&mut self, priority: usize, screen: Screen) {
@@ -217,6 +230,7 @@ impl Screen {
             Self::AltAttribute(_, alt_attribute) => leds_for_alt_attribute(*alt_attribute),
             Self::Attribute(_, attribute) => leds_for_attribute(*attribute),
             Self::Clipping(cycles) => leds_for_clipping(*cycles),
+            Self::Paused(cycles) => leds_for_paused(*cycles),
         }
     }
 
@@ -227,6 +241,7 @@ impl Screen {
             Screen::AltAttribute(age, alt_attribute) => ticked_alt_attribute(age, alt_attribute),
             Screen::Attribute(age, attribute) => ticked_attribute(age, attribute),
             Screen::Clipping(age) => ticked_clipping(age),
+            Screen::Paused(cycles) => ticked_paused(cycles),
         }
     }
 }
@@ -319,6 +334,11 @@ fn ticked_clipping(age: u32) -> Option<Screen> {
     } else {
         Some(Screen::Clipping(age + 1))
     }
+}
+
+fn ticked_paused(mut cycles: u32) -> Option<Screen> {
+    cycles = if cycles > 240 * 8 { 0 } else { cycles + 1 };
+    Some(Screen::Paused(cycles))
 }
 
 fn leds_for_failure(cycles: u32) -> [bool; 8] {
@@ -479,6 +499,20 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
         AttributeScreen::Feedback(position, phase) => feedback_to_leds(position, phase),
         AttributeScreen::Pan(position, phase) => pan_to_leds(position, phase),
     }
+}
+
+fn leds_for_paused(cycles: u32) -> [bool; 8] {
+    const INTERVAL: u32 = 240;
+    let mut leds = [false; 8];
+    let segment = cycles / INTERVAL;
+    let on = segment == 0 || segment == 2;
+    if on {
+        leds[1] = true;
+        leds[2] = true;
+        leds[5] = true;
+        leds[6] = true;
+    }
+    leds
 }
 
 fn phase_to_leds(phase: f32) -> [bool; 8] {
