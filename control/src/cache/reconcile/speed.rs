@@ -46,6 +46,7 @@ impl Store {
         } else if let Some(tapped_tempo) = self.cache.tapped_tempo {
             self.cache.attributes.speed =
                 tapped_tempo * self.cache.configuration.tap_interval_denominator as f32;
+            self.cache.attributes.paused_delay = false;
         } else {
             let (speed, display) = match self.cache.options.delay_range {
                 DelayRange::Long => self.speed_for_long_range(),
