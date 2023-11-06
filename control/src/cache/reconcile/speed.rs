@@ -42,8 +42,7 @@ impl Store {
         if let Some(clock_tempo) = clock_tempo {
             let c_i = f32_to_usize_5(self.input.speed.value());
             let coefficient = [1.0, 1.0 / 2.0, 1.0 / 4.0, 1.0 / 8.0, 1.0 / 16.0][c_i];
-            self.cache.attributes.speed = ((clock_tempo as f32 / 1000.0) * coefficient)
-                * self.cache.configuration.tap_interval_denominator as f32;
+            self.cache.attributes.speed = (clock_tempo as f32 / 1000.0) * coefficient;
         } else if let Some(tapped_tempo) = self.cache.tapped_tempo {
             self.cache.attributes.speed =
                 tapped_tempo * self.cache.configuration.tap_interval_denominator as f32;
