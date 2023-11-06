@@ -555,14 +555,14 @@ Select what should be visualized on the display when pots are inactive.
 
 \textbf{1. Position within the loop} -- the LEDs blink in round-robin fashion,
   representing the current position within the delay loop. Note that this mode
-  is not available when using delay in the audio range. This is the default.
+  is not active when using delay in the audio range. This is the default.
 
-\textbf{2. Active heads} -- the top and bottom rows of LEDs represent heads with
+\textbf{2. Active heads} -- the top and bottom row of LEDs represent heads with
   active playback and feedback respectively.
 
 While in the configuration menu, turn the SPEED knob to select the default page.
 
-\subsection{Position reset trigger}
+\subsection{Position reset trigger} \label{section:configure-reset}
 
 Assign one of the control inputs to the delay position reset. When triggered,
 the tape loop and the impulse output sequence are brought to their beginning.
@@ -574,7 +574,7 @@ While in the configuration menu, turn the TONE knob to select a dedicated
 control input for this mapping. Turning it all the way to the left will disable
 this mapping.
 
-\subsection{Pause/resume trigger}
+\subsection{Pause/resume trigger} \label{section:configure-pause}
 
 Assign one of the control inputs for pause/resume of the delay line. When
 paused, delay retains its current position, and it won't record or play back any
@@ -592,7 +592,7 @@ this mapping.
 \begin{minipage}[t]{0.45\textwidth}
 \setlength{\parskip}{6pt}
 
-\subsection{Tap/clock-in interval}
+\subsection{Tap/clock-in interval} \label{section:configure-tap-interval}
 
 Configure the length of the tap/clock-in interval. Using a shorter interval
 makes dialing in longer delay lengths easier. Setting the right interval
@@ -676,6 +676,45 @@ FEEDBACK a little lower.
 
 \end{minipage}
 
+\newpage
+\noindent\begin{minipage}[t]{0.45\textwidth}\setlength{\parskip}{6pt}
+
+\subsection{Frippertronics looper}
+
+\vspace{5mm}\begin{center}\includegraphics[width=0.7\textwidth]{patch-frippertronics-looper.pdf}\vspace{5mm}\end{center}
+
+The first head plays the incoming sound and sound that's fed back by the last
+head. The feedback gain of the last head is set around unity, so it retains
+the previously recorded sound indefinitely. The length of the loop depends on
+the SPEED knob.
+
+Play with the tone or WOW/FLUT controls, so the looped sound changes over time.
+Bring in other heads to introduce layers from different parts of the loop.
+You can optionally map clock input to SPEED, so your loop will be synchronized.
+
+\end{minipage}\begin{minipage}{0.05\textwidth}\phantom{ }\end{minipage}\begin{minipage}[t]{0.45\textwidth}\setlength{\parskip}{6pt}
+
+
+\subsection{Improved Frippertronics looper}
+
+\vspace{5mm}\begin{center}\includegraphics[width=0.85\textwidth]{patch-improved-frippertronics-looper.pdf}\vspace{5mm}\end{center}
+
+This builds on the previous example, adding some configuration tweaks to provide
+better user experience, closer to using a dedicated looper.
+
+Using pause/resume and reset position trigger inputs allows you to reset the
+buffer and start recording the loop when you are ready. Read sections
+\ref{section:configure-reset} and \ref{section:configure-pause} to learn how to
+map these triggers.
+
+To dial in the desired loop length accurately, configure a shorter tap-in
+interval. This will allow you to effectively count in the loop sequence.
+Tapping-in unpauses delay if it is paused. Read section
+\ref{section:configure-tap-interval} to learn how to customize the tap-in
+interval.
+
+\end{minipage}
+
 % Start of the last page
 \newpage
 
@@ -685,7 +724,7 @@ FEEDBACK a little lower.
 \section{Acknowledgments}
 
 Kudos to all the eurorack, DSP, and embedded programming communities online.
-Here are some of the valuable resources that helped shape this module:
+Here are some of the people and resources that helped shape this module:
 
 Jatin Chowdhury's white papers
 \textit{Real-time physical modelling for analog tape machines\footnote{
@@ -711,10 +750,12 @@ mhampton's implementation%
 \footnote{\url{https://github.com/mhampton/ZetaCarinaeModules}}
 of the Ornstein-Uhlenbeck algorithm, which was used as part of the wow effect.
 
-And last but not least, Hainbach%
-\footnote{\url{https://www.youtube.com/@Hainbach}}
+Hainbach\footnote{\url{https://www.youtube.com/@Hainbach}}
 and his contaigious enthusiasm about tape machines. Which sparked my initial
 ideas to create this module.
+
+TODO: Ale Moglia, aka Bartola Valves, for suggesting to extend this module's
+capabilities into looping territory and introducing me to Frippertronics.
 
 \vspace{2.5cm}
 
@@ -734,8 +775,10 @@ ideas to create this module.
    & New filter placements \\
   v1.3 & The status LED blinks three times \\
    & Default display can be customized \\
+   & Configure the tap/delay length ratio \\
    & Delay position can be reset \\
-   & Configure the tap/delay length ratio
+   & Delay playback can be paused \\
+   & Optimizations for use as a looper
 \end{tabular}
 
 \end{minipage}

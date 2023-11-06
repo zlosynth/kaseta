@@ -2,7 +2,9 @@ PATCHES = \
 	patch-clean-slate.pdf \
 	patch-saturation.pdf \
 	patch-ping-pong-echo.pdf \
-	patch-almost-reverb.pdf
+	patch-almost-reverb.pdf \
+	patch-frippertronics-looper.pdf \
+	patch-improved-frippertronics-looper.pdf
 
 .PHONY: pdf
 pdf: clean pdf-images
