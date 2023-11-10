@@ -200,7 +200,7 @@ impl Display {
 
     pub fn set_paused(&mut self) {
         match self.prioritized[5] {
-            Some(Screen::Clipping(_)) => (),
+            Some(Screen::Paused(_)) => (),
             _ => self.set_screen(5, Screen::Paused(0)),
         }
     }
