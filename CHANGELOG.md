@@ -10,6 +10,7 @@ backwards compatibility.
 * Allow reset of the loop position through a control input.
 * Pause/resume the delay line using a control input.
 * Allow configuration of the ratio between the tap interval and delay length.
+* Visualize progress of the buffer reset.
 
 ## 1.2.0
 

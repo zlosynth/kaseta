@@ -109,6 +109,7 @@ struct ResetSelector {
 pub struct Reaction {
     pub impulse: bool,
     pub new_position: usize,
+    pub buffer_reset_progress: Option<u8>,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -264,9 +265,16 @@ impl Delay {
         };
         let new_position = self.calculate_position_index();
 
+        let buffer_reset_progress = if let BufferReset::Resetting(i, n) = self.buffer_reset {
+            Some(((i as f32 / n as f32) * 7.99) as u8)
+        } else {
+            None
+        };
+
         Reaction {
             impulse,
             new_position,
+            buffer_reset_progress,
         }
     }
 

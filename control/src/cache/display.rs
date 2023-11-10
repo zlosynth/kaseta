@@ -19,6 +19,7 @@ pub enum Screen {
     Attribute(u32, AttributeScreen),
     Clipping(u32),
     Paused(u32),
+    BufferReset(u32),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -198,6 +199,17 @@ impl Display {
         }
     }
 
+    pub fn set_buffer_reset(&mut self, progress: u8) {
+        match self.prioritized[5] {
+            Some(Screen::BufferReset(_)) => (),
+            _ => self.set_screen(5, Screen::BufferReset(progress as u32)),
+        }
+    }
+
+    pub fn reset_buffer_reset(&mut self) {
+        self.reset_screen(5);
+    }
+
     pub fn set_paused(&mut self) {
         match self.prioritized[5] {
             Some(Screen::Paused(_)) => (),
@@ -231,10 +243,12 @@ impl Screen {
             Self::Attribute(_, attribute) => leds_for_attribute(*attribute),
             Self::Clipping(cycles) => leds_for_clipping(*cycles),
             Self::Paused(cycles) => leds_for_paused(*cycles),
+            Self::BufferReset(progress) => leds_for_buffer_reset(*progress),
         }
     }
 
     fn ticked(self) -> Option<Self> {
+        // TODO: For those that just return themselves unchanged, use => self
         match self {
             Screen::Failure(cycles) => ticked_failure(cycles),
             Screen::Dialog(menu) => Some(Screen::Dialog(ticked_dialog(menu))),
@@ -242,12 +256,14 @@ impl Screen {
             Screen::Attribute(age, attribute) => ticked_attribute(age, attribute),
             Screen::Clipping(age) => ticked_clipping(age),
             Screen::Paused(cycles) => ticked_paused(cycles),
+            Screen::BufferReset(_) => Some(self),
         }
     }
 }
 
 fn ticked_dialog(menu: DialogScreen) -> DialogScreen {
     match menu {
+        // TODO: For those that just return themselves unchanged, use => self
         DialogScreen::Configuration(configuration) => match configuration {
             ConfigurationScreen::Idle(cycles) => ticked_configuration_idle(cycles),
             ConfigurationScreen::Rewind(rewind) => ticked_configuration_rewind(rewind),
@@ -511,6 +527,14 @@ fn leds_for_paused(cycles: u32) -> [bool; 8] {
         leds[2] = true;
         leds[5] = true;
         leds[6] = true;
+    }
+    leds
+}
+
+fn leds_for_buffer_reset(progress: u32) -> [bool; 8] {
+    let mut leds = [true; 8];
+    for i in 0..progress as usize {
+        leds[7 - i] = false;
     }
     leds
 }

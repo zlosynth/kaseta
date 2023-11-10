@@ -131,6 +131,12 @@ impl Store {
                 .display
                 .set_fallback_attribute(AttributeScreen::Position(dsp_reaction.new_position));
         }
+
+        if let Some(buffer_reset_progress) = dsp_reaction.buffer_reset_progress {
+            self.cache.display.set_buffer_reset(buffer_reset_progress);
+        } else {
+            self.cache.display.reset_buffer_reset();
+        }
     }
 
     pub fn tick(&mut self) -> DesiredOutput {

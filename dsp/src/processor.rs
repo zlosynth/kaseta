@@ -85,6 +85,7 @@ pub struct Reaction {
     pub delay_impulse: bool,
     pub output_clipping: bool,
     pub new_position: usize,
+    pub buffer_reset_progress: Option<u8>,
 }
 
 impl Processor {
