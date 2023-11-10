@@ -42,13 +42,13 @@ impl CVs {
     pub fn sample(&mut self, adc_1: &mut Adc<ADC1, Enabled>, adc_2: &mut Adc<ADC2, Enabled>) {
         adc_1.start_conversion(&mut self.pins.cv_1);
         adc_2.start_conversion(&mut self.pins.cv_2);
-        let sample_1: u32 = block!(adc_1.read_sample()).unwrap();
-        let sample_2: u32 = block!(adc_2.read_sample()).unwrap();
+        let sample_1: u32 = block!(adc_1.read_sample()).unwrap_or_default();
+        let sample_2: u32 = block!(adc_2.read_sample()).unwrap_or_default();
 
         adc_1.start_conversion(&mut self.pins.cv_3);
         adc_2.start_conversion(&mut self.pins.cv_4);
-        let sample_3: u32 = block!(adc_1.read_sample()).unwrap();
-        let sample_4: u32 = block!(adc_2.read_sample()).unwrap();
+        let sample_3: u32 = block!(adc_1.read_sample()).unwrap_or_default();
+        let sample_4: u32 = block!(adc_2.read_sample()).unwrap_or_default();
 
         self.cv[0].set(sample_1, adc_1.slope());
         self.cv[1].set(sample_2, adc_2.slope());

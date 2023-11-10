@@ -16,6 +16,9 @@ impl Randomizer {
 impl Random for Randomizer {
     #[allow(clippy::cast_lossless)]
     fn normal(&mut self) -> f32 {
-        RngCore::<u16>::gen(&mut self.rng).unwrap() as f32 / (2 << 15) as f32
+        match RngCore::<u16>::gen(&mut self.rng) {
+            Ok(x) => x as f32 / (2 << 15) as f32,
+            Err(_) => 0.0,
+        }
     }
 }

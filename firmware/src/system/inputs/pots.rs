@@ -114,11 +114,11 @@ impl Pots {
     ) -> (f32, f32, f32) {
         adc_1.start_conversion(&mut self.pins.multiplexer_1);
         adc_2.start_conversion(&mut self.pins.multiplexer_2);
-        let sample_1: u32 = block!(adc_1.read_sample()).unwrap();
-        let sample_2: u32 = block!(adc_2.read_sample()).unwrap();
+        let sample_1: u32 = block!(adc_1.read_sample()).unwrap_or_default();
+        let sample_2: u32 = block!(adc_2.read_sample()).unwrap_or_default();
 
         adc_1.start_conversion(&mut self.pins.multiplexer_3);
-        let sample_3: u32 = block!(adc_1.read_sample()).unwrap();
+        let sample_3: u32 = block!(adc_1.read_sample()).unwrap_or_default();
 
         (
             transpose_adc(sample_1, adc_1.slope()),

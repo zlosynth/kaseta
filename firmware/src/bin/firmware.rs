@@ -258,10 +258,7 @@ mod app {
             reaction = Some(processor.process(buffer, randomizer));
         });
 
-        processor_reaction_producer
-            .enqueue(reaction.unwrap())
-            .ok()
-            .unwrap();
+        let _ = processor_reaction_producer.enqueue(reaction.unwrap());
     }
 
     #[task(
@@ -279,10 +276,7 @@ mod app {
 
         inputs.sample();
 
-        input_snapshot_producer
-            .enqueue(inputs.snapshot())
-            .ok()
-            .unwrap();
+        let _ = input_snapshot_producer.enqueue(inputs.snapshot());
     }
 
     #[task(
@@ -316,12 +310,9 @@ mod app {
         if let Some(snapshot) = dequeue_last(input_snapshot_consumer) {
             let result = control.apply_input_snapshot(snapshot);
             if let Some(save) = result.save {
-                save_producer.enqueue(save).ok().unwrap();
+                let _ = save_producer.enqueue(save);
             }
-            processor_attributes_producer
-                .enqueue(result.dsp_attributes)
-                .ok()
-                .unwrap();
+            let _ = processor_attributes_producer.enqueue(result.dsp_attributes);
         }
 
         let desired_output = control.tick();
@@ -362,7 +353,7 @@ mod app {
 
         cx.shared.save_cache.lock(|save_cache| {
             if let Some(save) = save_cache.take() {
-                store::spawn(save).ok().unwrap();
+                store::spawn(save).unwrap_or_else(|_| defmt::warn!("Failed issuing store request"));
             }
         });
     }

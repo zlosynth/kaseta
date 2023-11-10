@@ -144,6 +144,9 @@ impl Pops {
     fn friction(&self) -> f32 {
         let phase = self.phase.fract();
 
+        // NOTE: Unwrap is unreachable. Tick moves phase. If phase is above
+        // the amount of pops, `tick` would return `None` and it won't be
+        // queried for friction.
         let intensity = self.pops[(self.phase * 0.96) as usize]
             .as_ref()
             .unwrap()
@@ -167,6 +170,9 @@ impl Pops {
     fn tick(mut self, sample_rate: f32) -> Option<Self> {
         let breaking = self.phase.fract() < 0.5;
         let slowdown_coefficient = if breaking {
+            // NOTE: Unwrap is unreachable. Tick moves phase. If phase is above
+            // the amount of pops, `tick` would return `None` and it won't be
+            // queried for friction.
             self.pops[(self.phase * 0.95) as usize]
                 .as_ref()
                 .unwrap()
