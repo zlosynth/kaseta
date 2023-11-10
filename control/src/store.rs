@@ -520,7 +520,11 @@ impl Store {
                 } else {
                     self.cache.display.reset_paused();
                 }
+            } else if !control.is_plugged {
+                self.cache.attributes.paused_delay = false;
             }
+        } else {
+            self.cache.attributes.paused_delay = false;
         }
     }
 }
