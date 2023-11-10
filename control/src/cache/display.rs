@@ -7,7 +7,7 @@ use core::mem;
 #[derive(Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub struct Display {
-    pub prioritized: [Option<Screen>; 7],
+    pub prioritized: [Option<Screen>; 8],
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -127,6 +127,7 @@ impl Default for Display {
                 None,
                 None,
                 None,
+                None,
                 Some(Screen::Attribute(0, AttributeScreen::Position(0))),
             ],
         }
@@ -211,18 +212,18 @@ impl Display {
     }
 
     pub fn set_paused(&mut self) {
-        match self.prioritized[5] {
+        match self.prioritized[6] {
             Some(Screen::Paused(_)) => (),
-            _ => self.set_screen(5, Screen::Paused(0)),
+            _ => self.set_screen(6, Screen::Paused(0)),
         }
     }
 
     pub fn reset_paused(&mut self) {
-        self.reset_screen(5);
+        self.reset_screen(6);
     }
 
     pub fn set_fallback_attribute(&mut self, attribute: AttributeScreen) {
-        self.set_screen(6, Screen::Attribute(0, attribute));
+        self.set_screen(7, Screen::Attribute(0, attribute));
     }
 
     fn set_screen(&mut self, priority: usize, screen: Screen) {
@@ -248,7 +249,6 @@ impl Screen {
     }
 
     fn ticked(self) -> Option<Self> {
-        // TODO: For those that just return themselves unchanged, use => self
         match self {
             Screen::Failure(cycles) => ticked_failure(cycles),
             Screen::Dialog(menu) => Some(Screen::Dialog(ticked_dialog(menu))),
@@ -263,19 +263,12 @@ impl Screen {
 
 fn ticked_dialog(menu: DialogScreen) -> DialogScreen {
     match menu {
-        // TODO: For those that just return themselves unchanged, use => self
         DialogScreen::Configuration(configuration) => match configuration {
             ConfigurationScreen::Idle(cycles) => ticked_configuration_idle(cycles),
-            ConfigurationScreen::Rewind(rewind) => ticked_configuration_rewind(rewind),
-            ConfigurationScreen::DefaultScreen(selection) => {
-                ticked_configuration_default_screen(selection)
-            }
-            ConfigurationScreen::ControlMapping(mapping) => {
-                ticked_configuration_control_mapping(mapping)
-            }
-            ConfigurationScreen::TapIntervalDenominator(denominator) => {
-                ticked_tap_interval_denominator(denominator)
-            }
+            ConfigurationScreen::Rewind(_) => menu,
+            ConfigurationScreen::DefaultScreen(_) => menu,
+            ConfigurationScreen::ControlMapping(_) => menu,
+            ConfigurationScreen::TapIntervalDenominator(_) => menu,
         },
         DialogScreen::Calibration(calibration) => match calibration {
             CalibrationScreen::SelectOctave1(i, cycles) => ticked_calibration_1(i, cycles),
@@ -288,22 +281,6 @@ fn ticked_dialog(menu: DialogScreen) -> DialogScreen {
 fn ticked_configuration_idle(mut cycles: u32) -> DialogScreen {
     cycles = if cycles > 1000 { 0 } else { cycles + 1 };
     DialogScreen::Configuration(ConfigurationScreen::Idle(cycles))
-}
-
-fn ticked_configuration_rewind(rewind: (usize, usize)) -> DialogScreen {
-    DialogScreen::Configuration(ConfigurationScreen::Rewind(rewind))
-}
-
-fn ticked_configuration_default_screen(selection: usize) -> DialogScreen {
-    DialogScreen::Configuration(ConfigurationScreen::DefaultScreen(selection))
-}
-
-fn ticked_configuration_control_mapping(mapping: Option<usize>) -> DialogScreen {
-    DialogScreen::Configuration(ConfigurationScreen::ControlMapping(mapping))
-}
-
-fn ticked_tap_interval_denominator(denominator: usize) -> DialogScreen {
-    DialogScreen::Configuration(ConfigurationScreen::TapIntervalDenominator(denominator))
 }
 
 fn ticked_calibration_1(i: usize, mut cycles: u32) -> DialogScreen {
