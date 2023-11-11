@@ -11,7 +11,7 @@ backwards compatibility.
 * Pause/resume the delay line using a control input.
 * Allow configuration of the ratio between the tap interval and delay length.
 * Visualize progress of the buffer reset.
-* Smoothen position response to control input.
+* Improve position response to control input.
 * Make clearing of the tape 2x faster.
 
 ## 1.2.0
@@ -70,7 +70,7 @@ backwards compatibility.
 * Delay start to prevent pops.
 * Increase pot buffer to prevent clicks.
 * Randomize intensity and spacing of flutter.
-* Smoothen wow depth control.
+* Improve wow depth control.
 
 ## 0.6.0
 
