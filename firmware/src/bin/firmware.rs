@@ -28,7 +28,7 @@ mod app {
     use kaseta_firmware::system::System;
 
     // Single blinks on the PCB's LED signalize the first revision.
-    const BLINKS: u8 = 2;
+    const BLINKS: u8 = 3;
 
     // Slice for shorter buffers that will be stored in the main memory.
     #[link_section = ".sram"]
