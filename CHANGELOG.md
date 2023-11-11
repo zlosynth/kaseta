@@ -12,6 +12,7 @@ backwards compatibility.
 * Allow configuration of the ratio between the tap interval and delay length.
 * Visualize progress of the buffer reset.
 * Smoothen position response to control input.
+* Make clearing of the tape 2x faster.
 
 ## 1.2.0
 

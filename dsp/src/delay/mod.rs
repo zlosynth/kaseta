@@ -428,7 +428,7 @@ impl BufferReset {
             BufferReset::Armed => BufferReset::FadingOut(0, 50),
             BufferReset::FadingOut(j, n) => {
                 if j == n {
-                    let chunks = 2 << 11;
+                    let chunks = 2 << 10;
                     BufferReset::Resetting(0, chunks)
                 } else {
                     BufferReset::FadingOut(*j + 1, *n)
@@ -436,7 +436,7 @@ impl BufferReset {
             }
             BufferReset::Resetting(j, n) => {
                 if j == n {
-                    BufferReset::FadingIn(0, 2000)
+                    BufferReset::FadingIn(0, 1000)
                 } else {
                     reset_request = Some(ResetSelector {
                         index: *j,
