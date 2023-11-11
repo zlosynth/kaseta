@@ -6,7 +6,7 @@ backwards compatibility.
 
 ## Unreleased
 
-* LED can be configured to visualize the current position within the loop.
+* Display the current position within the loop.
 * Allow reset of the loop position through a control input.
 * Pause/resume the delay line using a control input.
 * Allow configuration of the ratio between the tap interval and delay length.
