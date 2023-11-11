@@ -70,8 +70,14 @@ impl CV {
 }
 
 fn transpose_adc(sample: u32, slope: u32) -> f32 {
+    // NOTE: The CV input spans between -5 and +5 V.
     let min = -5.0;
     let span = 10.0;
+    // NOTE: Based on the measuring, the real span of measured CV is -4.97 to
+    // +4.97 V. This compensation makes sure that control value can hit both
+    // extremes.
+    let compensation = 10.0 / 9.94;
     let phase = (slope as f32 - sample as f32) / slope as f32;
-    min + phase * span
+    let scaled = (min + phase * span).clamp(min, min + span);
+    scaled * compensation
 }

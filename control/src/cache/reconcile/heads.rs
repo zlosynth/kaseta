@@ -24,16 +24,22 @@ impl Store {
     }
 
     fn reconcile_position(&mut self, i: usize) {
-        // TODO: Only update the position if CV has changed significantly (above noise
-        // level) from the last value.
+        let pot = self.input.head[i].position.last_value_above_noise;
+
+        let control_index = self.control_index_for_attribute(AttributeIdentifier::Position(i));
+        let cv = if let Some(i) = control_index {
+            let control = &self.input.control[i];
+            if control.is_plugged {
+                Some(control.last_value_above_noise / 5.0)
+            } else {
+                None
+            }
+        } else {
+            None
+        };
+
         self.cache.attributes.head[i].position = quantize(
-            calculate(
-                self.input.head[i].position.last_value_above_noise,
-                self.control_value_for_attribute(AttributeIdentifier::Position(i))
-                    .map(|x| x / 5.0),
-                (0.0, 1.0),
-                None,
-            ),
+            calculate(pot, cv, (0.0, 1.0), None),
             Quantization::from((self.cache.options.quantize_6, self.cache.options.quantize_8)),
         );
     }

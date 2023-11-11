@@ -31,11 +31,13 @@ mod tests {
 
             defmt::info!("Set the input to -5 V, then click the button");
             sample_until_button_is_clicked(inputs);
-            defmt::assert!(inputs.cvs.cv[i].value.unwrap() < 0.01);
+            let value = inputs.cvs.cv[i].value.unwrap();
+            defmt::assert!(value < -4.9999, "{:?} > -5.0", value);
 
             defmt::info!("Set the input to +5 V, then click the button");
             sample_until_button_is_clicked(inputs);
-            defmt::assert!(inputs.cvs.cv[i].value.unwrap() > 0.98);
+            let value = inputs.cvs.cv[i].value.unwrap();
+            defmt::assert!(value > 4.9999, "{:?} < 5.0", value);
 
             defmt::info!("OK");
         }

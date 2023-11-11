@@ -1,5 +1,8 @@
 //! Manage control input's state.
 
+#[allow(unused_imports)]
+use micromath::F32Ext;
+
 use super::buffer::Buffer;
 
 /// Use this to hold control input's state over time.
@@ -12,6 +15,7 @@ pub struct Control {
     pub is_plugged: bool,
     pub was_plugged: bool,
     pub was_unplugged: bool,
+    pub last_value_above_noise: f32,
     buffer: Buffer<4>,
 }
 
@@ -27,6 +31,16 @@ impl Control {
         }
         self.was_plugged = !was_plugged && self.is_plugged;
         self.was_unplugged = was_plugged && !self.is_plugged;
+
+        let value = self.buffer.read();
+        let diff = (self.last_value_above_noise - value).abs();
+        if diff > 0.01 {
+            self.last_value_above_noise = value;
+        } else if value < -4.97 {
+            self.last_value_above_noise = -5.0;
+        } else if value > 4.97 {
+            self.last_value_above_noise = 5.0;
+        }
     }
 
     pub fn value(&self) -> f32 {
