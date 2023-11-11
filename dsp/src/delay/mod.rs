@@ -266,7 +266,7 @@ impl Delay {
         let new_position = self.calculate_position_index();
 
         let buffer_reset_progress = if let BufferReset::Resetting(i, n) = self.buffer_reset {
-            Some(((i as f32 / n as f32) * 7.99) as u8)
+            Some(((i as f32 / n as f32) * 8.99) as u8)
         } else {
             None
         };

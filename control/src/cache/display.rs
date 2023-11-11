@@ -201,10 +201,7 @@ impl Display {
     }
 
     pub fn set_buffer_reset(&mut self, progress: u8) {
-        match self.prioritized[5] {
-            Some(Screen::BufferReset(_)) => (),
-            _ => self.set_screen(5, Screen::BufferReset(progress as u32)),
-        }
+        self.set_screen(5, Screen::BufferReset(progress as u32));
     }
 
     pub fn reset_buffer_reset(&mut self) {
@@ -509,9 +506,9 @@ fn leds_for_paused(cycles: u32) -> [bool; 8] {
 }
 
 fn leds_for_buffer_reset(progress: u32) -> [bool; 8] {
-    let mut leds = [true; 8];
-    for i in 0..progress as usize {
-        leds[7 - i] = false;
+    let mut leds = [false; 8];
+    for i in 0..8 - progress as usize {
+        leds[i] = true;
     }
     leds
 }

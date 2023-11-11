@@ -299,6 +299,7 @@ impl DelayReaction {
     fn notify(&mut self, reaction: &mut Reaction) {
         reaction.delay_impulse = self.impulse;
         reaction.new_position = self.new_position;
+        reaction.buffer_reset_progress = self.buffer_reset_progress;
     }
 }
 
