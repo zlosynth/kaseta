@@ -15,7 +15,7 @@ use crate::cache::mapping::AttributeIdentifier;
 use crate::cache::{Cache, Configuration};
 use crate::input::pot::Pot;
 use crate::input::snapshot::Snapshot as InputSnapshot;
-use crate::input::store::{Head as InputHead, Store as Input};
+use crate::input::store::Store as Input;
 use crate::log;
 use crate::output::DesiredOutput;
 use crate::save::Save;
@@ -428,13 +428,6 @@ impl Store {
         &mut self,
         mut draft: Configuration,
     ) -> (Configuration, Option<ConfigurationScreen>) {
-        for (i, head) in self.input.head.iter().enumerate() {
-            let maybe_screen = update_rewind_configuration(&mut draft, i, head);
-            if let Some(screen) = maybe_screen {
-                return (draft, Some(screen));
-            }
-        }
-
         if let Some(screen) =
             update_default_display_configuration(&mut draft, &mut self.input.speed)
         {
@@ -535,37 +528,6 @@ impl Store {
     }
 }
 
-fn update_rewind_configuration(
-    draft: &mut Configuration,
-    i: usize,
-    head: &InputHead,
-) -> Option<ConfigurationScreen> {
-    let screen = None;
-
-    let volume_active = head.volume.activation_movement();
-    let feedback_active = head.feedback.activation_movement();
-
-    if !volume_active && !feedback_active {
-        return screen;
-    }
-
-    let rewind_speed = if volume_active {
-        f32_to_index_of_4(head.volume.value())
-    } else {
-        draft.rewind_speed[i].0
-    };
-
-    let fast_forward_speed = if feedback_active {
-        f32_to_index_of_4(head.feedback.value())
-    } else {
-        draft.rewind_speed[i].1
-    };
-
-    let tuple = (rewind_speed, fast_forward_speed);
-    draft.rewind_speed[i] = tuple;
-    Some(ConfigurationScreen::Rewind(tuple))
-}
-
 fn update_default_display_configuration(
     draft: &mut Configuration,
     pot: &mut Pot,
@@ -646,18 +608,6 @@ fn update_tap_interval_denominator(
     };
     draft.tap_interval_denominator = denominator;
     Some(ConfigurationScreen::TapIntervalDenominator(denominator))
-}
-
-fn f32_to_index_of_4(x: f32) -> usize {
-    if x < 0.25 {
-        0
-    } else if x < 0.5 {
-        1
-    } else if x < 0.75 {
-        2
-    } else {
-        3
-    }
 }
 
 impl From<Save> for Store {
@@ -1072,26 +1022,7 @@ mod tests {
 
         hold_button(&mut store, input);
 
-        input.head[0].volume = 1.0;
-        input.head[0].feedback = 1.0;
-        for _ in 0..32 {
-            store.apply_input_snapshot(input);
-            store.tick();
-        }
-        input.head[1].volume = 1.0;
-        input.head[1].feedback = 1.0;
-        for _ in 0..32 {
-            store.apply_input_snapshot(input);
-            store.tick();
-        }
-        input.head[2].volume = 1.0;
-        input.head[2].feedback = 1.0;
-        for _ in 0..32 {
-            store.apply_input_snapshot(input);
-            store.tick();
-        }
-        input.head[3].volume = 1.0;
-        input.head[3].feedback = 1.0;
+        input.speed = 1.0;
         for _ in 0..32 {
             store.apply_input_snapshot(input);
             store.tick();
@@ -1102,10 +1033,10 @@ mod tests {
         let mut store = Store::from(save.unwrap());
         store.apply_input_snapshot(input);
 
-        assert_eq!(store.cache.configuration.rewind_speed[0], (3, 3));
-        assert_eq!(store.cache.configuration.rewind_speed[1], (3, 3));
-        assert_eq!(store.cache.configuration.rewind_speed[2], (3, 3));
-        assert_eq!(store.cache.configuration.rewind_speed[3], (3, 3));
+        assert_eq!(
+            store.cache.configuration.default_display_page,
+            DisplayPage::Heads
+        );
     }
 
     #[cfg(test)]
@@ -1395,80 +1326,42 @@ mod tests {
         fn when_clicks_button_it_saves_configuration_and_enters_normal_mode() {
             let (mut store, mut input) = init_store();
 
-            input.head[0].volume = 0.05;
-            apply_input_snapshot(&mut store, input);
-            input.head[0].feedback = 0.05;
-            apply_input_snapshot(&mut store, input);
-            input.head[1].volume = 0.35;
-            apply_input_snapshot(&mut store, input);
-            input.head[1].feedback = 0.35;
-            apply_input_snapshot(&mut store, input);
-            input.head[2].volume = 0.7;
-            apply_input_snapshot(&mut store, input);
-            input.head[2].feedback = 0.7;
-            apply_input_snapshot(&mut store, input);
-            input.head[3].volume = 1.0;
-            apply_input_snapshot(&mut store, input);
-            input.head[3].feedback = 1.0;
+            input.speed = 1.0;
             apply_input_snapshot(&mut store, input);
 
             click_button(&mut store, input);
 
-            assert_eq!(store.cache.configuration.rewind_speed[0], (0, 0));
-            assert_eq!(store.cache.configuration.rewind_speed[1], (1, 1));
-            assert_eq!(store.cache.configuration.rewind_speed[2], (2, 2));
-            assert_eq!(store.cache.configuration.rewind_speed[3], (3, 3));
-        }
-
-        #[test]
-        fn when_turns_volume_and_feedback_the_rewind_speed_is_visualized_on_display() {
-            let (mut store, mut input) = init_store();
-
-            input.head[0].volume = 0.05;
-            input.head[0].feedback = 0.05;
-            apply_input_snapshot(&mut store, input);
-            assert_animation(&mut store, &[9006]);
-
-            input.head[1].volume = 0.35;
-            input.head[1].feedback = 0.35;
-            apply_input_snapshot(&mut store, input);
-            assert_animation(&mut store, &[9966]);
-
-            input.head[2].volume = 0.7;
-            input.head[2].feedback = 0.7;
-            apply_input_snapshot(&mut store, input);
-            assert_animation(&mut store, &[9886]);
-
-            input.head[3].volume = 1.0;
-            input.head[3].feedback = 1.0;
-            apply_input_snapshot(&mut store, input);
-            assert_animation(&mut store, &[8888]);
+            assert_eq!(
+                store.cache.configuration.default_display_page,
+                DisplayPage::Heads
+            );
         }
 
         #[test]
         fn when_does_not_change_attribute_it_keeps_the_previously_set_value() {
             let (mut store, mut input) = init_store();
 
-            input.head[2].volume = 0.7;
-            input.head[2].feedback = 0.7;
+            input.speed = 1.0;
             apply_input_snapshot(&mut store, input);
             click_button(&mut store, input);
 
-            assert_eq!(store.cache.configuration.rewind_speed[2], (2, 2));
+            assert_eq!(
+                store.cache.configuration.default_display_page,
+                DisplayPage::Heads
+            );
 
-            input.head[2].volume = 0.0;
-            input.head[2].feedback = 0.0;
+            input.speed = 0.0;
             apply_input_snapshot(&mut store, input);
 
             hold_button(&mut store, input);
 
-            input.head[1].volume = 0.35;
-            input.head[1].feedback = 0.35;
             apply_input_snapshot(&mut store, input);
             click_button(&mut store, input);
 
-            assert_eq!(store.cache.configuration.rewind_speed[2], (2, 2));
-            assert_eq!(store.cache.configuration.rewind_speed[1], (1, 1));
+            assert_eq!(
+                store.cache.configuration.default_display_page,
+                DisplayPage::Heads
+            );
         }
 
         #[test]

@@ -41,7 +41,6 @@ pub enum CalibrationScreen {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 pub enum ConfigurationScreen {
     Idle(u32),
-    Rewind((usize, usize)),
     DefaultScreen(usize),
     ControlMapping(Option<usize>),
     TapIntervalDenominator(usize),
@@ -262,7 +261,6 @@ fn ticked_dialog(menu: DialogScreen) -> DialogScreen {
     match menu {
         DialogScreen::Configuration(configuration) => match configuration {
             ConfigurationScreen::Idle(cycles) => ticked_configuration_idle(cycles),
-            ConfigurationScreen::Rewind(_) => menu,
             ConfigurationScreen::DefaultScreen(_) => menu,
             ConfigurationScreen::ControlMapping(_) => menu,
             ConfigurationScreen::TapIntervalDenominator(_) => menu,
@@ -400,16 +398,6 @@ fn leds_for_configuration(configuration: &ConfigurationScreen) -> [bool; 8] {
             } else {
                 [false, true, false, true, true, false, true, false]
             }
-        }
-        ConfigurationScreen::Rewind((rewind, fast_forward)) => {
-            let mut leds = [false; 8];
-            for i in 0..=*fast_forward {
-                leds[i] = true;
-            }
-            for i in 0..=*rewind {
-                leds[leds.len() - 1 - i] = true;
-            }
-            leds
         }
         ConfigurationScreen::DefaultScreen(selection) => index_to_leds(*selection),
         ConfigurationScreen::ControlMapping(mapping) => {
