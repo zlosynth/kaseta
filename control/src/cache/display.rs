@@ -454,7 +454,7 @@ fn leds_for_attribute(attribute: AttributeScreen) -> [bool; 8] {
         AttributeScreen::HeadsOverview((top, bottom)) => [
             top[0], top[1], top[2], top[3], bottom[0], bottom[1], bottom[2], bottom[3],
         ],
-        AttributeScreen::Position(position) => index_to_leds(position),
+        AttributeScreen::Position(position) => position_to_leds(position),
         AttributeScreen::OctaveOffset(offset) => {
             let mut leds = [false; 8];
             if offset >= leds.len() {
@@ -514,6 +514,16 @@ fn phase_to_leds(phase: f32) -> [bool; 8] {
 fn index_to_leds(index: usize) -> [bool; 8] {
     let mut leds = [false; 8];
     leds[index] = true;
+    leds
+}
+
+fn position_to_leds(position: usize) -> [bool; 8] {
+    let mut leds = [false; 8];
+    if position < 4 {
+        leds[position] = true;
+    } else {
+        leds[7 - (position - 4)] = true;
+    }
     leds
 }
 
