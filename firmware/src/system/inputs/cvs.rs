@@ -78,6 +78,6 @@ fn transpose_adc(sample: u32, slope: u32) -> f32 {
     // extremes.
     let compensation = 10.0 / 9.94;
     let phase = (slope as f32 - sample as f32) / slope as f32;
-    let scaled = (min + phase * span).clamp(min, min + span);
-    scaled * compensation
+    let scaled = min + phase * span;
+    (scaled * compensation).clamp(min, min + span)
 }
