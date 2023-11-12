@@ -309,7 +309,7 @@ fn ticked_alt_attribute(age: u32, menu: AltAttributeScreen) -> Option<Screen> {
 }
 
 fn ticked_attribute(age: u32, menu: AttributeScreen) -> Option<Screen> {
-    if age > 2000 {
+    if age > 2000 && !matches!(menu, AttributeScreen::Position(_)) {
         None
     } else {
         Some(Screen::Attribute(age + 1, menu))

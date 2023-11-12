@@ -1449,7 +1449,6 @@ mod tests {
             input.drive = 0.1;
             apply_input_snapshot(&mut store, input);
             assert_eq!(store.state, State::Normal);
-            assert_animation(&mut store, &[0000]);
         }
 
         #[test]

@@ -35,8 +35,7 @@ impl Default for Configuration {
     fn default() -> Self {
         Self {
             rewind_speed: [(0, 0), (1, 1), (2, 2), (3, 3)],
-            // TODO: Change this to position. Make sure there is fallback set from the get go
-            default_display_page: DisplayPage::Heads,
+            default_display_page: DisplayPage::Position,
             position_reset_mapping: None,
             pause_resume_mapping: None,
             tap_interval_denominator: 1,
