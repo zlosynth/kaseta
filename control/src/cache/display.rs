@@ -494,11 +494,19 @@ fn leds_for_paused(cycles: u32) -> [bool; 8] {
 }
 
 fn leds_for_buffer_reset(progress: u32) -> [bool; 8] {
-    let mut leds = [false; 8];
-    for i in 0..8 - progress as usize {
-        leds[i] = true;
+    if progress < 4 {
+        let mut leds = [true; 8];
+        for i in 0..progress as usize {
+            leds[i] = false;
+        }
+        leds
+    } else {
+        let mut leds = [false; 8];
+        for i in 4..(4 + 8 - progress) as usize {
+            leds[i] = true;
+        }
+        leds
     }
-    leds
 }
 
 fn phase_to_leds(phase: f32) -> [bool; 8] {
