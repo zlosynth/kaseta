@@ -443,7 +443,7 @@ mod app {
 
     fn warm_up_control(control: &mut Store, inputs: &mut Inputs, frequency: Hertz) {
         let ms = frequency.to_kHz();
-        for _ in 0..50 {
+        for _ in 0..100 {
             inputs.sample();
             control.warm_up(inputs.snapshot());
             cortex_m::asm::delay(5 * ms);
