@@ -521,9 +521,11 @@ impl Store {
                 }
             } else if !control.is_plugged {
                 self.cache.attributes.paused_delay = false;
+                self.cache.display.reset_paused();
             }
         } else {
             self.cache.attributes.paused_delay = false;
+            self.cache.display.reset_paused();
         }
     }
 }
