@@ -39,6 +39,11 @@ impl Store {
         self.cache.requests.reset_impulse =
             just_triggered_clock || just_triggered_tap || just_triggered_position_reset;
 
+        if just_triggered_tap {
+            self.cache.attributes.paused_delay = false;
+            self.cache.display.reset_paused();
+        }
+
         if let Some(clock_tempo) = clock_tempo {
             let c_i = f32_to_usize_5(self.input.speed.value());
             let coefficient = [1.0, 1.0 / 2.0, 1.0 / 4.0, 1.0 / 8.0, 1.0 / 16.0][c_i];
@@ -46,7 +51,6 @@ impl Store {
         } else if let Some(tapped_tempo) = self.cache.tapped_tempo {
             self.cache.attributes.speed =
                 tapped_tempo * self.cache.configuration.tap_interval_denominator as f32;
-            self.cache.attributes.paused_delay = false;
         } else {
             let (speed, display) = match self.cache.options.delay_range {
                 DelayRange::Long => self.speed_for_long_range(),
