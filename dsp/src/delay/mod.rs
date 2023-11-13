@@ -35,7 +35,7 @@ pub struct Delay {
     buffer_reset: BufferReset,
     compressor: [Compressor; 4],
     dc_blocker: [DCBlocker; 4],
-    playback_controls: PlayControls,
+    play_state: PlayState,
 }
 
 #[derive(Default, Debug)]
@@ -114,9 +114,11 @@ pub struct Reaction {
 
 #[derive(Clone, Copy, Debug)]
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
-enum PlayControls {
-    Play,
-    Pause,
+enum PlayState {
+    Playing,
+    Pausing(usize, usize),
+    Unpausing(usize, usize),
+    Paused,
 }
 
 impl Delay {
@@ -158,7 +160,7 @@ impl Delay {
                 DCBlocker::default(),
                 DCBlocker::default(),
             ],
-            playback_controls: PlayControls::default(),
+            play_state: PlayState::default(),
         }
     }
 
@@ -181,8 +183,14 @@ impl Delay {
         random: &mut impl Random,
     ) -> Reaction {
         let buffer_len = input_buffer.len();
+
         for (i, x) in input_buffer.iter_mut().enumerate() {
             let amp = self.buffer_reset.calculate_input_amplitude(i, buffer_len);
+            *x *= amp;
+        }
+
+        for (i, x) in input_buffer.iter_mut().enumerate() {
+            let amp = self.play_state.calculate_input_amplitude(i, buffer_len);
             *x *= amp;
         }
 
@@ -204,7 +212,7 @@ impl Delay {
             wow_flutter.dry_process(input_buffer);
         }
 
-        if self.playback_controls.is_playing() {
+        if self.play_state.is_playing() {
             for x in input_buffer.iter() {
                 self.buffer.write(*x);
             }
@@ -258,7 +266,9 @@ impl Delay {
             wow_flutter.buffer_reset(index * wow_flutter_chunk, wow_flutter_chunk);
         }
 
-        let impulse = if self.playback_controls.is_playing() {
+        self.play_state.tick();
+
+        let impulse = if self.play_state.is_playing() {
             self.consider_impulse(input_buffer.len(), random)
         } else {
             false
@@ -341,11 +351,11 @@ impl Delay {
             self.buffer_reset = BufferReset::Armed;
         }
 
-        self.playback_controls = if attributes.paused {
-            PlayControls::Pause
+        if attributes.paused {
+            self.play_state.pause();
         } else {
-            PlayControls::Play
-        };
+            self.play_state.unpause();
+        }
     }
 }
 
@@ -458,14 +468,76 @@ impl BufferReset {
     }
 }
 
-impl Default for PlayControls {
+impl Default for PlayState {
     fn default() -> Self {
-        Self::Pause
+        Self::Playing
     }
 }
 
-impl PlayControls {
+impl PlayState {
     fn is_playing(self) -> bool {
-        matches!(self, Self::Play)
+        matches!(self, Self::Playing)
+            || matches!(self, Self::Pausing(_, _))
+            || matches!(self, Self::Unpausing(_, _))
+    }
+
+    fn calculate_input_amplitude(&mut self, i: usize, buffer_len: usize) -> f32 {
+        match self {
+            Self::Pausing(j, n) => {
+                let part = 1.0 / *n as f32;
+                let start = *j as f32 / *n as f32;
+                let phase_in_buffer = i as f32 / buffer_len as f32;
+                1.0 - (start + phase_in_buffer * part)
+            }
+            Self::Unpausing(j, n) => {
+                let part = 1.0 / *n as f32;
+                let start = *j as f32 / *n as f32;
+                let phase_in_buffer = i as f32 / buffer_len as f32;
+                start + phase_in_buffer * part
+            }
+            Self::Paused => 0.0,
+            Self::Playing => 1.0,
+        }
+    }
+
+    fn tick(&mut self) {
+        *self = match self {
+            Self::Pausing(mut j, n) => {
+                j += 1;
+                if j == *n {
+                    Self::Paused
+                } else {
+                    Self::Pausing(j, *n)
+                }
+            }
+            Self::Unpausing(mut j, n) => {
+                j += 1;
+                if j == *n {
+                    Self::Playing
+                } else {
+                    Self::Unpausing(j, *n)
+                }
+            }
+            Self::Paused => Self::Paused,
+            Self::Playing => Self::Playing,
+        }
+    }
+
+    fn pause(&mut self) {
+        *self = match self {
+            Self::Playing => Self::Pausing(0, 10),
+            Self::Paused => Self::Paused,
+            Self::Pausing(j, n) => Self::Pausing(*j, *n),
+            Self::Unpausing(j, n) => Self::Pausing(*n - *j, *n),
+        };
+    }
+
+    fn unpause(&mut self) {
+        *self = match self {
+            Self::Playing => Self::Playing,
+            Self::Paused => Self::Unpausing(0, 10),
+            Self::Pausing(j, n) => Self::Unpausing(*n - *j, *n),
+            Self::Unpausing(j, n) => Self::Unpausing(*j, *n),
+        };
     }
 }
