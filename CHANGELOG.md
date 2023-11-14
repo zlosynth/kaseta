@@ -13,6 +13,7 @@ backwards compatibility.
 * Visualize progress of the buffer reset.
 * Improve position response to control input.
 * Make clearing of the tape 2x faster.
+* Prevent wobble noises produced by short feedback with wow/flutter.
 
 ## 1.2.0
 

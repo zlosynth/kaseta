@@ -42,6 +42,7 @@ pub struct Delay {
 #[cfg_attr(feature = "defmt", derive(defmt::Format))]
 struct Head {
     reader: FractionalDelay,
+    position: f32,
     feedback: f32,
     volume: f32,
     pan: f32,
@@ -224,16 +225,22 @@ impl Delay {
             {
                 // NOTE: Must read from back, so heads can move from old to new.
                 let age = buffer_len - i;
-
-                let mut offset = age as f32;
-                if self.wow_flutter_placement.is_read() {
-                    offset += wow_flutter_delays[i];
-                }
+                let offset = age as f32;
 
                 let mut feedback: f32 = self
                     .heads
                     .iter_mut()
-                    .map(|head| head.reader.read(&self.buffer, offset) * head.feedback)
+                    .map(|head| {
+                        // NOTE: Wow and flutter on a very short loop cause
+                        // beeps and wobbles.
+                        head.reader.read(&self.buffer, {
+                            if self.wow_flutter_placement.is_read() && head.position > 0.01 {
+                                offset + wow_flutter_delays[i]
+                            } else {
+                                offset
+                            }
+                        }) * head.feedback
+                    })
                     .enumerate()
                     .map(|(i, x)| self.compressor[i].process(self.dc_blocker[i].tick(x)))
                     .sum();
@@ -246,7 +253,13 @@ impl Delay {
                 let mut left = 0.0;
                 let mut right = 0.0;
                 for head in &mut self.heads {
-                    let value = head.reader.read(&self.buffer, offset);
+                    let value = head.reader.read(&self.buffer, {
+                        if self.wow_flutter_placement.is_read() {
+                            offset + wow_flutter_delays[i]
+                        } else {
+                            offset
+                        }
+                    });
                     let amplified = value * head.volume;
                     left += amplified * (1.0 - head.pan);
                     right += amplified * head.pan;
@@ -336,6 +349,7 @@ impl Delay {
 
         self.length = attributes.length;
         for (i, head) in self.heads.iter_mut().enumerate() {
+            head.position = self.length * attributes.heads[i].position;
             head.feedback = attributes.heads[i].feedback;
             head.volume = attributes.heads[i].volume;
             head.pan = attributes.heads[i].pan;
