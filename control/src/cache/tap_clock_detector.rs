@@ -33,4 +33,7 @@ impl TapClockDetector {
     pub fn detected_tempo(&self) -> Option<u32> {
         self.detector.tempo
     }
+    pub fn first_beat_after_detection(&self) -> bool {
+        self.detector.first_beat_after_detection
+    }
 }

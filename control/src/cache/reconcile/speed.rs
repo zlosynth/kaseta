@@ -39,7 +39,7 @@ impl Store {
         self.cache.requests.reset_impulse =
             just_triggered_clock || just_triggered_tap || just_triggered_position_reset;
 
-        if just_triggered_tap {
+        if self.cache.tap_detector.first_beat_after_detection() {
             self.cache.attributes.paused_delay = false;
             self.cache.display.reset_paused();
         }

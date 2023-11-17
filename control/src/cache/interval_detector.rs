@@ -15,6 +15,7 @@ pub struct IntervalDetector {
     trigger_age: [u32; 3],
     pub tempo: Option<u32>,
     pub just_detected: bool,
+    pub first_beat_after_detection: bool,
 }
 
 impl IntervalDetector {
@@ -51,6 +52,10 @@ impl IntervalDetector {
             *x = x.saturating_add(1);
         }
         self.just_detected = false;
+
+        if let Some(tempo) = self.tempo {
+            self.first_beat_after_detection = self.trigger_age[2] == tempo;
+        }
     }
 }
 
