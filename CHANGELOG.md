@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+## 1.3.0
+
 * Display the current position within the loop.
 * Allow reset of the loop position through a control input.
 * Pause/resume the delay line using a control input.
