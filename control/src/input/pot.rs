@@ -21,7 +21,7 @@ impl Pot {
     pub fn update(&mut self, value: f32) {
         self.buffer.write(value);
 
-        self.last_activation_movement = if self.traveled_more_than(0.01) {
+        self.last_activation_movement = if self.traveled_more_than(0.013) {
             0
         } else {
             self.last_activation_movement.saturating_add(1)

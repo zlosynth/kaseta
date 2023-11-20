@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* Prevent accidental control mapping of noisy pots.
+
 ## 1.3.0
 
 * Display the current position within the loop.
