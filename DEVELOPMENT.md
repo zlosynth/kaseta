@@ -126,7 +126,7 @@ given in [Flash via ST-Link](#flash-via-st-link).
 To run one of the integration tests kept under `firmware/tests`:
 
 ```sh
-makers test-embedded inputs
+makers test-embedded button
 ```
 
 ## Embedded benchmark
