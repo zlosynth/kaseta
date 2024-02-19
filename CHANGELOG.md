@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+## 1.3.2
+
 * Snap position sliders to the edges.
 
 ## 1.3.1
