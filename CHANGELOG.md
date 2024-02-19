@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* Snap position sliders to the edges.
+
 ## 1.3.1
 
 * Prevent accidental control mapping of noisy pots.

@@ -24,7 +24,10 @@ impl Store {
     }
 
     fn reconcile_position(&mut self, i: usize) {
-        let pot = self.input.head[i].position.last_value_above_noise;
+        // NOTE: Snap to the beginning and end to make sure it is possible to
+        // get to these extremes.
+        let pot_raw = self.input.head[i].position.last_value_above_noise;
+        let pot = ((pot_raw * 1.04) - 0.02).clamp(0.0, 1.0);
 
         let control_index = self.control_index_for_attribute(AttributeIdentifier::Position(i));
         let cv = if let Some(i) = control_index {
