@@ -19,7 +19,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         target: x86_64-unknown-linux-gnu
-        toolchain: 1.76.0
+        toolchain: 1.77.0
         default: true
         override: true
         components: rustfmt, clippy
@@ -27,7 +27,7 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         target: thumbv7em-none-eabihf
-        toolchain: 1.76.0
+        toolchain: 1.77.0
         override: true
         components: rustfmt, clippy
     - name: Install cargo-make
