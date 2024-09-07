@@ -4,23 +4,25 @@
 
 Follow [Rust's installation guide](https://www.rust-lang.org/tools/install).
 
-Install tooling of the embedded Rust target for Cortex-M7F:
+Install tooling of the embedded Rust target for Cortex-M7F. It is necessary to
+use an older version of Rust, since newer version bloat the firmware:
 
 ```sh
-rustup target add thumbv7em-none-eabihf
+rustup install 1.76.0
+rustup +1.76.0 target add thumbv7em-none-eabihf
 ```
 
 This project utilizes [cargo make](https://github.com/sagiegurari/cargo-make):
 
 ```sh
-cargo install cargo-make
+cargo +1.76.0 install cargo-make
 ```
 
 Furthermore, the embedded part of the project uses [flip
 link](https://github.com/knurling-rs/flip-link):
 
 ```sh
-cargo install flip-link
+cargo +1.76.0 install flip-link
 ```
 
 ## Formatting, linting, unit tests
@@ -28,7 +30,7 @@ cargo install flip-link
 Run formatting, linter and unit tests:
 
 ```sh
-makers
+cargo +1.76.0 make
 ```
 
 ## DSP benchmark
@@ -37,7 +39,7 @@ Run the benchmark:
 
 ``` sh
 cd dsp
-cargo bench --bench bench
+cargo +1.76.0 bench --bench bench
 ```
 
 Use a profiler to analyze the results:
@@ -46,7 +48,7 @@ Use a profiler to analyze the results:
 cd dsp
 rm -f target/release/deps/bench-*
 rm -f callgrind.out.*
-RUSTFLAGS="-g" cargo bench --bench bench --no-run
+RUSTFLAGS="-g" cargo +1.76.0 bench --bench bench --no-run
 BENCH=$(find target/release/deps -type f -executable -name 'bench-*')
 valgrind \
     --tool=callgrind \
@@ -78,20 +80,20 @@ started](https://probe.rs/docs/getting-started/probe-setup/) to learn how.
 Then install Rust dependencies of probe-rs:
 
 ```sh
-cargo install probe-run
-cargo install flip-link
+cargo +1.76.0 install probe-run
+cargo +1.76.0 install flip-link
 ```
 
 To flash the project, call this make target:
 
 ```sh
-makers flash
+cargo +1.76.0 make flash
 ```
 
 Logging level can be set using an environment variable:
 
 ```sh
-DEFMT_LOG=info makers flash
+DEFMT_LOG=info cargo +1.76.0 make flash
 ```
 
 ## Flash via DFU
@@ -105,7 +107,7 @@ On Fedora, this can be done by calling:
 
 ```sh
 sudo dnf install dfu-util
-cargo install cargo-binutils
+cargo +1.76.0 install cargo-binutils
 rustup component add llvm-tools-preview
 ```
 
@@ -113,7 +115,7 @@ Click the RESET button while holding the BOOT button of the Daisy Patch SM to
 enter the bootloader. Then call this make target:
 
 ```sh
-makers flash-dfu
+cargo +1.76.0 make flash-dfu
 ```
 
 ## Embedded tests
@@ -126,7 +128,7 @@ given in [Flash via ST-Link](#flash-via-st-link).
 To run one of the integration tests kept under `firmware/tests`:
 
 ```sh
-makers test-embedded button
+cargo +1.76.0 make test-embedded button
 ```
 
 ## Embedded benchmark
@@ -140,7 +142,7 @@ Before running a benchmark, first make sure to go through the guidance given in
 To run one of the benchmarks kept under `benches/src/bin`:
 
 ```sh
-makers bench oversampling
+cargo +1.76.0 make bench oversampling
 ```
 
 ## Firmware size
@@ -151,16 +153,16 @@ the firmware size stays slim and no bloat gets in.
 Install needed tooling:
 
 ```sh
-cargo install cargo-bloat
-cargo install cargo-binutils
-rustup component add llvm-tools-preview
+cargo +1.76.0 install cargo-bloat
+cargo +1.76.0 install cargo-binutils
+rustup +1.76.0 component add llvm-tools-preview
 ```
 
 Run the following command often to make sure no unnecessary heavy dependencies
 are brought in:
 
 ```sh
-makers bloat
+cargo +1.76.0 make bloat
 ```
 
 ## Manual
@@ -176,7 +178,7 @@ sudo dnf install inkscape texlive-latex texlive-ec texlive-microtype texlive-pag
 To build the manual:
 
 ```sh
-makers manual
+cargo +1.76.0 make manual
 ```
 
 The built PDF is then available in `manual/user/manual.pdf`.
