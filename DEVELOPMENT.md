@@ -108,7 +108,7 @@ On Fedora, this can be done by calling:
 ```sh
 sudo dnf install dfu-util
 cargo +1.77.0 install cargo-binutils
-rustup component add llvm-tools-preview
+rustup +1.77.0 component add llvm-tools-preview
 ```
 
 Click the RESET button while holding the BOOT button of the Daisy Patch SM to
