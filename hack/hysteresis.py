@@ -588,7 +588,7 @@ def test_fitting_functions(input_configs):
     configs = sorted(configs, key=lambda x: x["rmse"])
 
     print("Approximations ordered by accuracy:")
-    for (i, config) in enumerate(configs):
+    for i, config in enumerate(configs):
         print(
             "{}. {}(rmse={}, rs={})".format(
                 i + 1, config["func"], config["rmse"], config["rs"]
@@ -608,7 +608,7 @@ def test_fitting_functions(input_configs):
 
 
 def print_parameters(parameters):
-    for (i, a) in enumerate(parameters[: len(parameters) - 1]):
+    for i, a in enumerate(parameters[: len(parameters) - 1]):
         print("a{} = {}".format(i + 1, a))
     print("b = {}".format(parameters[-1]))
 
