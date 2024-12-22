@@ -12,7 +12,6 @@
 \usepackage{footnote} % footnotes in tables
 \makesavenoteenv{tabular} % footnotes in tables
 \usepackage[left=2cm,right=2cm,top=3cm,bottom=3cm]{geometry} % wider and taller page
-\renewcommand*{\thefootnote}{\fnsymbol{footnote}} % use an asterisk for footnotes
 
 \pagenumbering{gobble} % hide page numbers
 \setlength{\columnsep}{1cm} % space between columns
@@ -79,25 +78,22 @@ Start by unpacking all baggies into a bowl so you don't lose any components.
   1 \texttimes & Front panel \\
   1 \texttimes & PCB (the black board) \\
   1 \texttimes & Daisy Patch Submodule (the yellow board) \\
-  5 \texttimes & Blue trim potentiometer with center detent* \\
+  5 \texttimes & Blue trim potentiometer with center detent\footnote{Potentiometers with a center detent snap when they are turned through their center position} \\
   9 \texttimes & Blue trim potentiometer without a detent \\
-  1 \texttimes & Green D-shaped potentiometer with center detent* \\
+  1 \texttimes & Green D-shaped potentiometer with center detent\footnote{See footnote 1} \\
   4 \texttimes & Green D-shaped potentiometer without a detent \\
   5 \texttimes & M7 nut and washer \\
   5 \texttimes & Knob \\
   4 \texttimes & Slider potentiometer and cap \\
-  8 \texttimes & 3.5mm jack socket \\
-  8 \texttimes & M6 nut and washer \\
+  8 \texttimes & 3.5mm jack socket, M6 nut and washer \\
   1 \texttimes & Tactile button \\
   9 \texttimes & Red LED \\
   1 \texttimes & Male connector 2\texttimes5 \\
   4 \texttimes & Female connector 2\texttimes5 \\
   1 \texttimes & Male connector 1\texttimes3 \\
-  1 \texttimes & M2 slotted screw, M2 Phillips screw, standoff \\
+  1 \texttimes & M2 slotted screw, M2 washer\footnote{Only available on newer kits, starting with serial number 220}, M2 Phillips screw, \\
+               & standoff \\
 \end{tabular}
-
-* Potentiometers with a center detent snap when they are turned through their
-center position.
 
 \section{Power and I2C}
 
@@ -181,7 +177,7 @@ parts sitting in the front panel.
     holes for now.
   \item Put washers on the pots and jacks.
   \item Secure the front side of the standoff with the slotted screw and its
-    washer. Tighten all the potentiometers and 3.5mm jack sockets in place with
+    washer\footnote{Only available on newer kits, starting with serial number 220}. Tighten all the potentiometers and 3.5mm jack sockets in place with
     their nuts. Use care not to scratch the panel. Plastic tools are prefered,
     and steel drivers should also serve well. If you only have pliers, put them
     in a thick plastic bag. Protect the panel!
