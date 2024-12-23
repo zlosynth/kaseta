@@ -90,13 +90,16 @@ mod app {
 
         let system = System::init(cx.core, cx.device);
         let mono = system.mono;
-        let status_led = system.status_led;
+        let mut status_led = system.status_led;
         let sdram = system.sdram;
         let mut audio = system.audio;
         let randomizer = system.randomizer;
         let mut inputs = system.inputs;
         let flash = system.flash;
         let mut outputs = system.outputs;
+
+        // Signalize that the firmware is uploaded.
+        status_led.on();
 
         let processor = initialize_dsp_processor(sdram);
         let mut storage = Storage::new(flash);
