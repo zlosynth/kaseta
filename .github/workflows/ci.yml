@@ -30,16 +30,12 @@ jobs:
         toolchain: 1.77.0
         override: true
         components: rustfmt, clippy
+    - name: Install cargo-binstall
+      uses: cargo-bins/cargo-binstall@main
     - name: Install cargo-make
-      uses: actions-rs/cargo@v1
-      with:
-        command: install
-        args: --debug --locked cargo-make
+      run: cargo binstall --no-confirm cargo-make@0.37.24
     - name: Install flip-link
-      uses: actions-rs/cargo@v1
-      with:
-        command: install
-        args: --debug --locked flip-link
+      run: cargo binstall --no-confirm flip-link@0.1.9
     - name: Install up Python 3.x toolchain
       uses: actions/setup-python@v2
       with:
