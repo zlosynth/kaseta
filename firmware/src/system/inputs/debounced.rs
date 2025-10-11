@@ -5,6 +5,7 @@ pub struct Debounced<const N: usize> {
 }
 
 impl<const N: usize> Debounced<N> {
+    #[allow(clippy::new_without_default)]
     pub fn new() -> Self {
         Self {
             debounce_filter: DebounceBuffer::new(),

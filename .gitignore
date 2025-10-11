@@ -1,6 +1,4 @@
 target
-control/Cargo.lock
-dsp/Cargo.lock
 callgrind.out.*
 amplitude_dataset.csv
 proptest-regressions
