@@ -7,6 +7,7 @@ backwards compatibility.
 ## Unreleased
 
 * Prevent accidental control mapping of even noisier pots.
+* Add power filtering and protection redundancy.
 
 ## 1.3.2
 
