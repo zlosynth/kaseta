@@ -12,14 +12,14 @@ sed -i "s/rev .*/rev \"v${version}\")/" hardware/Module.kicad_sch
 sed -i "s/gr_text \"board .*\" /gr_text \"board v${version}\" /" hardware/Module.kicad_pcb
 sed -i "s/rev .*/rev \"v${version}\")/" hardware/Module.kicad_pcb
 
-makers
+cargo +1.77.0 make
 
 rm -rf release
 mkdir release
 
-pushd firmware && cargo objcopy --release -- -O binary ../release/kaseta-firmware-${version}.bin && popd
+pushd firmware && cargo +1.77.0 objcopy --release -- -O binary ../release/kaseta-firmware-${version}.bin && popd
 
-makers manual
+cargo +1.77.0 make manual
 cp manual/user/manual.pdf release/kaseta-user-manual.pdf
 cp manual/build/manual.pdf release/kaseta-build-manual.pdf
 
