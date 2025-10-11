@@ -22272,7 +22272,7 @@
 			)
 		)
 	)
-	(gr_text "board v1.3.2"
+	(gr_text "board v1.3.3"
 		(at 144.61 127.68 90)
 		(layer "F.SilkS")
 		(uuid "9309129b-3558-4565-bc76-77229a2c13f8")

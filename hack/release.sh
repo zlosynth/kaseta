@@ -9,7 +9,7 @@ sed -i "s/version =.* # hack\/release.sh$/version = \"${version}\" # hack\/relea
 sed -i "s/version =.* # hack\/release.sh$/version = \"${version}\" # hack\/release.sh/" dsp/Cargo.toml
 sed -i "s/version =.* # hack\/release.sh$/version = \"${version}\" # hack\/release.sh/" benches/Cargo.toml
 sed -i "s/rev .*/rev \"v${version}\")/" hardware/Module.kicad_sch
-sed -i "s/gr_text \"board .*\" /gr_text \"board v${version}\" /" hardware/Module.kicad_pcb
+sed -i "s/gr_text \"board .*\"/gr_text \"board v${version}\"/" hardware/Module.kicad_pcb
 sed -i "s/rev .*/rev \"v${version}\")/" hardware/Module.kicad_pcb
 
 cargo +1.77.0 make
