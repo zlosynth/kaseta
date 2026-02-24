@@ -31,7 +31,10 @@ impl Tone2 {
     /// unstable and the initialization will panic.
     #[must_use]
     pub fn new(sample_rate: f32) -> Self {
-        assert!(sample_rate > 500.0);
+        assert!(
+            sample_rate > 500,
+            "Tone2 may be unstable for low sample rates"
+        );
         Self {
             sample_rate,
             tone_1: Tone::new(sample_rate),
