@@ -31,6 +31,10 @@ impl Tone2 {
     /// unstable and the initialization will panic.
     #[must_use]
     pub fn new(sample_rate: f32) -> Self {
+        assert!(
+            sample_rate > 500,
+            "Tone2 may be unstable for low sample rates"
+        );
         Self {
             sample_rate,
             tone_1: Tone::new(sample_rate),
@@ -81,5 +85,16 @@ impl Tone {
         for x in buffer.iter_mut() {
             *x = self.tick(*x);
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    #[should_panic]
+    fn test_invalid_sample_rate() {
+        Tone2::new(500f32);
     }
 }
