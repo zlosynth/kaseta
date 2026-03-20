@@ -25,10 +25,6 @@ pub struct Tone {
 }
 
 impl Tone2 {
-    /// # Panics
-    ///
-    /// Sample rate must be higher than 500, otherwise the filter becomes
-    /// unstable and the initialization will panic.
     #[must_use]
     pub fn new(sample_rate: f32) -> Self {
         Self {
