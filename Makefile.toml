@@ -29,6 +29,13 @@ condition = { files_not_exist = [".cargo/"] }
 env = { CARGO_MAKE_FORMAT_TOML_ARGS = "--check" }
 run_task = { name = "format-toml" }
 
+# Pin taplo-cli to a version compatible with our Rust 1.77.0 toolchain. When a
+# version is set, cargo-make installs with --locked, so taplo's own Cargo.lock
+# is used. Otherwise cargo resolves clap_derive to a version that requires the
+# edition2024 Cargo feature, which Rust 1.77.0 does not support.
+[tasks.format-toml]
+install_crate = { crate_name = "taplo-cli", binary = "taplo", test_arg = "--help", version = "0.9.3" }
+
 [tasks.clippy]
 env = { CARGO_MAKE_CLIPPY_ARGS = "--tests --benches -- -Dclippy::all -Dwarnings" }
 
