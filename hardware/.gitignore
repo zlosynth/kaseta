@@ -31,3 +31,6 @@ fp-info-cache
 # Generated JLC PCB files
 gerber/
 production_files/
+
+# KiCad local history
+.history/
