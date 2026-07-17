@@ -597,6 +597,12 @@
         "+5V",
         "VCC",
         "VEE"
+      ],
+      "VCC": [
+        "VCC"
+      ],
+      "VEE": [
+        "VEE"
       ]
     },
     "netclass_patterns": [

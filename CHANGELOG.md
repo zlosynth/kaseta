@@ -7,6 +7,7 @@ backwards compatibility.
 ## Unreleased
 
 * Switch to Alpha sliders now when Song Huei is no longer selling theirs.
+* Use better, easier to solder, footprints.
 
 ## 1.3.3
 

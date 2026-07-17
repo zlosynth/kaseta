@@ -1,0 +1,303 @@
+(footprint "Potentiometer_Trimmer_SongHuei"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(descr "Potentiometer, vertical, 9mm, single, http://www.thonk.co.uk/wp-content/uploads/2014/10/R0904N_Thonk.pdf")
+	(tags "potentiometer vertical 9mm single")
+	(property "Reference" "RV3"
+		(at 11.3 2.54 270)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "0a2c09a7-13f0-4a9d-a020-854671a0a6c1")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "Trim. pot"
+		(at 7.405 2.435 90)
+		(layer "F.Fab")
+		(uuid "6bbcd09a-7e30-404d-a977-0414d94079e6")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" "http://www.thonk.co.uk/wp-content/uploads/2014/10/R0904N_Thonk.pdf"
+		(at 0 0 0)
+		(layer "B.Fab")
+		(hide yes)
+		(uuid "807c887d-bc0b-48ce-b2d1-252d49ddb2bd")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+			(justify mirror)
+		)
+	)
+	(property "Description" "Song Huei 9mm trimmer pot"
+		(at 0 0 0)
+		(layer "B.Fab")
+		(hide yes)
+		(uuid "9770f3b3-7ea0-4c0c-af7f-0b701f4a69a7")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+			(justify mirror)
+		)
+	)
+	(attr through_hole exclude_from_pos_files exclude_from_bom)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_line
+		(start 0.875 -2.375)
+		(end 5.595 -2.375)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "dc168471-c378-4368-9cb2-d5de9f216db0")
+	)
+	(fp_line
+		(start 0.875 -1.185)
+		(end 0.875 -2.365)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "d6d58f2c-4b25-40db-a973-44d7f86e14a5")
+	)
+	(fp_line
+		(start 0.875 1.515)
+		(end 0.875 1.185)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "c3b7737c-78ad-4f6c-9a88-04396d9d04d2")
+	)
+	(fp_line
+		(start 0.875 3.995)
+		(end 0.875 3.545)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "536e9183-250d-44e3-80ec-f38699a4fb2e")
+	)
+	(fp_line
+		(start 0.875 7.375)
+		(end 0.875 6.065)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "3bd041c7-59b2-498f-8653-fb1b73d4ea04")
+	)
+	(fp_line
+		(start 0.875 7.375)
+		(end 5.595 7.375)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "2544964e-0f7b-46f5-a6f6-be79e89b5a66")
+	)
+	(fp_line
+		(start 9.405 -2.365)
+		(end 12.465 -2.365)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "a074e10d-f70f-4c99-8726-ec8f9ff5f1b9")
+	)
+	(fp_line
+		(start 9.405 7.375)
+		(end 12.465 7.375)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "7608b131-605b-4150-b8f9-2c5be1b0c4dd")
+	)
+	(fp_line
+		(start 12.465 7.375)
+		(end 12.465 -2.365)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(layer "F.SilkS")
+		(uuid "012faf77-0040-491b-b71a-f78ee8bf340a")
+	)
+	(fp_line
+		(start -1.155 -3.905)
+		(end -1.155 8.915)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "80bec900-a361-46e4-b6fa-8553cc7e3e73")
+	)
+	(fp_line
+		(start -1.155 8.915)
+		(end 12.595 8.915)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "3eeb9707-92a0-49e0-9ae0-4cf31249d8f4")
+	)
+	(fp_line
+		(start 12.595 -3.905)
+		(end -1.155 -3.905)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "a13c152a-881d-423e-89bd-b9e63a3cf7e8")
+	)
+	(fp_line
+		(start 12.595 8.915)
+		(end 12.595 -3.905)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(layer "F.CrtYd")
+		(uuid "44e12938-9d15-4353-9c3d-8246b6b9b545")
+	)
+	(fp_line
+		(start 0.995 -2.245)
+		(end 12.345 -2.245)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "2881213f-4b6a-42af-bbe0-32a4dc120014")
+	)
+	(fp_line
+		(start 0.995 7.255)
+		(end 0.995 -2.245)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "ec02e14e-e215-4272-a192-02e2505058b6")
+	)
+	(fp_line
+		(start 0.995 7.255)
+		(end 12.345 7.255)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "55f8a1ae-30d2-44cf-b66b-cadc00a57eef")
+	)
+	(fp_line
+		(start 12.345 7.255)
+		(end 12.345 -2.245)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "acb0bfb3-9f3a-47c9-849a-bca27af63d31")
+	)
+	(fp_circle
+		(center 7.495 2.505)
+		(end 7.495 -0.995)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "7a198123-7d44-4ce4-a06b-5d9cccc5022c")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 10.975 2.395 90)
+		(layer "F.Fab")
+		(uuid "9fd3e3de-c4d8-4cf5-8f76-c7f741510b02")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "" thru_hole oval
+		(at 7.495 -2.295 90)
+		(size 2.3 3.2)
+		(drill oval 1.8 2.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "2d9550fd-704d-4766-af20-2a90ce955e00")
+	)
+	(pad "" thru_hole oval
+		(at 7.495 7.305 90)
+		(size 2.3 3.2)
+		(drill oval 1.8 2.2)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "de620a49-11fd-471b-8eef-157ddf7c5311")
+	)
+	(pad "1" thru_hole rect
+		(at 0.495 0.005 90)
+		(size 1.8 1.8)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "3ff40381-f151-4d5e-852f-b8660f0bdddd")
+	)
+	(pad "2" thru_hole circle
+		(at 0.495 2.505 90)
+		(size 1.8 1.8)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "f1134159-6eda-400a-91e2-f81d8a4d3bea")
+	)
+	(pad "3" thru_hole circle
+		(at 0.495 5.005 90)
+		(size 1.8 1.8)
+		(drill 1)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "9e4a1141-749b-430c-a9e6-a6ff6a6cad77")
+	)
+	(embedded_fonts no)
+	(model "${KICAD6_3DMODEL_DIR}/Potentiometer_THT.3dshapes/Potentiometer_Alpha_RD901F-40-00D_Single_Vertical.wrl"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)
