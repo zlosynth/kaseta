@@ -10,7 +10,7 @@
 	(title_block
 		(title "Kaseta")
 		(date "2023-01-21")
-		(rev "v1.3.3")
+		(rev "v1.3.4")
 		(company "Zlosynth Instruments")
 		(comment 1 "CC BY-SA")
 		(comment 2 "petr@zlosyth.com")
@@ -21988,7 +21988,7 @@
 			)
 		)
 	)
-	(gr_text "board v1.3.3"
+	(gr_text "board v1.3.4"
 		(at 144.61 127.68 90)
 		(layer "F.SilkS")
 		(uuid "9309129b-3558-4565-bc76-77229a2c13f8")
