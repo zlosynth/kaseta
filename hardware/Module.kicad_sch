@@ -4106,6 +4106,16 @@
 			(embedded_fonts no)
 		)
 	)
+	(text "VERSION_B\n"
+		(exclude_from_sim no)
+		(at 226.822 86.36 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "11a07b83-c183-4447-9e3f-22f97013b2f6")
+	)
 	(text "Low ESR caps\n10u or 22u is fine"
 		(exclude_from_sim no)
 		(at 377.19 50.8 0)
@@ -4116,6 +4126,16 @@
 			(justify left bottom)
 		)
 		(uuid "8eb9b685-cd13-4944-b43c-b549866fb6ce")
+	)
+	(text "VERSION_A"
+		(exclude_from_sim no)
+		(at 226.568 73.66 0)
+		(effects
+			(font
+				(size 1.27 1.27)
+			)
+		)
+		(uuid "c7894b6c-4943-489a-b5d4-e8af0277aa2d")
 	)
 	(junction
 		(at 325.12 50.8)
@@ -4152,12 +4172,6 @@
 		(diameter 0)
 		(color 0 0 0 0)
 		(uuid "6bdac5d5-0a45-4bd8-8fea-f02378a0d729")
-	)
-	(junction
-		(at 231.14 259.842)
-		(diameter 0)
-		(color 0 0 0 0)
-		(uuid "6ee774ab-3f46-4282-9de5-98463f8dad1c")
 	)
 	(junction
 		(at 311.5818 192.659)
@@ -4299,16 +4313,6 @@
 	)
 	(wire
 		(pts
-			(xy 231.14 259.842) (xy 231.14 262.382)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "027d6d0d-b59e-4ccf-a178-c75c77a32944")
-	)
-	(wire
-		(pts
 			(xy 66.5734 214.8078) (xy 66.5734 215.6968)
 		)
 		(stroke
@@ -4396,16 +4400,6 @@
 			(type default)
 		)
 		(uuid "16102567-7585-4089-adef-167edb3bd3b2")
-	)
-	(wire
-		(pts
-			(xy 229.616 259.842) (xy 231.14 259.842)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "166f00cf-2689-48fd-9199-98a8f84afc93")
 	)
 	(wire
 		(pts
@@ -4546,6 +4540,16 @@
 			(type default)
 		)
 		(uuid "37bbd460-217c-4d4f-add2-940b9d84802d")
+	)
+	(wire
+		(pts
+			(xy 224.79 88.9) (xy 224.79 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "39e7b744-97a7-4352-844a-1ad5780fa654")
 	)
 	(wire
 		(pts
@@ -5049,6 +5053,16 @@
 	)
 	(wire
 		(pts
+			(xy 224.79 87.63) (xy 242.57 87.63)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c7b9a9d7-406d-442b-8d48-3bf78784837e")
+	)
+	(wire
+		(pts
 			(xy 349.25 43.18) (xy 347.98 43.18)
 		)
 		(stroke
@@ -5056,6 +5070,16 @@
 			(type default)
 		)
 		(uuid "c8c6aca7-800f-439b-998b-d570ae2fca7e")
+	)
+	(wire
+		(pts
+			(xy 224.79 74.93) (xy 242.57 74.93)
+		)
+		(stroke
+			(width 0)
+			(type default)
+		)
+		(uuid "c906cf5c-e3d4-4ec2-8eed-3eac3187d66a")
 	)
 	(wire
 		(pts
@@ -5086,16 +5110,6 @@
 			(type default)
 		)
 		(uuid "d589183c-3bb3-41b4-a2c5-c9b4e769bdab")
-	)
-	(wire
-		(pts
-			(xy 231.14 257.048) (xy 231.14 259.842)
-		)
-		(stroke
-			(width 0)
-			(type default)
-		)
-		(uuid "d5940a05-8b64-4a1f-a22a-aa35b6d20f95")
 	)
 	(wire
 		(pts
@@ -5189,13 +5203,13 @@
 	)
 	(wire
 		(pts
-			(xy 229.616 257.048) (xy 231.14 257.048)
+			(xy 224.79 76.2) (xy 224.79 74.93)
 		)
 		(stroke
 			(width 0)
 			(type default)
 		)
-		(uuid "f767e64c-55c5-490e-a484-dbe494403fa0")
+		(uuid "f34806a0-d0d9-480e-a302-92c53920d6eb")
 	)
 	(wire
 		(pts
@@ -5276,54 +5290,6 @@
 					(size 1.27 1.27)
 				)
 				(justify left)
-			)
-		)
-	)
-	(global_label "VERSION_B"
-		(shape input)
-		(at 229.616 259.842 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "0800d23a-0ea9-4774-994c-67871d0a8a52")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 216.9824 259.7626 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-	)
-	(global_label "VERSION_A"
-		(shape input)
-		(at 242.57 74.93 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "0aa40510-188f-4efa-b382-37a01a42a5c1")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 230.1179 74.8506 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
 			)
 		)
 	)
@@ -7055,30 +7021,6 @@
 			)
 		)
 	)
-	(global_label "VERSION_B"
-		(shape input)
-		(at 242.57 87.63 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "acc5a912-5636-49b3-a5b4-26cd52823170")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 229.9364 87.5506 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-	)
 	(global_label "MUL_ADDR_A"
 		(shape input)
 		(at 296.3418 179.451 180)
@@ -7164,30 +7106,6 @@
 		(uuid "b94a3943-578a-4c11-8bbb-e1cfd34b5560")
 		(property "Intersheetrefs" "${INTERSHEET_REFS}"
 			(at 288.0625 159.0516 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-				(justify right)
-			)
-		)
-	)
-	(global_label "VERSION_A"
-		(shape input)
-		(at 229.616 257.048 180)
-		(fields_autoplaced yes)
-		(effects
-			(font
-				(size 1.27 1.27)
-			)
-			(justify right)
-		)
-		(uuid "ba936773-3ed6-4687-ba6d-c06b6246389f")
-		(property "Intersheetrefs" "${INTERSHEET_REFS}"
-			(at 217.1639 256.9686 0)
 			(hide yes)
 			(show_name no)
 			(do_not_autoplace no)
@@ -10271,7 +10189,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Potentiometer_THT:Potentiometer_Bourns_PTA3043_Single_Slide"
+		(property "Footprint" "Custom:Potentiometer_Alpha_RA3043F-20-20D1-B10K-01"
 			(at 70.5104 115.062 0)
 			(hide yes)
 			(show_name no)
@@ -11280,6 +11198,82 @@
 			(project "Module"
 				(path "/d8dbb6f8-0752-44b9-9e4d-ab35aa03755f"
 					(reference "#PWR057")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
+		(at 224.79 76.2 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "4522f882-01ad-446d-a40a-8b8556e0e828")
+		(property "Reference" "#PWR0102"
+			(at 224.79 82.55 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 224.79 80.137 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 224.79 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 224.79 76.2 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 224.79 76.2 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "fb7e910c-abb4-49a3-a1e1-9c7c20b5776d")
+		)
+		(instances
+			(project "Module"
+				(path "/d8dbb6f8-0752-44b9-9e4d-ab35aa03755f"
+					(reference "#PWR0102")
 					(unit 1)
 				)
 			)
@@ -12298,82 +12292,6 @@
 			(project "Module"
 				(path "/d8dbb6f8-0752-44b9-9e4d-ab35aa03755f"
 					(reference "#PWR09")
-					(unit 1)
-				)
-			)
-		)
-	)
-	(symbol
-		(lib_id "power:GND")
-		(at 231.14 262.382 0)
-		(unit 1)
-		(body_style 1)
-		(exclude_from_sim no)
-		(in_bom yes)
-		(on_board yes)
-		(in_pos_files yes)
-		(dnp no)
-		(uuid "5ae648a3-5b8c-42cc-b74a-dba15bc3574c")
-		(property "Reference" "#PWR0101"
-			(at 231.14 268.732 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Value" "GND"
-			(at 231.14 266.319 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Footprint" ""
-			(at 231.14 262.382 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Datasheet" ""
-			(at 231.14 262.382 0)
-			(hide yes)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(property "Description" ""
-			(at 231.14 262.382 0)
-			(show_name no)
-			(do_not_autoplace no)
-			(effects
-				(font
-					(size 1.27 1.27)
-				)
-			)
-		)
-		(pin "1"
-			(uuid "d2432428-2ec1-447a-aa89-3c6b399541e8")
-		)
-		(instances
-			(project "Module"
-				(path "/d8dbb6f8-0752-44b9-9e4d-ab35aa03755f"
-					(reference "#PWR0101")
 					(unit 1)
 				)
 			)
@@ -13885,6 +13803,82 @@
 	)
 	(symbol
 		(lib_id "power:GND")
+		(at 224.79 88.9 0)
+		(unit 1)
+		(body_style 1)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(in_pos_files yes)
+		(dnp no)
+		(uuid "74daae93-b5a7-4b64-9a99-e0a25748634b")
+		(property "Reference" "#PWR0103"
+			(at 224.79 95.25 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Value" "GND"
+			(at 224.79 92.837 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Footprint" ""
+			(at 224.79 88.9 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Datasheet" ""
+			(at 224.79 88.9 0)
+			(hide yes)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(property "Description" ""
+			(at 224.79 88.9 0)
+			(show_name no)
+			(do_not_autoplace no)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+			)
+		)
+		(pin "1"
+			(uuid "76d676c6-da2d-489a-8388-01e1f30271ca")
+		)
+		(instances
+			(project "Module"
+				(path "/d8dbb6f8-0752-44b9-9e4d-ab35aa03755f"
+					(reference "#PWR0103")
+					(unit 1)
+				)
+			)
+		)
+	)
+	(symbol
+		(lib_id "power:GND")
 		(at 171.1452 38.1508 0)
 		(unit 1)
 		(body_style 1)
@@ -14151,7 +14145,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Potentiometer_THT:Potentiometer_Bourns_PTA3043_Single_Slide"
+		(property "Footprint" "Custom:Potentiometer_Alpha_RA3043F-20-20D1-B10K-01"
 			(at 70.3072 73.66 0)
 			(hide yes)
 			(show_name no)
@@ -16694,7 +16688,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Potentiometer_THT:Potentiometer_Bourns_PTA3043_Single_Slide"
+		(property "Footprint" "Custom:Potentiometer_Alpha_RA3043F-20-20D1-B10K-01"
 			(at 70.3072 95.0468 0)
 			(hide yes)
 			(show_name no)
@@ -19110,7 +19104,7 @@
 				(justify right)
 			)
 		)
-		(property "Footprint" "Potentiometer_THT:Potentiometer_Bourns_PTA3043_Single_Slide"
+		(property "Footprint" "Custom:Potentiometer_Alpha_RA3043F-20-20D1-B10K-01"
 			(at 70.0532 53.2892 0)
 			(hide yes)
 			(show_name no)
