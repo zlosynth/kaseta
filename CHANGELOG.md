@@ -6,6 +6,8 @@ backwards compatibility.
 
 ## Unreleased
 
+* Switch to Alpha sliders now when Song Huei is no longer selling theirs.
+
 ## 1.3.3
 
 * Prevent accidental control mapping of even noisier pots.
