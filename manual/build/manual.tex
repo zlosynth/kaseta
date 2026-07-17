@@ -97,60 +97,50 @@ Start by unpacking all baggies into a bowl so you don't lose any components.
                & standoff \\
 \end{tabular}
 
-\section{Power and I2C}
-
-Start by soldering the power and I2C connectors.
-
-\begin{enumerate}
-  \item Take the male 2\texttimes5 connector and put the side with shorter legs
-    through the footprint marked with a white stripe and a label ``RED~-12V''.
-    Make sure to put it on the marked side of the PCB.
-  \item Solder a single pin in and check that the connector is upright. If it
-    is not, heat up the pin and align the connector by pushing it against the
-    board.
-  \item Solder all the pins in.
-\end{enumerate}
-
-Repeat the process for the male 1\texttimes3 connector, placed in the ``I2C''
-footprint.
-
-\section{Daisy Patch Submodule}
-
-The Daisy Patch Submodule is connected to the main PCB through a set of
-connectors.
-
-\begin{enumerate}
-  \item Mount the four female 2\texttimes5 connectors on the pins of the Daisy
-    Patch Submodule. See Figure \ref{daisy}.
-  \item Plug the mounted connectors into the black PCB through
-    footprints marked as ``SM''. Make sure to put them on the correct side
-    of the PCB, where all four connectors are marked.
-  \item Solder all the pins in.
-  \item Once done, carefully detach Daisy Patch Submodule to prevent it
-    from getting damaged while progressing with the build. It may be a
-    little difficult. Pull each connector by a millimeter at a time.
-    The result is illustrated in Figure \ref{connectors}.
-\end{enumerate}
-
 \begin{figure}[h]
   \centering
   \includegraphics[width=\linewidth]{p01.jpg}
   \caption{All the components laid out}
 \end{figure}
 
-\begin{figure}[h]
-  \centering
-  \includegraphics[width=\linewidth]{p02.jpg}
-  \caption{Connectors mounted on the submodule}
-  \label{daisy}
-\end{figure}
+\newpage
+
+\section{Connectors}
+
+Start by soldering the connectors. These include the power and I2C connectors,
+and the connectors through which the Daisy Patch Submodule attaches to the main
+PCB. For each connector, follow the same procedure:
+
+\begin{enumerate}
+  \item Put the connector through its footprint. Make sure to put it on the
+    correct side of the PCB, where the connector is marked.
+  \item Solder a single pin in and check that the connector is upright. If it
+    is not, heat up the pin and align the connector by pushing it against the
+    board.
+  \item Solder all the pins in.
+\end{enumerate}
+
+Solder the following connectors this way:
+
+\begin{itemize}
+  \item The male 2\texttimes5 connector, in the footprint marked with a white
+    stripe and a label ``RED~-12V''. Put the side with shorter legs through the
+    board.
+  \item The male 1\texttimes3 connector, in the ``I2C'' footprint.
+  \item The four female 2\texttimes5 connectors, in the footprints marked
+    ``SM''.
+\end{itemize}
+
+The result is illustrated in Figure \ref{connectors}.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\linewidth]{p03.jpg}
+  \includegraphics[width=\linewidth]{p02.jpg}
   \caption{The power, I2C and submodule connectors}
   \label{connectors}
 \end{figure}
+
+\newpage
 
 \section{Front panel}
 
@@ -188,14 +178,14 @@ parts sitting in the front panel.
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\linewidth]{p04.jpg}
+  \includegraphics[width=\linewidth]{p03.jpg}
   \caption{Rear of the panel before soldering}
   \label{Before soldering}
 \end{figure}
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=\linewidth]{p05.jpg}
+  \includegraphics[width=\linewidth]{p04.jpg}
   \caption{Taped LED holes}
   \label{masking}
 \end{figure}
@@ -254,13 +244,13 @@ The module is now complete. Have fun! You can find the user manual on \url{https
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.9\linewidth]{p06.jpg}
+  \includegraphics[width=0.9\linewidth]{p05.jpg}
   \caption{\centering Top, left, bottom and right side view}
 \end{figure}
 
 \begin{figure}[h]
   \centering
-  \includegraphics[width=0.8\linewidth]{p07.jpg}
+  \includegraphics[width=0.8\linewidth]{p06.jpg}
   \caption{Front view of the assembled module}
 \end{figure}
 
