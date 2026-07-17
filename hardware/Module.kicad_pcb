@@ -909,7 +909,7 @@
 			(uuid "b9a969ee-788f-42b3-86a8-aeb4c6113219")
 		)
 		(embedded_fonts no)
-		(model "${KICAD6_3DMODEL_DIR}/Connector_PinHeader_2.54mm.3dshapes/PinHeader_2x05_P2.54mm_Vertical.wrl"
+		(model "${KICAD10_3DMODEL_DIR}/Connector_PinHeader_2.54mm.3dshapes/PinHeader_2x05_P2.54mm_Vertical.step"
 			(offset
 				(xyz 0 0 0)
 			)
@@ -4954,6 +4954,18 @@
 				)
 			)
 		)
+		(property "Value" "Daisy_Patch_SM"
+			(at -32.8336 -1.3011 90)
+			(layer "F.Fab")
+			(uuid "6bed7629-2f6f-46dd-8762-529994c98d0a")
+			(effects
+				(font
+					(size 1 1)
+					(thickness 0.15)
+				)
+				(justify mirror)
+			)
+		)
 		(property "Datasheet" ""
 			(at 0 0 0)
 			(layer "F.Fab")
@@ -4976,18 +4988,6 @@
 					(size 1.27 1.27)
 					(thickness 0.15)
 				)
-			)
-		)
-		(property "Value" "Daisy_Patch_SM"
-			(at -32.8336 -1.3011 90)
-			(layer "F.Fab")
-			(uuid "6bed7629-2f6f-46dd-8762-529994c98d0a")
-			(effects
-				(font
-					(size 1 1)
-					(thickness 0.15)
-				)
-				(justify mirror)
 			)
 		)
 		(path "/e1577b55-984d-4300-9631-1ac13a7fa330")
@@ -22045,7 +22045,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot\nw/\ncenter\ndetent"
+	(gr_text "Trimmer\nw/\ncenter\ndetent"
 		(at 53.36 93.94 0)
 		(layer "B.SilkS")
 		(uuid "c130c8d0-1805-4088-b8cc-4686d9f47db0")
@@ -22057,7 +22057,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot\nw/\ncenter\ndetent"
+	(gr_text "Trimmer\nw/\ncenter\ndetent"
 		(at 53.48 80.66 0)
 		(layer "B.SilkS")
 		(uuid "4a84eb70-e3ff-4710-a281-06cdc27cb5bd")
@@ -22081,7 +22081,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot\nw/\ncenter\ndetent"
+	(gr_text "Trimmer\nw/\ncenter\ndetent"
 		(at 53.53 66.8 0)
 		(layer "B.SilkS")
 		(uuid "a2c37922-2d2e-480f-b856-0299dcbc6c5b")
@@ -22093,7 +22093,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot\nw/\ncenter\ndetent"
+	(gr_text "Trimmer\nw/\ncenter\ndetent"
 		(at 53.58 52.94 0)
 		(layer "B.SilkS")
 		(uuid "7abb3b31-e7de-4eb7-b04c-b4758d63bf62")
@@ -22105,7 +22105,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot\nw/\ncenter\ndetent"
+	(gr_text "Trimmer\nw/\ncenter\ndetent"
 		(at 55.67 39.06 0)
 		(layer "B.SilkS")
 		(uuid "b60e2cfb-d9a1-4f96-a88d-25f3045d2da1")
@@ -22189,7 +22189,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot"
+	(gr_text "Trimmer"
 		(at 65.94 64.7 0)
 		(layer "B.SilkS")
 		(uuid "1e35a697-77f0-4ca7-9481-69779eeb497b")
@@ -22201,7 +22201,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot"
+	(gr_text "Trimmer"
 		(at 65.94 92.38 0)
 		(layer "B.SilkS")
 		(uuid "e819f264-9aaf-4c16-a5a7-74f8f7052efe")
@@ -22213,7 +22213,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot"
+	(gr_text "Trimmer"
 		(at 65.96 78.63 0)
 		(layer "B.SilkS")
 		(uuid "c35554aa-deb6-453a-8151-5f298b1bddf1")
@@ -22225,7 +22225,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot"
+	(gr_text "Trimmer"
 		(at 66.08 50.6 0)
 		(layer "B.SilkS")
 		(uuid "4aa405b8-69bb-436e-be0d-0b78fff8a5e1")
@@ -22237,7 +22237,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot"
+	(gr_text "Trimmer"
 		(at 75.84 37.5 0)
 		(layer "B.SilkS")
 		(uuid "4b30fec7-766c-493e-bcf6-aeb860cc2596")
@@ -22249,7 +22249,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot"
+	(gr_text "Trimmer"
 		(at 78.3 64.77 0)
 		(layer "B.SilkS")
 		(uuid "8ab5b44c-b013-4c9b-be6a-879dcdce2e04")
@@ -22261,7 +22261,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot"
+	(gr_text "Trimmer"
 		(at 78.34 50.52 0)
 		(layer "B.SilkS")
 		(uuid "328aa8db-ef27-46ee-963e-c497b08d57f6")
@@ -22273,7 +22273,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot"
+	(gr_text "Trimmer"
 		(at 78.35 92.54 0)
 		(layer "B.SilkS")
 		(uuid "a778ec85-2e1a-4eb7-b90a-f717ccbbd968")
@@ -22285,7 +22285,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Blue\npot"
+	(gr_text "Trimmer"
 		(at 78.44 78.63 0)
 		(layer "B.SilkS")
 		(uuid "96ab3e4b-0ab4-456d-8343-be217dafc51c")
@@ -22393,18 +22393,6 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Green pot: Regular potentiometer\nBlue pot: Tall trimmer potentiometer"
-		(at 97.74 119.83 0)
-		(layer "B.SilkS")
-		(uuid "cf833823-70f7-4d6b-ae01-40aac2f2f7af")
-		(effects
-			(font
-				(size 1 1)
-				(thickness 0.15)
-			)
-			(justify mirror)
-		)
-	)
 	(gr_text "Jack"
 		(at 101.56 137.28 0)
 		(layer "B.SilkS")
@@ -22453,7 +22441,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Green\npot\nw/\ncenter\ndetent"
+	(gr_text "Pot\nw/\ncenter\ndetent"
 		(at 135.83 132.58 0)
 		(layer "B.SilkS")
 		(uuid "2521c2ea-7c64-47be-bfc9-9b053cc77ee9")
@@ -22465,7 +22453,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Green\npot"
+	(gr_text "Pot"
 		(at 135.99 108.14 0)
 		(layer "B.SilkS")
 		(uuid "f41f36c6-deec-430a-9949-0655711dae13")
@@ -22477,7 +22465,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Green\npot"
+	(gr_text "Pot"
 		(at 136.04 62.07 0)
 		(layer "B.SilkS")
 		(uuid "b867c63d-6e8f-4c60-be54-2d9d54ee588e")
@@ -22489,7 +22477,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Green\npot"
+	(gr_text "Pot"
 		(at 136.11 85.06 0)
 		(layer "B.SilkS")
 		(uuid "e1be6ddf-dcef-40a8-88e4-3dde81abc718")
@@ -22501,7 +22489,7 @@
 			(justify mirror)
 		)
 	)
-	(gr_text "Green\npot"
+	(gr_text "Pot"
 		(at 136.12 39.05 0)
 		(layer "B.SilkS")
 		(uuid "9242e452-04bf-4db6-ad1a-1cb5df94278a")
