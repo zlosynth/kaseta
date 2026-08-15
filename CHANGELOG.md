@@ -6,6 +6,10 @@ backwards compatibility.
 
 ## Unreleased
 
+## 1.3.5
+
+* Fix the Alpha slider footprint orientation.
+
 ## 1.3.4
 
 * Switch to Alpha sliders now when Song Huei is no longer selling theirs.
