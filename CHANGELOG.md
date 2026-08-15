@@ -8,7 +8,7 @@ backwards compatibility.
 
 ## 1.3.5
 
-* Fix the Alpha slider footprint orientation.
+* Fix the Alpha slider footprint orientation and pinout.
 
 ## 1.3.4
 
